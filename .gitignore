@@ -33,6 +33,17 @@ yarn-error.*
 # local env files
 .env*.local
 .env
+.env.*
+!.env.example
+
+# claude / tooling
+.claude/
+
+# backend
+backend/node_modules/
+
+# logs
+*.log
 
 # typescript
 *.tsbuildinfo
