@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/typography';
 import { getGameDetail } from '../services/rawgApi';
 import { useLibrary } from '../hooks/useLibrary';
 import Rating from '../components/Rating';
@@ -261,6 +262,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.textSecondary,
     fontSize: 13,
+    fontFamily: fonts.body,
     textAlign: 'center',
   },
   heroBlock: {
@@ -306,16 +308,17 @@ const styles = StyleSheet.create({
   yearText: {
     color: colors.textSecondary,
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
   },
   title: {
     color: colors.textPrimary,
     fontSize: 24,
-    fontWeight: '800',
+    fontFamily: fonts.headingExtraBold,
   },
   developer: {
     color: colors.textSecondary,
     fontSize: 12,
+    fontFamily: fonts.body,
   },
   ratingSection: {
     flexDirection: 'row',
@@ -330,7 +333,7 @@ const styles = StyleSheet.create({
   ratingLabel: {
     color: colors.textSecondary,
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
   },
   starsRow: {
     flexDirection: 'row',
@@ -340,7 +343,7 @@ const styles = StyleSheet.create({
   ratingValue: {
     color: colors.warning,
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
   },
   statsRow: {
     flexDirection: 'row',
@@ -360,12 +363,12 @@ const styles = StyleSheet.create({
   statLabel: {
     color: colors.textMuted,
     fontSize: 9,
-    fontWeight: '600',
+    fontFamily: fonts.bodySemiBold,
   },
   statValue: {
     color: colors.textPrimary,
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
   },
   synopsisBlock: {
     gap: 8,
@@ -373,11 +376,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.textPrimary,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: fonts.heading,
   },
   synopsisText: {
     color: colors.textSecondary,
     fontSize: 12,
+    fontFamily: fonts.body,
     lineHeight: 18,
   },
   libraryBlock: {
@@ -391,7 +395,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: colors.textSecondary,
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.bodySemiBold,
   },
   reviewInput: {
     minHeight: 72,
@@ -402,6 +406,7 @@ const styles = StyleSheet.create({
     padding: 12,
     color: colors.textPrimary,
     fontSize: 13,
+    fontFamily: fonts.body,
     textAlignVertical: 'top',
   },
   reviewBtn: {
@@ -416,7 +421,7 @@ const styles = StyleSheet.create({
   reviewBtnText: {
     color: colors.textPrimary,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
   },
   btnDisabled: {
     opacity: 0.5,
@@ -424,10 +429,12 @@ const styles = StyleSheet.create({
   hintText: {
     color: colors.textMuted,
     fontSize: 12,
+    fontFamily: fonts.body,
   },
   saveErrorText: {
     color: colors.warning,
     fontSize: 12,
+    fontFamily: fonts.body,
   },
   footerBar: {
     flexDirection: 'row',
@@ -453,6 +460,6 @@ const styles = StyleSheet.create({
   favoriteBtnText: {
     color: colors.textPrimary,
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
   },
 });

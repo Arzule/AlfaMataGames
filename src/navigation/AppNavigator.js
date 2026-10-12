@@ -14,6 +14,7 @@ import FavoritesScreen from '../screens/FavoritesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/typography';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -29,6 +30,7 @@ function MainTabs() {
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
+        tabBarLabelStyle: { fontFamily: fonts.bodySemiBold },
       }}
     >
       <Tab.Screen
