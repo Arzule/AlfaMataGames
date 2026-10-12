@@ -1,6 +1,6 @@
 // src/navigation/AppNavigator.js
 import React from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -10,21 +10,13 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import GameCatalogScreen from '../screens/GameCatalogScreen';
 import GameDetailScreen from '../screens/GameDetailScreen';
+import FavoritesScreen from '../screens/FavoritesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { useAuth } from '../hooks/useAuth';
 import { colors } from '../theme/colors';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
-
-// Placeholder simple para Favoritos (aún no implementada en esta entrega).
-function PlaceholderScreen({ label }) {
-  return (
-    <View style={styles.placeholder}>
-      <Text style={styles.placeholderText}>{label}</Text>
-    </View>
-  );
-}
 
 function MainTabs() {
   return (
@@ -51,14 +43,14 @@ function MainTabs() {
       />
       <Tab.Screen
         name="Favoritos"
+        component={FavoritesScreen}
         options={{
+          title: 'Favoritos',
           tabBarIcon: ({ color, size }) => (
             <Feather name="heart" size={size} color={color} />
           ),
         }}
-      >
-        {() => <PlaceholderScreen label="Favoritos (próximamente)" />}
-      </Tab.Screen>
+      />
       <Tab.Screen
         name="Perfil"
         component={ProfileScreen}
@@ -110,16 +102,6 @@ export default function AppNavigator() {
 }
 
 const styles = StyleSheet.create({
-  placeholder: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  placeholderText: {
-    color: colors.textSecondary,
-    fontSize: 14,
-  },
   loading: {
     flex: 1,
     backgroundColor: colors.background,
