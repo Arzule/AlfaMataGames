@@ -9,21 +9,20 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-
-// Credenciales estáticas de prueba para esta entrega (sin backend real)
-const TEST_CREDENTIALS = {
-  email: 'drago@gmail.com',
-  password: '12345678',
-};
+import { useAuth } from '../hooks/useAuth';
 
 export default function LoginScreen({ navigation }) {
+  const { login } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   const validate = () => {
     const newErrors = {};
@@ -44,19 +43,18 @@ export default function LoginScreen({ navigation }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
 
-    const isValidUser =
-      email.trim().toLowerCase() === TEST_CREDENTIALS.email &&
-      password === TEST_CREDENTIALS.password;
-
-    if (!isValidUser) {
-      setErrors({ general: 'Correo o contraseña incorrectos' });
-      return;
+    setSubmitting(true);
+    try {
+      await login(email.trim(), password);
+      // La navegación cambia automáticamente al iniciar sesión.
+    } catch (err) {
+      setErrors({ general: err.message });
+    } finally {
+      setSubmitting(false);
     }
-
-    navigation.replace('MainTabs');
   };
 
   return (
@@ -92,6 +90,7 @@ export default function LoginScreen({ navigation }) {
                 onChangeText={setEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
+                editable={!submitting}
               />
             </View>
             {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
@@ -114,6 +113,7 @@ export default function LoginScreen({ navigation }) {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
+                editable={!submitting}
               />
               <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)}>
                 <Feather
@@ -130,8 +130,24 @@ export default function LoginScreen({ navigation }) {
             <Text style={[styles.errorText, styles.errorGeneral]}>{errors.general}</Text>
           )}
 
-          <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-            <Text style={styles.submitBtnText}>Iniciar sesión</Text>
+          <TouchableOpacity
+            style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
+            onPress={handleSubmit}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color={colors.textPrimary} />
+            ) : (
+              <Text style={styles.submitBtnText}>Iniciar sesión</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.linkRow}
+            onPress={() => navigation.navigate('Register')}
+            disabled={submitting}
+          >
+            <Text style={styles.linkText}>¿No tienes cuenta? Regístrate</Text>
           </TouchableOpacity>
 
           <Text style={styles.hint}>
@@ -228,10 +244,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 4,
   },
+  submitBtnDisabled: {
+    opacity: 0.6,
+  },
   submitBtnText: {
     color: colors.textPrimary,
     fontSize: 15,
     fontWeight: '700',
+  },
+  linkRow: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  linkText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '600',
   },
   hint: {
     color: colors.textMuted,
