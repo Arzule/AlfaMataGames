@@ -13,6 +13,7 @@ import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import GameCard from '../components/GameCard';
 import { getGames } from '../services/rawgApi';
+import { useAuth } from '../hooks/useAuth';
 
 const CATEGORIES = ['Todos', 'Jugando', 'Completado', 'Pendiente', 'Abandonado'];
 
@@ -35,6 +36,8 @@ function mapRawgGame(game) {
 }
 
 export default function GameCatalogScreen({ navigation }) {
+  const { user } = useAuth();
+  const username = user?.name ?? 'jugador';
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -75,9 +78,11 @@ export default function GameCatalogScreen({ navigation }) {
           <View style={styles.avatarPlaceholder}>
             <Feather name="user" size={18} color={colors.textSecondary} />
           </View>
-          <View>
+          <View style={styles.userInfo}>
             <Text style={styles.greeting}>Hola,</Text>
-            <Text style={styles.username}>CPsito</Text>
+            <Text style={styles.username} numberOfLines={1}>
+              {username}
+            </Text>
           </View>
         </View>
         <TouchableOpacity style={styles.notifBtn}>
@@ -171,6 +176,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flexShrink: 1,
+  },
+  userInfo: {
+    flexShrink: 1,
   },
   avatarPlaceholder: {
     width: 40,
