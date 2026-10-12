@@ -63,14 +63,20 @@ export async function request(path, { method = 'GET', body, auth = false } = {})
     clearTimeout(timeoutId);
   }
 
-  // El backend puede devolver 204 (sin contenido) o JSON.
+  // 204 No Content: respuesta válida sin cuerpo.
+  if (response.status === 204) {
+    return null;
+  }
+
+  // Se espera JSON tanto en respuestas correctas como de error.
   const text = await response.text();
   let data = null;
+  let parseFailed = false;
   if (text) {
     try {
       data = JSON.parse(text);
     } catch (err) {
-      data = null;
+      parseFailed = true;
     }
   }
 
@@ -89,6 +95,13 @@ export async function request(path, { method = 'GET', body, auth = false } = {})
       unauthorizedHandler();
     }
 
+    throw error;
+  }
+
+  // Una respuesta OK con cuerpo debe ser JSON válido; nunca devolver null en silencio.
+  if (parseFailed || data === null) {
+    const error = new Error('Respuesta inesperada del servidor');
+    error.status = response.status;
     throw error;
   }
 
