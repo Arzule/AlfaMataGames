@@ -6,20 +6,36 @@ import {
   Image,
   ScrollView,
   TouchableOpacity,
+  TextInput,
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { getGameDetail } from '../services/rawgApi';
+import { useLibrary } from '../hooks/useLibrary';
+import Rating from '../components/Rating';
+import StatusChips from '../components/StatusChips';
 
 export default function GameDetailScreen({ route, navigation }) {
   const { gameId } = route.params;
 
+  const { getEntry, isFavorite, saveEntry, loading: libraryLoading } = useLibrary();
+
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [saving, setSaving] = useState(null);
+  const [saveError, setSaveError] = useState(null);
+
+  const entry = getEntry(gameId);
+  const favorite = isFavorite(gameId);
+  const savedReview = entry?.review ?? '';
+
+  const [reviewText, setReviewText] = useState(savedReview);
+  useEffect(() => {
+    setReviewText(savedReview);
+  }, [savedReview]);
 
   useEffect(() => {
     let isMounted = true;
@@ -60,6 +76,35 @@ export default function GameDetailScreen({ route, navigation }) {
   const developer = game.developers?.[0]?.name ?? 'Desarrollador desconocido';
   const platforms = game.platforms?.map((p) => p.platform.name).join(', ') ?? 'N/D';
   const year = game.released ? new Date(game.released).getFullYear() : '—';
+
+  // Resumen que se guarda la primera vez que el juego entra a la biblioteca.
+  const summary = {
+    id: game.id,
+    name: game.name,
+    image: game.background_image ?? null,
+    rating: typeof game.rating === 'number' ? game.rating : null,
+  };
+
+  const busy = saving !== null;
+  const canEdit = !libraryLoading && !busy;
+
+  const runSave = async (tag, patch) => {
+    setSaving(tag);
+    setSaveError(null);
+    try {
+      await saveEntry(summary, patch);
+    } catch (err) {
+      setSaveError('No se pudieron guardar los cambios. Intenta de nuevo.');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleToggleFavorite = () => runSave('favorite', { isFavorite: !favorite });
+  const handleStatusChange = (status) => runSave('status', { status });
+  const handleScoreChange = (userScore) => runSave('score', { userScore });
+  const handleSaveReview = () =>
+    runSave('review', { review: reviewText.trim() ? reviewText.trim() : null });
 
   return (
     <View style={styles.flex}>
@@ -114,23 +159,83 @@ export default function GameDetailScreen({ route, navigation }) {
               {game.description_raw ?? 'Sin descripción disponible.'}
             </Text>
           </View>
+
+          {/* Mi biblioteca */}
+          <View style={styles.libraryBlock}>
+            <Text style={styles.sectionTitle}>MI BIBLIOTECA</Text>
+
+            <View style={styles.libraryRow}>
+              <Text style={styles.fieldLabel}>Estado</Text>
+              <StatusChips
+                value={entry?.status ?? null}
+                onChange={canEdit ? handleStatusChange : undefined}
+              />
+            </View>
+
+            <View style={styles.libraryRow}>
+              <Text style={styles.fieldLabel}>Tu puntuación</Text>
+              <Rating
+                value={entry?.userScore ?? null}
+                onChange={canEdit ? handleScoreChange : undefined}
+                readOnly={!canEdit}
+              />
+            </View>
+
+            <View style={styles.libraryRow}>
+              <Text style={styles.fieldLabel}>Tu reseña</Text>
+              <TextInput
+                style={styles.reviewInput}
+                placeholder="Escribe tu reseña..."
+                placeholderTextColor={colors.textMuted}
+                value={reviewText}
+                onChangeText={setReviewText}
+                multiline
+                maxLength={500}
+                editable={!libraryLoading}
+              />
+              <TouchableOpacity
+                style={[styles.reviewBtn, (libraryLoading || busy) && styles.btnDisabled]}
+                onPress={handleSaveReview}
+                disabled={libraryLoading || busy}
+              >
+                {saving === 'review' ? (
+                  <ActivityIndicator color={colors.textPrimary} size="small" />
+                ) : (
+                  <Text style={styles.reviewBtnText}>Guardar reseña</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {libraryLoading ? (
+              <Text style={styles.hintText}>Cargando tu biblioteca...</Text>
+            ) : null}
+            {saveError ? <Text style={styles.saveErrorText}>{saveError}</Text> : null}
+          </View>
         </View>
       </ScrollView>
 
       {/* Footer */}
       <View style={styles.footerBar}>
         <TouchableOpacity
-          style={styles.favoriteBtn}
-          onPress={() => setIsFavorite((prev) => !prev)}
+          style={[styles.favoriteBtn, (libraryLoading || busy) && styles.btnDisabled]}
+          onPress={handleToggleFavorite}
+          disabled={libraryLoading || busy}
         >
-          <Feather
-            name="heart"
-            size={20}
-            color={isFavorite ? colors.primary : colors.textSecondary}
-            fill={isFavorite ? colors.primary : 'none'}
-          />
+          {saving === 'favorite' ? (
+            <ActivityIndicator
+              color={colors.primary}
+              size="small"
+            />
+          ) : (
+            <Feather
+              name="heart"
+              size={20}
+              color={favorite ? colors.primary : colors.textSecondary}
+              fill={favorite ? colors.primary : 'none'}
+            />
+          )}
           <Text style={styles.favoriteBtnText}>
-            {isFavorite ? 'En favoritos' : 'Agregar a favoritos'}
+            {favorite ? 'En favoritos' : 'Agregar a favoritos'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -264,7 +369,6 @@ const styles = StyleSheet.create({
   },
   synopsisBlock: {
     gap: 8,
-    paddingBottom: 24,
   },
   sectionTitle: {
     color: colors.textPrimary,
@@ -275,6 +379,55 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 12,
     lineHeight: 18,
+  },
+  libraryBlock: {
+    gap: 12,
+    paddingTop: 4,
+    paddingBottom: 24,
+  },
+  libraryRow: {
+    gap: 6,
+  },
+  fieldLabel: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  reviewInput: {
+    minHeight: 72,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: 12,
+    color: colors.textPrimary,
+    fontSize: 13,
+    textAlignVertical: 'top',
+  },
+  reviewBtn: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 16,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewBtnText: {
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  btnDisabled: {
+    opacity: 0.5,
+  },
+  hintText: {
+    color: colors.textMuted,
+    fontSize: 12,
+  },
+  saveErrorText: {
+    color: colors.warning,
+    fontSize: 12,
   },
   footerBar: {
     flexDirection: 'row',
