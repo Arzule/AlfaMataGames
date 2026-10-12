@@ -37,37 +37,45 @@ export function LibraryProvider({ children }) {
     itemsRef.current = items;
   }, [items]);
 
-  // Carga la biblioteca cuando cambia el usuario; cancela si se desmonta.
-  useEffect(() => {
-    let cancelled = false;
+  // Contador de peticiones: descarta respuestas obsoletas (lentas).
+  const requestIdRef = useRef(0);
 
+  // Pide GET /library con loading/error. Reutilizable por el efecto y refresh().
+  const load = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await libraryApi.getLibrary();
+      if (requestId !== requestIdRef.current) return;
+      setItems(Array.isArray(data?.items) ? data.items : []);
+    } catch (err) {
+      if (requestId === requestIdRef.current) {
+        setError('No se pudo cargar tu biblioteca.');
+      }
+    } finally {
+      if (requestId === requestIdRef.current) setLoading(false);
+    }
+  }, []);
+
+  // Carga la biblioteca cuando cambia el usuario; se limpia sin sesión.
+  useEffect(() => {
     if (!userId) {
+      // Invalida cualquier petición en curso y vacía el estado.
+      requestIdRef.current += 1;
       setItems([]);
       setError(null);
       setLoading(false);
-      return () => {
-        cancelled = true;
-      };
+      return;
     }
+    load();
+  }, [userId, load]);
 
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await libraryApi.getLibrary();
-        if (cancelled) return;
-        setItems(Array.isArray(data?.items) ? data.items : []);
-      } catch (err) {
-        if (!cancelled) setError('No se pudo cargar tu biblioteca.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [userId]);
+  // Vuelve a pedir la biblioteca (usado por pull-to-refresh y "Reintentar").
+  const refresh = useCallback(async () => {
+    if (!userId) return;
+    await load();
+  }, [userId, load]);
 
   // Devuelve la entrada guardada de un juego (o undefined).
   const getEntry = useCallback(
@@ -179,6 +187,7 @@ export function LibraryProvider({ children }) {
     isFavorite,
     saveEntry,
     removeEntry,
+    refresh,
   };
 
   return <LibraryContext.Provider value={value}>{children}</LibraryContext.Provider>;
