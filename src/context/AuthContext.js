@@ -51,6 +51,9 @@ export function AuthProvider({ children }) {
           setAuthToken(stored);
           const data = await authApi.getMe();
           if (!isMounted) return;
+          if (!data || !data.user) {
+            throw new Error('Respuesta inesperada del servidor');
+          }
           setToken(stored);
           setUser(data.user);
         }
@@ -69,6 +72,10 @@ export function AuthProvider({ children }) {
 
   // Guarda token y usuario (en estado y en SecureStore).
   const applySession = useCallback(async (data) => {
+    // La respuesta del backend debe traer token y usuario; si no, es inválida.
+    if (!data || !data.token || !data.user) {
+      throw new Error('Respuesta inesperada del servidor');
+    }
     setAuthToken(data.token);
     setToken(data.token);
     setUser(data.user);
