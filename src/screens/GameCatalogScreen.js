@@ -2,7 +2,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
-  Text,
   FlatList,
   TouchableOpacity,
   StyleSheet,
@@ -10,11 +9,12 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { fonts } from '../theme/typography';
 import GameCard from '../components/GameCard';
 import Header from '../components/Header';
 import SearchBar from '../components/SearchBar';
 import CategoryButton from '../components/CategoryButton';
+import EmptyState from '../components/EmptyState';
+import ErrorState from '../components/ErrorState';
 import { useAuth } from '../hooks/useAuth';
 import { useLibrary } from '../hooks/useLibrary';
 import { useDebounce } from '../hooks/useDebounce';
@@ -141,12 +141,7 @@ export default function GameCatalogScreen({ navigation }) {
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
       ) : isTodos && error ? (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={reload}>
-            <Text style={styles.retryText}>Reintentar</Text>
-          </TouchableOpacity>
-        </View>
+        <ErrorState message={error} onRetry={reload} />
       ) : (
         <FlatList
           data={data}
@@ -167,9 +162,10 @@ export default function GameCatalogScreen({ navigation }) {
             ) : null
           }
           ListEmptyComponent={
-            <View style={styles.centered}>
-              <Text style={styles.emptyText}>{emptyMessage}</Text>
-            </View>
+            <EmptyState
+              icon={isTodos ? 'search' : 'inbox'}
+              title={emptyMessage}
+            />
           }
         />
       )}
@@ -231,22 +227,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 60,
     paddingHorizontal: 24,
-  },
-  errorText: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontFamily: fonts.body,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  retryText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontFamily: fonts.bodyBold,
-  },
-  emptyText: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontFamily: fonts.body,
   },
 });

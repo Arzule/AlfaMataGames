@@ -17,6 +17,7 @@ import { getGameDetail } from '../services/rawgApi';
 import { useLibrary } from '../hooks/useLibrary';
 import Rating from '../components/Rating';
 import StatusChips from '../components/StatusChips';
+import ErrorState from '../components/ErrorState';
 
 export default function GameDetailScreen({ route, navigation }) {
   const { gameId } = route.params;
@@ -69,7 +70,7 @@ export default function GameDetailScreen({ route, navigation }) {
   if (error || !game) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>{error ?? 'Juego no encontrado.'}</Text>
+        <ErrorState message={error ?? 'Juego no encontrado.'} />
       </View>
     );
   }
@@ -258,12 +259,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.background,
     paddingHorizontal: 24,
-  },
-  errorText: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontFamily: fonts.body,
-    textAlign: 'center',
   },
   heroBlock: {
     width: '100%',

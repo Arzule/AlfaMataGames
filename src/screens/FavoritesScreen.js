@@ -5,7 +5,6 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
@@ -14,6 +13,8 @@ import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import GameCard from '../components/GameCard';
 import Header from '../components/Header';
+import EmptyState from '../components/EmptyState';
+import ErrorState from '../components/ErrorState';
 import { useLibrary } from '../hooks/useLibrary';
 
 export default function FavoritesScreen({ navigation }) {
@@ -65,12 +66,7 @@ export default function FavoritesScreen({ navigation }) {
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
       ) : error ? (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={refresh}>
-            <Text style={styles.retryText}>Reintentar</Text>
-          </TouchableOpacity>
-        </View>
+        <ErrorState message={error} onRetry={refresh} />
       ) : (
         <FlatList
           data={favorites}
@@ -88,12 +84,11 @@ export default function FavoritesScreen({ navigation }) {
             />
           }
           ListEmptyComponent={
-            <View style={styles.centered}>
-              <Text style={styles.emptyTitle}>Aún no tienes favoritos</Text>
-              <Text style={styles.emptyHelp}>
-                Marca un juego con el corazón desde su detalle
-              </Text>
-            </View>
+            <EmptyState
+              icon="heart"
+              title="Aún no tienes favoritos"
+              message="Marca un juego con el corazón desde su detalle"
+            />
           }
         />
       )}
@@ -129,30 +124,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 60,
     paddingHorizontal: 24,
-  },
-  errorText: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontFamily: fonts.body,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  retryText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontFamily: fonts.bodyBold,
-  },
-  emptyTitle: {
-    color: colors.textPrimary,
-    fontSize: 15,
-    fontFamily: fonts.heading,
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  emptyHelp: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontFamily: fonts.body,
-    textAlign: 'center',
   },
 });
