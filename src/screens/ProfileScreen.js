@@ -1,19 +1,25 @@
 // src/screens/ProfileScreen.js
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { useAuth } from '../hooks/useAuth';
+import { confirmAction } from '../utils/confirm';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
 
-  // Pide confirmación antes de cerrar sesión.
-  const handleLogout = () => {
-    Alert.alert('Cerrar sesión', '¿Seguro que deseas salir de tu cuenta?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Cerrar sesión', style: 'destructive', onPress: () => logout() },
-    ]);
+  // Pide confirmación antes de cerrar sesión (compatible con web).
+  const handleLogout = async () => {
+    const confirmed = await confirmAction({
+      title: 'Cerrar sesión',
+      message: '¿Seguro que deseas salir de tu cuenta?',
+      confirmText: 'Cerrar sesión',
+      cancelText: 'Cancelar',
+    });
+    if (confirmed) {
+      await logout();
+    }
   };
 
   return (
