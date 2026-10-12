@@ -16,9 +16,13 @@ import Header from '../components/Header';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
 import { useLibrary } from '../hooks/useLibrary';
+import { useGridColumns } from '../hooks/useGridColumns';
 
 export default function FavoritesScreen({ navigation }) {
   const { items, loading, error, refresh } = useLibrary();
+
+  // Columnas segun el ancho de pantalla (2 movil, 3 tablet, 4 escritorio).
+  const columns = useGridColumns();
 
   // Solo las entradas favoritas, en formato de GameCard.
   const favorites = useMemo(
@@ -37,13 +41,15 @@ export default function FavoritesScreen({ navigation }) {
 
   const renderItem = useCallback(
     ({ item }) => (
-      <GameCard
-        game={item}
-        status={item.status}
-        onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
-      />
+      <View style={[styles.cell, { maxWidth: `${100 / columns}%` }]}>
+        <GameCard
+          game={item}
+          status={item.status}
+          onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
+        />
+      </View>
     ),
-    [navigation]
+    [navigation, columns]
   );
 
   const keyExtractor = useCallback((item) => String(item.id), []);
@@ -70,9 +76,10 @@ export default function FavoritesScreen({ navigation }) {
       ) : (
         <FlatList
           data={favorites}
+          key={`favoritos-${columns}`}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
-          numColumns={2}
+          numColumns={columns}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.gridContent}
           refreshControl={
@@ -117,6 +124,9 @@ const styles = StyleSheet.create({
   },
   row: {
     gap: 16,
+  },
+  cell: {
+    flex: 1,
   },
   centered: {
     flex: 1,

@@ -59,7 +59,7 @@ export default function GameCard({ game, onPress, status = null, platform }) {
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
+    width: '100%',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   },
   cover: {
     width: '100%',
-    height: 200,
+    aspectRatio: 3 / 4,
   },
   details: {
     padding: 12,

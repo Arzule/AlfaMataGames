@@ -19,6 +19,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useLibrary } from '../hooks/useLibrary';
 import { useDebounce } from '../hooks/useDebounce';
 import { useGames } from '../hooks/useGames';
+import { useGridColumns } from '../hooks/useGridColumns';
 
 const CATEGORIES = ['Todos', 'Jugando', 'Completado', 'Pendiente', 'Abandonado'];
 
@@ -40,6 +41,9 @@ export default function GameCatalogScreen({ navigation }) {
   const { games, loading, loadingMore, error, hasMore, loadMore, reload } = useGames({
     search: searchTerm,
   });
+
+  // Columnas segun el ancho de pantalla (2 movil, 3 tablet, 4 escritorio).
+  const columns = useGridColumns();
 
   const isTodos = selectedCategory === 'Todos';
 
@@ -77,15 +81,17 @@ export default function GameCatalogScreen({ navigation }) {
     ({ item }) => {
       const status = isTodos ? getEntry(item.id)?.status ?? null : item.status;
       return (
-        <GameCard
-          game={item}
-          status={status}
-          platform={item.platform}
-          onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
-        />
+        <View style={[styles.cell, { maxWidth: `${100 / columns}%` }]}>
+          <GameCard
+            game={item}
+            status={status}
+            platform={item.platform}
+            onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
+          />
+        </View>
       );
     },
-    [isTodos, getEntry, navigation]
+    [isTodos, getEntry, navigation, columns]
   );
 
   const keyExtractor = useCallback((item) => String(item.id), []);
@@ -145,8 +151,9 @@ export default function GameCatalogScreen({ navigation }) {
       ) : (
         <FlatList
           data={data}
+          key={`catalogo-${columns}`}
           keyExtractor={keyExtractor}
-          numColumns={2}
+          numColumns={columns}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.gridContent}
           renderItem={renderItem}
@@ -217,6 +224,9 @@ const styles = StyleSheet.create({
   },
   row: {
     gap: 16,
+  },
+  cell: {
+    flex: 1,
   },
   footerSpinner: {
     paddingVertical: 16,
