@@ -1,5 +1,5 @@
 // src/screens/GameCatalogScreen.js
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,79 +12,85 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import GameCard from '../components/GameCard';
-import { getGames } from '../services/rawgApi';
 import { useAuth } from '../hooks/useAuth';
 import { useLibrary } from '../hooks/useLibrary';
+import { useDebounce } from '../hooks/useDebounce';
+import { useGames } from '../hooks/useGames';
 
 const CATEGORIES = ['Todos', 'Jugando', 'Completado', 'Pendiente', 'Abandonado'];
-
-function mapRawgGame(game) {
-  return {
-    id: game.id,
-    title: game.name,
-    image: game.background_image,
-    platform: game.platforms?.[0]?.platform?.name ?? null,
-    rating: typeof game.rating === 'number' ? game.rating.toFixed(1) : null,
-  };
-}
 
 export default function GameCatalogScreen({ navigation }) {
   const { user } = useAuth();
   const { items, getEntry, loading: libraryLoading } = useLibrary();
   const username = user?.name ?? 'jugador';
 
-  const [games, setGames] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
 
-  const loadGames = useCallback(async (query = '') => {
-    try {
-      setLoading(true);
-      setError(null);
-      const results = await getGames({ search: query, pageSize: 20 });
-      setGames(results.map(mapRawgGame));
-    } catch (err) {
-      setError('No se pudieron cargar los juegos. Verifica tu conexión.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Búsqueda con debounce; el término efectivo se aplica sola o al enviar.
+  const debouncedSearch = useDebounce(searchText, 500);
+  const [searchTerm, setSearchTerm] = useState('');
   useEffect(() => {
-    loadGames();
-  }, [loadGames]);
+    setSearchTerm(debouncedSearch);
+  }, [debouncedSearch]);
 
-  const handleSearchSubmit = () => {
-    loadGames(searchText);
-  };
-
-  // Juegos de la biblioteca del usuario con el estado seleccionado,
-  // filtrando por nombre localmente con el texto de búsqueda.
-  const libraryGames = items
-    .filter((item) => item.status === selectedCategory)
-    .filter((item) => {
-      const query = searchText.trim().toLowerCase();
-      if (!query) return true;
-      return (item.name ?? '').toLowerCase().includes(query);
-    })
-    .map((item) => ({
-      id: item.gameId,
-      title: item.name,
-      image: item.image,
-      rating: item.rating != null ? Number(item.rating).toFixed(1) : null,
-      status: item.status,
-      platform: null,
-    }));
+  const { games, loading, loadingMore, error, hasMore, loadMore, reload } = useGames({
+    search: searchTerm,
+  });
 
   const isTodos = selectedCategory === 'Todos';
+
+  // Juegos de la biblioteca con el estado elegido, filtrados por nombre.
+  const libraryGames = useMemo(
+    () =>
+      items
+        .filter((item) => item.status === selectedCategory)
+        .filter((item) => {
+          const query = debouncedSearch.trim().toLowerCase();
+          if (!query) return true;
+          return (item.name ?? '').toLowerCase().includes(query);
+        })
+        .map((item) => ({
+          id: item.gameId,
+          title: item.name,
+          image: item.image,
+          rating: item.rating != null ? Number(item.rating).toFixed(1) : null,
+          status: item.status,
+          platform: null,
+        })),
+    [items, selectedCategory, debouncedSearch]
+  );
+
   const data = isTodos ? games : libraryGames;
   const isLoading = isTodos ? loading : libraryLoading;
 
   const emptyMessage = isTodos
     ? 'No se encontraron juegos.'
     : `Aún no tienes juegos en «${selectedCategory}».`;
+
+  const handleSearchSubmit = () => setSearchTerm(searchText);
+
+  const renderItem = useCallback(
+    ({ item }) => {
+      const status = isTodos ? getEntry(item.id)?.status ?? null : item.status;
+      return (
+        <GameCard
+          game={item}
+          status={status}
+          platform={item.platform}
+          onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
+        />
+      );
+    },
+    [isTodos, getEntry, navigation]
+  );
+
+  const keyExtractor = useCallback((item) => String(item.id), []);
+
+  // Paginación solo en el chip "Todos".
+  const handleEndReached = useCallback(() => {
+    if (isTodos) loadMore();
+  }, [isTodos, loadMore]);
 
   return (
     <View style={styles.container}>
@@ -148,28 +154,29 @@ export default function GameCatalogScreen({ navigation }) {
       ) : isTodos && error ? (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={() => loadGames(searchText)}>
+          <TouchableOpacity onPress={reload}>
             <Text style={styles.retryText}>Reintentar</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
           data={data}
-          keyExtractor={(item) => String(item.id)}
+          keyExtractor={keyExtractor}
           numColumns={2}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.gridContent}
-          renderItem={({ item }) => {
-            const status = isTodos ? getEntry(item.id)?.status ?? null : item.status;
-            return (
-              <GameCard
-                game={item}
-                status={status}
-                platform={item.platform}
-                onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
+          renderItem={renderItem}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={
+            isTodos && loadingMore ? (
+              <ActivityIndicator
+                color={colors.primary}
+                size="small"
+                style={styles.footerSpinner}
               />
-            );
-          }}
+            ) : null
+          }
           ListEmptyComponent={
             <View style={styles.centered}>
               <Text style={styles.emptyText}>{emptyMessage}</Text>
@@ -282,9 +289,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 24,
     gap: 16,
+    flexGrow: 1,
   },
   row: {
     gap: 16,
+  },
+  footerSpinner: {
+    paddingVertical: 16,
   },
   centered: {
     flex: 1,
