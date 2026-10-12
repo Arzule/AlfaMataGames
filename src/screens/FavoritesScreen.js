@@ -5,17 +5,24 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/typography';
 import GameCard from '../components/GameCard';
+import Header from '../components/Header';
+import EmptyState from '../components/EmptyState';
+import ErrorState from '../components/ErrorState';
 import { useLibrary } from '../hooks/useLibrary';
+import { useGridColumns } from '../hooks/useGridColumns';
 
 export default function FavoritesScreen({ navigation }) {
   const { items, loading, error, refresh } = useLibrary();
+
+  // Columnas segun el ancho de pantalla (2 movil, 3 tablet, 4 escritorio).
+  const columns = useGridColumns();
 
   // Solo las entradas favoritas, en formato de GameCard.
   const favorites = useMemo(
@@ -34,13 +41,15 @@ export default function FavoritesScreen({ navigation }) {
 
   const renderItem = useCallback(
     ({ item }) => (
-      <GameCard
-        game={item}
-        status={item.status}
-        onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
-      />
+      <View style={[styles.cell, { maxWidth: `${100 / columns}%` }]}>
+        <GameCard
+          game={item}
+          status={item.status}
+          onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
+        />
+      </View>
     ),
-    [navigation]
+    [navigation, columns]
   );
 
   const keyExtractor = useCallback((item) => String(item.id), []);
@@ -48,30 +57,29 @@ export default function FavoritesScreen({ navigation }) {
   return (
     <View style={styles.container}>
       {/* Encabezado */}
-      <View style={styles.headerBar}>
-        <Text style={styles.title}>Favoritos</Text>
-        <Text style={styles.count}>
-          {favorites.length} {favorites.length === 1 ? 'juego' : 'juegos'}
-        </Text>
-      </View>
+      <Header
+        title="Favoritos"
+        style={styles.header}
+        right={
+          <Text style={styles.count}>
+            {favorites.length} {favorites.length === 1 ? 'juego' : 'juegos'}
+          </Text>
+        }
+      />
 
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
       ) : error ? (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={refresh}>
-            <Text style={styles.retryText}>Reintentar</Text>
-          </TouchableOpacity>
-        </View>
+        <ErrorState message={error} onRetry={refresh} />
       ) : (
         <FlatList
           data={favorites}
+          key={`favoritos-${columns}`}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
-          numColumns={2}
+          numColumns={columns}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.gridContent}
           refreshControl={
@@ -83,12 +91,11 @@ export default function FavoritesScreen({ navigation }) {
             />
           }
           ListEmptyComponent={
-            <View style={styles.centered}>
-              <Text style={styles.emptyTitle}>Aún no tienes favoritos</Text>
-              <Text style={styles.emptyHelp}>
-                Marca un juego con el corazón desde su detalle
-              </Text>
-            </View>
+            <EmptyState
+              icon="heart"
+              title="Aún no tienes favoritos"
+              message="Marca un juego con el corazón desde su detalle"
+            />
           }
         />
       )}
@@ -101,23 +108,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  headerBar: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
+  header: {
     paddingTop: 60,
-    paddingBottom: 16,
-  },
-  title: {
-    color: colors.textPrimary,
-    fontSize: 24,
-    fontWeight: '800',
   },
   count: {
     color: colors.textSecondary,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.bodySemiBold,
   },
   gridContent: {
     paddingHorizontal: 24,
@@ -128,34 +125,14 @@ const styles = StyleSheet.create({
   row: {
     gap: 16,
   },
+  cell: {
+    flex: 1,
+  },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: 60,
     paddingHorizontal: 24,
-  },
-  errorText: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  retryText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  emptyTitle: {
-    color: colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  emptyHelp: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    textAlign: 'center',
   },
 });

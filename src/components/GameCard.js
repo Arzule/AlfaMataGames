@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/typography';
 
 // Colores de los estados, compartidos con StatusChips.
 export const STATUS_STYLES = {
@@ -58,7 +59,7 @@ export default function GameCard({ game, onPress, status = null, platform }) {
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
+    width: '100%',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -67,7 +68,7 @@ const styles = StyleSheet.create({
   },
   cover: {
     width: '100%',
-    height: 200,
+    aspectRatio: 3 / 4,
   },
   details: {
     padding: 12,
@@ -76,7 +77,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.textPrimary,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: fonts.heading,
   },
   metaRow: {
     flexDirection: 'row',
@@ -92,6 +93,7 @@ const styles = StyleSheet.create({
   platformText: {
     color: colors.textSecondary,
     fontSize: 11,
+    fontFamily: fonts.body,
     flexShrink: 1,
   },
   ratingBlock: {
@@ -102,7 +104,7 @@ const styles = StyleSheet.create({
   ratingText: {
     color: colors.warning,
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
   },
   badgeWrapper: {
     flexDirection: 'row',
@@ -114,6 +116,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
   },
 });

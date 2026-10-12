@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
@@ -13,6 +12,8 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/typography';
+import FormInput from '../components/FormInput';
 import { useAuth } from '../hooks/useAuth';
 
 export default function LoginScreen({ navigation }) {
@@ -20,7 +21,6 @@ export default function LoginScreen({ navigation }) {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -72,59 +72,28 @@ export default function LoginScreen({ navigation }) {
         </View>
 
         <View style={styles.form}>
-          {/* Campo correo */}
-          <View style={styles.field}>
-            <Text style={styles.label}>CORREO ELECTRÓNICO</Text>
-            <View
-              style={[
-                styles.inputBox,
-                errors.email && styles.inputBoxError,
-              ]}
-            >
-              <Feather name="mail" size={18} color={colors.textSecondary} />
-              <TextInput
-                style={styles.input}
-                placeholder="drago@gmail.com"
-                placeholderTextColor={colors.textMuted}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                editable={!submitting}
-              />
-            </View>
-            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-          </View>
+          <FormInput
+            label="CORREO ELECTRÓNICO"
+            icon="mail"
+            placeholder="drago@gmail.com"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            editable={!submitting}
+            error={errors.email}
+          />
 
-          {/* Campo contraseña */}
-          <View style={styles.field}>
-            <Text style={styles.label}>CONTRASEÑA</Text>
-            <View
-              style={[
-                styles.inputBox,
-                errors.password && styles.inputBoxError,
-              ]}
-            >
-              <Feather name="lock" size={18} color={colors.textSecondary} />
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••••••"
-                placeholderTextColor={colors.textMuted}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                editable={!submitting}
-              />
-              <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)}>
-                <Feather
-                  name={showPassword ? 'eye-off' : 'eye'}
-                  size={18}
-                  color={colors.textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
-            {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-          </View>
+          <FormInput
+            label="CONTRASEÑA"
+            icon="lock"
+            placeholder="••••••••••••"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            editable={!submitting}
+            error={errors.password}
+          />
 
           {errors.general && (
             <Text style={[styles.errorText, styles.errorGeneral]}>{errors.general}</Text>
@@ -167,11 +136,14 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 40,
   },
   brandHeader: {
     alignItems: 'center',
+    width: '100%',
+    maxWidth: 420,
     marginBottom: 32,
   },
   logoPlaceholder: {
@@ -188,48 +160,22 @@ const styles = StyleSheet.create({
   brandName: {
     color: colors.textPrimary,
     fontSize: 26,
-    fontWeight: '800',
+    fontFamily: fonts.headingExtraBold,
     marginBottom: 4,
   },
   brandSub: {
     color: colors.textSecondary,
     fontSize: 13,
+    fontFamily: fonts.body,
   },
   form: {
     width: '100%',
-  },
-  field: {
-    width: '100%',
-    marginBottom: 20,
-  },
-  label: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  inputBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    height: 48,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-  },
-  inputBoxError: {
-    borderColor: '#ef4444',
-  },
-  input: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontSize: 14,
+    maxWidth: 420,
   },
   errorText: {
     color: '#ef4444',
     fontSize: 12,
+    fontFamily: fonts.body,
     marginTop: 6,
   },
   errorGeneral: {
@@ -250,7 +196,7 @@ const styles = StyleSheet.create({
   submitBtnText: {
     color: colors.textPrimary,
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
   },
   linkRow: {
     alignItems: 'center',
@@ -259,11 +205,12 @@ const styles = StyleSheet.create({
   linkText: {
     color: colors.primary,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.bodySemiBold,
   },
   hint: {
     color: colors.textMuted,
     fontSize: 11,
+    fontFamily: fonts.body,
     textAlign: 'center',
     marginTop: 16,
   },

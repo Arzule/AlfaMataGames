@@ -4,6 +4,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { STATUS_STYLES } from './GameCard';
+import { fonts } from '../theme/typography';
 
 const STATUSES = ['Jugando', 'Completado', 'Pendiente', 'Abandonado'];
 
@@ -62,6 +63,6 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
   },
 });
