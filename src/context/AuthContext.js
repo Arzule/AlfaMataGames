@@ -1,14 +1,14 @@
 // src/context/AuthContext.js
-// Maneja la sesión del usuario: token persistente en SecureStore y estado global.
+// Maneja la sesión del usuario: token persistente (nativo/web) y estado global.
 import React, {
   createContext,
   useCallback,
   useEffect,
   useState,
 } from 'react';
-import * as SecureStore from 'expo-secure-store';
 import { setAuthToken, setUnauthorizedHandler } from '../services/apiClient';
 import * as authApi from '../services/authApi';
+import * as storage from '../utils/storage';
 
 // Clave con la que se guarda el token en el almacenamiento seguro.
 const TOKEN_KEY = 'alfamatagames.token';
@@ -26,7 +26,7 @@ export function AuthProvider({ children }) {
     setUser(null);
     setToken(null);
     try {
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
+      await storage.removeItem(TOKEN_KEY);
     } catch (err) {
       // Si falla el borrado, la sesión en memoria ya quedó cerrada.
     }
@@ -46,7 +46,7 @@ export function AuthProvider({ children }) {
 
     (async () => {
       try {
-        const stored = await SecureStore.getItemAsync(TOKEN_KEY);
+        const stored = await storage.getItem(TOKEN_KEY);
         if (stored) {
           setAuthToken(stored);
           const data = await authApi.getMe();
@@ -70,7 +70,7 @@ export function AuthProvider({ children }) {
     };
   }, [clearSession]);
 
-  // Guarda token y usuario (en estado y en SecureStore).
+  // Guarda token y usuario (en estado y en el almacenamiento).
   const applySession = useCallback(async (data) => {
     // La respuesta del backend debe traer token y usuario; si no, es inválida.
     if (!data || !data.token || !data.user) {
@@ -79,7 +79,7 @@ export function AuthProvider({ children }) {
     setAuthToken(data.token);
     setToken(data.token);
     setUser(data.user);
-    await SecureStore.setItemAsync(TOKEN_KEY, data.token);
+    await storage.setItem(TOKEN_KEY, data.token);
   }, []);
 
   const login = useCallback(
