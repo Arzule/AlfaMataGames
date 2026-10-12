@@ -24,6 +24,11 @@ function buildUrl(path) {
   return `${base}${path}`;
 }
 
+// En desarrollo, mostrar la URL base configurada (no es un secreto).
+if (__DEV__) {
+  console.log('[api] API_URL =', API_URL);
+}
+
 /**
  * Realiza una petición al backend.
  * @param {string} path ruta relativa, ej. '/auth/login'
@@ -33,6 +38,7 @@ function buildUrl(path) {
  * @param {boolean} [options.auth] si debe enviar el token Bearer
  */
 export async function request(path, { method = 'GET', body, auth = false } = {}) {
+  const url = buildUrl(path);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -47,13 +53,16 @@ export async function request(path, { method = 'GET', body, auth = false } = {})
 
   let response;
   try {
-    response = await fetch(buildUrl(path), {
+    response = await fetch(url, {
       method,
       headers,
       body: hasBody ? JSON.stringify(body) : undefined,
       signal: controller.signal,
     });
   } catch (err) {
+    if (__DEV__) {
+      console.log(`[api] ${method} ${url} -> sin conexión`);
+    }
     // Sin conexión o tiempo de espera agotado.
     const error = new Error('No se pudo conectar con el servidor');
     error.status = 0;
@@ -61,6 +70,11 @@ export async function request(path, { method = 'GET', body, auth = false } = {})
     throw error;
   } finally {
     clearTimeout(timeoutId);
+  }
+
+  // En desarrollo, registrar método, URL y status (sin cuerpos ni cabeceras).
+  if (__DEV__) {
+    console.log(`[api] ${method} ${url} -> ${response.status}`);
   }
 
   // 204 No Content: respuesta válida sin cuerpo.
