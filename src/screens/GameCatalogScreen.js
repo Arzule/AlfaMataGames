@@ -14,30 +14,25 @@ import { colors } from '../theme/colors';
 import GameCard from '../components/GameCard';
 import { getGames } from '../services/rawgApi';
 import { useAuth } from '../hooks/useAuth';
+import { useLibrary } from '../hooks/useLibrary';
 
 const CATEGORIES = ['Todos', 'Jugando', 'Completado', 'Pendiente', 'Abandonado'];
-
-// Asigna un estado ficticio de forma determinística según el id,
-// ya que RAWG no maneja progreso personal del usuario.
-function assignStatus(id) {
-  const statuses = ['Jugando', 'Completado', 'Pendiente', 'Abandonado'];
-  return statuses[id % statuses.length];
-}
 
 function mapRawgGame(game) {
   return {
     id: game.id,
     title: game.name,
     image: game.background_image,
-    platform: game.platforms?.[0]?.platform?.name ?? 'N/D',
-    rating: game.rating?.toFixed(1) ?? '0.0',
-    status: assignStatus(game.id),
+    platform: game.platforms?.[0]?.platform?.name ?? null,
+    rating: typeof game.rating === 'number' ? game.rating.toFixed(1) : null,
   };
 }
 
 export default function GameCatalogScreen({ navigation }) {
   const { user } = useAuth();
+  const { items, getEntry, loading: libraryLoading } = useLibrary();
   const username = user?.name ?? 'jugador';
+
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -65,10 +60,31 @@ export default function GameCatalogScreen({ navigation }) {
     loadGames(searchText);
   };
 
-  const filteredGames =
-    selectedCategory === 'Todos'
-      ? games
-      : games.filter((g) => g.status === selectedCategory);
+  // Juegos de la biblioteca del usuario con el estado seleccionado,
+  // filtrando por nombre localmente con el texto de búsqueda.
+  const libraryGames = items
+    .filter((item) => item.status === selectedCategory)
+    .filter((item) => {
+      const query = searchText.trim().toLowerCase();
+      if (!query) return true;
+      return (item.name ?? '').toLowerCase().includes(query);
+    })
+    .map((item) => ({
+      id: item.gameId,
+      title: item.name,
+      image: item.image,
+      rating: item.rating != null ? Number(item.rating).toFixed(1) : null,
+      status: item.status,
+      platform: null,
+    }));
+
+  const isTodos = selectedCategory === 'Todos';
+  const data = isTodos ? games : libraryGames;
+  const isLoading = isTodos ? loading : libraryLoading;
+
+  const emptyMessage = isTodos
+    ? 'No se encontraron juegos.'
+    : `Aún no tienes juegos en «${selectedCategory}».`;
 
   return (
     <View style={styles.container}>
@@ -125,11 +141,11 @@ export default function GameCatalogScreen({ navigation }) {
       </View>
 
       {/* Contenido */}
-      {loading ? (
+      {isLoading ? (
         <View style={styles.centered}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
-      ) : error ? (
+      ) : isTodos && error ? (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity onPress={() => loadGames(searchText)}>
@@ -138,20 +154,25 @@ export default function GameCatalogScreen({ navigation }) {
         </View>
       ) : (
         <FlatList
-          data={filteredGames}
+          data={data}
           keyExtractor={(item) => String(item.id)}
           numColumns={2}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.gridContent}
-          renderItem={({ item }) => (
-            <GameCard
-              game={item}
-              onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
-            />
-          )}
+          renderItem={({ item }) => {
+            const status = isTodos ? getEntry(item.id)?.status ?? null : item.status;
+            return (
+              <GameCard
+                game={item}
+                status={status}
+                platform={item.platform}
+                onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
+              />
+            );
+          }}
           ListEmptyComponent={
             <View style={styles.centered}>
-              <Text style={styles.emptyText}>No se encontraron juegos.</Text>
+              <Text style={styles.emptyText}>{emptyMessage}</Text>
             </View>
           }
         />

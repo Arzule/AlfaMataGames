@@ -1,7 +1,7 @@
 // Controladores de la biblioteca del usuario autenticado.
 // Todas las operaciones usan el user_id tomado del token.
 const pool = require('../config/db');
-const { STATUSES } = require('../utils/validators');
+const { STATUSES, REVIEW_MAX_LENGTH } = require('../utils/validators');
 
 // Convierte una fila de user_games al formato camelCase de la API.
 function mapEntry(row) {
@@ -120,7 +120,18 @@ async function upsert(req, res, next) {
       }
     }
     if (body.review !== undefined) {
-      fields.review = body.review === null ? null : String(body.review);
+      if (body.review === null) {
+        fields.review = null;
+      } else if (
+        typeof body.review === 'string' &&
+        body.review.length <= REVIEW_MAX_LENGTH
+      ) {
+        fields.review = body.review;
+      } else {
+        errors.push(
+          `La reseña debe ser texto de máximo ${REVIEW_MAX_LENGTH} caracteres.`
+        );
+      }
     }
 
     if (errors.length) {

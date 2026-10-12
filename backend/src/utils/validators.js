@@ -1,6 +1,8 @@
 // Validaciones manuales (sin librerías externas).
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const STATUSES = ['Jugando', 'Completado', 'Pendiente', 'Abandonado'];
+// Longitud máxima permitida para la reseña de un juego.
+const REVIEW_MAX_LENGTH = 1000;
 
 // Verifica un correo con formato básico válido.
 function isValidEmail(email) {
@@ -45,4 +47,4 @@ function validateLogin(body = {}) {
   return { errors, data: { email, password } };
 }
 
-module.exports = { isValidEmail, validateRegister, validateLogin, STATUSES };
+module.exports = { isValidEmail, validateRegister, validateLogin, STATUSES, REVIEW_MAX_LENGTH };
