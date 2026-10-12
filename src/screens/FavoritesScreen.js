@@ -11,7 +11,9 @@ import {
   RefreshControl,
 } from 'react-native';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/typography';
 import GameCard from '../components/GameCard';
+import Header from '../components/Header';
 import { useLibrary } from '../hooks/useLibrary';
 
 export default function FavoritesScreen({ navigation }) {
@@ -48,12 +50,15 @@ export default function FavoritesScreen({ navigation }) {
   return (
     <View style={styles.container}>
       {/* Encabezado */}
-      <View style={styles.headerBar}>
-        <Text style={styles.title}>Favoritos</Text>
-        <Text style={styles.count}>
-          {favorites.length} {favorites.length === 1 ? 'juego' : 'juegos'}
-        </Text>
-      </View>
+      <Header
+        title="Favoritos"
+        style={styles.header}
+        right={
+          <Text style={styles.count}>
+            {favorites.length} {favorites.length === 1 ? 'juego' : 'juegos'}
+          </Text>
+        }
+      />
 
       {loading ? (
         <View style={styles.centered}>
@@ -101,23 +106,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  headerBar: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
+  header: {
     paddingTop: 60,
-    paddingBottom: 16,
-  },
-  title: {
-    color: colors.textPrimary,
-    fontSize: 24,
-    fontWeight: '800',
   },
   count: {
     color: colors.textSecondary,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.bodySemiBold,
   },
   gridContent: {
     paddingHorizontal: 24,
@@ -138,24 +133,26 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.textSecondary,
     fontSize: 13,
+    fontFamily: fonts.body,
     textAlign: 'center',
     marginBottom: 12,
   },
   retryText: {
     color: colors.primary,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
   },
   emptyTitle: {
     color: colors.textPrimary,
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: fonts.heading,
     marginBottom: 6,
     textAlign: 'center',
   },
   emptyHelp: {
     color: colors.textSecondary,
     fontSize: 13,
+    fontFamily: fonts.body,
     textAlign: 'center',
   },
 });

@@ -3,7 +3,6 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
-  TextInput,
   FlatList,
   TouchableOpacity,
   StyleSheet,
@@ -11,7 +10,11 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/typography';
 import GameCard from '../components/GameCard';
+import Header from '../components/Header';
+import SearchBar from '../components/SearchBar';
+import CategoryButton from '../components/CategoryButton';
 import { useAuth } from '../hooks/useAuth';
 import { useLibrary } from '../hooks/useLibrary';
 import { useDebounce } from '../hooks/useDebounce';
@@ -95,55 +98,41 @@ export default function GameCatalogScreen({ navigation }) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.headerBar}>
-        <View style={styles.userProfile}>
+      <Header
+        subtitle="Hola,"
+        title={username}
+        left={
           <View style={styles.avatarPlaceholder}>
             <Feather name="user" size={18} color={colors.textSecondary} />
           </View>
-          <View style={styles.userInfo}>
-            <Text style={styles.greeting}>Hola,</Text>
-            <Text style={styles.username} numberOfLines={1}>
-              {username}
-            </Text>
-          </View>
-        </View>
-        <TouchableOpacity style={styles.notifBtn}>
-          <Feather name="bell" size={18} color={colors.textPrimary} />
-        </TouchableOpacity>
-      </View>
+        }
+        right={
+          <TouchableOpacity style={styles.notifBtn}>
+            <Feather name="bell" size={18} color={colors.textPrimary} />
+          </TouchableOpacity>
+        }
+      />
 
       {/* Búsqueda */}
       <View style={styles.searchContainer}>
-        <View style={styles.searchBox}>
-          <Feather name="search" size={16} color={colors.textMuted} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar juegos..."
-            placeholderTextColor={colors.textMuted}
-            value={searchText}
-            onChangeText={setSearchText}
-            onSubmitEditing={handleSearchSubmit}
-            returnKeyType="search"
-          />
-        </View>
+        <SearchBar
+          value={searchText}
+          onChangeText={setSearchText}
+          onSubmit={handleSearchSubmit}
+          placeholder="Buscar juegos..."
+        />
       </View>
 
       {/* Categorías */}
       <View style={styles.categoryScroller}>
-        {CATEGORIES.map((category) => {
-          const isActive = category === selectedCategory;
-          return (
-            <TouchableOpacity
-              key={category}
-              style={[styles.chip, isActive && styles.chipActive]}
-              onPress={() => setSelectedCategory(category)}
-            >
-              <Text style={[styles.chipLabel, isActive && styles.chipLabelActive]}>
-                {category}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+        {CATEGORIES.map((category) => (
+          <CategoryButton
+            key={category}
+            label={category}
+            active={category === selectedCategory}
+            onPress={() => setSelectedCategory(category)}
+          />
+        ))}
       </View>
 
       {/* Contenido */}
@@ -193,22 +182,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  headerBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  userProfile: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flexShrink: 1,
-  },
-  userInfo: {
-    flexShrink: 1,
-  },
   avatarPlaceholder: {
     width: 40,
     height: 40,
@@ -218,15 +191,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  greeting: {
-    color: colors.textSecondary,
-    fontSize: 12,
-  },
-  username: {
-    color: colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '700',
   },
   notifBtn: {
     width: 36,
@@ -242,48 +206,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 16,
   },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    height: 44,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-  },
-  searchInput: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontSize: 14,
-  },
   categoryScroller: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
     paddingHorizontal: 24,
     paddingBottom: 16,
-  },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipLabel: {
-    color: colors.textPrimary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  chipLabelActive: {
-    color: colors.textPrimary,
   },
   gridContent: {
     paddingHorizontal: 24,
@@ -307,16 +235,18 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.textSecondary,
     fontSize: 13,
+    fontFamily: fonts.body,
     textAlign: 'center',
     marginBottom: 12,
   },
   retryText: {
     color: colors.primary,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
   },
   emptyText: {
     color: colors.textSecondary,
     fontSize: 13,
+    fontFamily: fonts.body,
   },
 });

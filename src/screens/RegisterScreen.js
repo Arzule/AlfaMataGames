@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
@@ -13,6 +12,8 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/typography';
+import FormInput from '../components/FormInput';
 import { useAuth } from '../hooks/useAuth';
 
 export default function RegisterScreen({ navigation }) {
@@ -22,7 +23,6 @@ export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -82,84 +82,49 @@ export default function RegisterScreen({ navigation }) {
         </View>
 
         <View style={styles.form}>
-          {/* Campo nombre */}
-          <View style={styles.field}>
-            <Text style={styles.label}>NOMBRE</Text>
-            <View style={[styles.inputBox, errors.name && styles.inputBoxError]}>
-              <Feather name="user" size={18} color={colors.textSecondary} />
-              <TextInput
-                style={styles.input}
-                placeholder="Tu nombre"
-                placeholderTextColor={colors.textMuted}
-                value={name}
-                onChangeText={setName}
-                editable={!submitting}
-              />
-            </View>
-            {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
-          </View>
+          <FormInput
+            label="NOMBRE"
+            icon="user"
+            placeholder="Tu nombre"
+            value={name}
+            onChangeText={setName}
+            editable={!submitting}
+            error={errors.name}
+          />
 
-          {/* Campo correo */}
-          <View style={styles.field}>
-            <Text style={styles.label}>CORREO ELECTRÓNICO</Text>
-            <View style={[styles.inputBox, errors.email && styles.inputBoxError]}>
-              <Feather name="mail" size={18} color={colors.textSecondary} />
-              <TextInput
-                style={styles.input}
-                placeholder="tucorreo@ejemplo.com"
-                placeholderTextColor={colors.textMuted}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                editable={!submitting}
-              />
-            </View>
-            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-          </View>
+          <FormInput
+            label="CORREO ELECTRÓNICO"
+            icon="mail"
+            placeholder="tucorreo@ejemplo.com"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            editable={!submitting}
+            error={errors.email}
+          />
 
-          {/* Campo contraseña */}
-          <View style={styles.field}>
-            <Text style={styles.label}>CONTRASEÑA</Text>
-            <View style={[styles.inputBox, errors.password && styles.inputBoxError]}>
-              <Feather name="lock" size={18} color={colors.textSecondary} />
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••••••"
-                placeholderTextColor={colors.textMuted}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                editable={!submitting}
-              />
-              <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)}>
-                <Feather
-                  name={showPassword ? 'eye-off' : 'eye'}
-                  size={18}
-                  color={colors.textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
-            {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-          </View>
+          <FormInput
+            label="CONTRASEÑA"
+            icon="lock"
+            placeholder="••••••••••••"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            editable={!submitting}
+            error={errors.password}
+          />
 
-          {/* Campo confirmar contraseña */}
-          <View style={styles.field}>
-            <Text style={styles.label}>CONFIRMAR CONTRASEÑA</Text>
-            <View style={[styles.inputBox, errors.confirm && styles.inputBoxError]}>
-              <Feather name="lock" size={18} color={colors.textSecondary} />
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••••••"
-                placeholderTextColor={colors.textMuted}
-                value={confirm}
-                onChangeText={setConfirm}
-                secureTextEntry={!showPassword}
-                editable={!submitting}
-              />
-            </View>
-            {errors.confirm && <Text style={styles.errorText}>{errors.confirm}</Text>}
-          </View>
+          <FormInput
+            label="CONFIRMAR CONTRASEÑA"
+            icon="lock"
+            placeholder="••••••••••••"
+            value={confirm}
+            onChangeText={setConfirm}
+            secureTextEntry
+            editable={!submitting}
+            error={errors.confirm}
+          />
 
           {errors.general && (
             <Text style={[styles.errorText, styles.errorGeneral]}>{errors.general}</Text>
@@ -198,11 +163,14 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 40,
   },
   brandHeader: {
     alignItems: 'center',
+    width: '100%',
+    maxWidth: 420,
     marginBottom: 28,
   },
   logoPlaceholder: {
@@ -219,48 +187,22 @@ const styles = StyleSheet.create({
   brandName: {
     color: colors.textPrimary,
     fontSize: 24,
-    fontWeight: '800',
+    fontFamily: fonts.headingExtraBold,
     marginBottom: 4,
   },
   brandSub: {
     color: colors.textSecondary,
     fontSize: 13,
+    fontFamily: fonts.body,
   },
   form: {
     width: '100%',
-  },
-  field: {
-    width: '100%',
-    marginBottom: 18,
-  },
-  label: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  inputBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    height: 48,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-  },
-  inputBoxError: {
-    borderColor: '#ef4444',
-  },
-  input: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontSize: 14,
+    maxWidth: 420,
   },
   errorText: {
     color: '#ef4444',
     fontSize: 12,
+    fontFamily: fonts.body,
     marginTop: 6,
   },
   errorGeneral: {
@@ -281,7 +223,7 @@ const styles = StyleSheet.create({
   submitBtnText: {
     color: colors.textPrimary,
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
   },
   linkRow: {
     alignItems: 'center',
@@ -290,6 +232,6 @@ const styles = StyleSheet.create({
   linkText: {
     color: colors.primary,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.bodySemiBold,
   },
 });
