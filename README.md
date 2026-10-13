@@ -5,7 +5,7 @@ registrarse e iniciar sesión con autenticación real (JWT), explorar un catálo
 ver el detalle de cada uno, marcarlos como favoritos y guardar su propio progreso: estado,
 puntuación y reseña.
 
-Este repositorio corresponde al **Avance 2** del proyecto: se conectó la app móvil con un
+Este repositorio corresponde al Avance 2 del proyecto: se conectó la app móvil con un
 backend propio (autenticación y biblioteca por usuario), se agregó el catálogo con búsqueda
 y paginación, la pantalla de detalle, la sección de favoritos y un conjunto de componentes
 reutilizables, además de la documentación del proyecto.
@@ -377,7 +377,7 @@ Las ramas se integran a `develop` con `git merge --no-ff` para conservar el hist
 ## Créditos
 
 - Datos de videojuegos proporcionados por **RAWG** (https://rawg.io).
-- **Autor(es):** completar
+- **Autor(es):** Gerardo Carpio
 
 ---
 
