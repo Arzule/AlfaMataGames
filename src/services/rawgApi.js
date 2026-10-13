@@ -9,6 +9,7 @@ const BASE_URL = 'https://api.rawg.io/api';
  * @param {string} [options.search] - texto de búsqueda
  * @param {number} [options.page] - número de página
  * @param {number} [options.pageSize] - resultados por página
+ * @returns {Promise<{results: Array, hasMore: boolean}>}
  */
 export async function getGames({ search = '', page = 1, pageSize = 20 } = {}) {
   const params = new URLSearchParams({
@@ -28,7 +29,11 @@ export async function getGames({ search = '', page = 1, pageSize = 20 } = {}) {
   }
 
   const data = await response.json();
-  return data.results;
+  return {
+    results: Array.isArray(data.results) ? data.results : [],
+    // RAWG devuelve `next` con la URL de la página siguiente (null al final).
+    hasMore: data.next != null,
+  };
 }
 
 /**

@@ -3,16 +3,18 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/typography';
 
-const STATUS_STYLES = {
+// Colores de los estados, compartidos con StatusChips.
+export const STATUS_STYLES = {
   Completado: { bg: colors.successBg, text: colors.success },
   Jugando: { bg: colors.infoBg, text: colors.info },
   Pendiente: { bg: colors.warningBg, text: colors.warning },
   Abandonado: { bg: colors.badgeNeutral, text: colors.textSecondary },
 };
 
-export default function GameCard({ game, onPress }) {
-  const statusStyle = STATUS_STYLES[game.status] || STATUS_STYLES.Pendiente;
+export default function GameCard({ game, onPress, status = null, platform }) {
+  const statusStyle = status ? STATUS_STYLES[status] : null;
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
@@ -23,23 +25,33 @@ export default function GameCard({ game, onPress }) {
         </Text>
 
         <View style={styles.metaRow}>
-          <View style={styles.platformBlock}>
-            <Feather name="monitor" size={13} color={colors.textSecondary} />
-            <Text style={styles.platformText}>{game.platform}</Text>
-          </View>
-          <View style={styles.ratingBlock}>
-            <Feather name="star" size={12} color={colors.warning} />
-            <Text style={styles.ratingText}>{game.rating}</Text>
-          </View>
+          {platform ? (
+            <View style={styles.platformBlock}>
+              <Feather name="monitor" size={13} color={colors.textSecondary} />
+              <Text style={styles.platformText} numberOfLines={1}>
+                {platform}
+              </Text>
+            </View>
+          ) : (
+            <View />
+          )}
+          {game.rating != null ? (
+            <View style={styles.ratingBlock}>
+              <Feather name="star" size={12} color={colors.warning} />
+              <Text style={styles.ratingText}>{game.rating}</Text>
+            </View>
+          ) : null}
         </View>
 
-        <View style={styles.badgeWrapper}>
-          <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-            <Text style={[styles.statusText, { color: statusStyle.text }]}>
-              {game.status}
-            </Text>
+        {statusStyle ? (
+          <View style={styles.badgeWrapper}>
+            <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+              <Text style={[styles.statusText, { color: statusStyle.text }]}>
+                {status}
+              </Text>
+            </View>
           </View>
-        </View>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
@@ -47,7 +59,7 @@ export default function GameCard({ game, onPress }) {
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
+    width: '100%',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -56,7 +68,7 @@ const styles = StyleSheet.create({
   },
   cover: {
     width: '100%',
-    height: 200,
+    aspectRatio: 3 / 4,
   },
   details: {
     padding: 12,
@@ -65,7 +77,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.textPrimary,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: fonts.heading,
   },
   metaRow: {
     flexDirection: 'row',
@@ -76,10 +88,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    flexShrink: 1,
   },
   platformText: {
     color: colors.textSecondary,
     fontSize: 11,
+    fontFamily: fonts.body,
+    flexShrink: 1,
   },
   ratingBlock: {
     flexDirection: 'row',
@@ -89,7 +104,7 @@ const styles = StyleSheet.create({
   ratingText: {
     color: colors.warning,
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
   },
   badgeWrapper: {
     flexDirection: 'row',
@@ -101,6 +116,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
   },
 });

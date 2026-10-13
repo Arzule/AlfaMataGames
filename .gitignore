@@ -33,6 +33,20 @@ yarn-error.*
 # local env files
 .env*.local
 .env
+.env.*
+!.env.example
+
+# codespaces
+AlfaMataGames.code-workspace
+
+# claude / tooling
+.claude/
+
+# backend
+backend/node_modules/
+
+# logs
+*.log
 
 # typescript
 *.tsbuildinfo
