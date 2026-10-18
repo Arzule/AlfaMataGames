@@ -9,12 +9,42 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - Entregados: Avance 1 y Avance 2.
 - **Fase actual: A3-0** (Migraciones de BD). Ninguna fase del Avance 3 iniciada.
 
+## Decisiones tomadas
+
+- **Despliegue**: backend y MySQL en Railway, con HTTPS; lo hace el usuario siguiendo
+  `docs/DEPLOY.md`. A4-4 a A4-6 requieren la URL pública.
+- **Esquema**: siempre por migraciones (`database/migrations` + tabla `schema_migrations`),
+  compatibles con la BD local existente y con una BD nueva en Railway.
+- **Conexión a BD**: variables sueltas (como hoy) o URL única (`DATABASE_URL` / `MYSQL_URL`),
+  con SSL opcional (`DB_SSL`).
+- **Claves externas solo en el backend**: RAWG (desde A3-6/A4-1), DeepL, Steam, OAuth.
+  La app usa `EXPO_PUBLIC_*` (desde A4-1) para que EAS inyecte las variables.
+- **Caché**: primera página del catálogo en `cacheDirectory` (expo-file-system) con
+  vencimiento de **7 días** y limpieza al iniciar; imágenes con caché de disco (expo-image);
+  botón "Borrar caché" en Perfil.
+- **Permisos**: cámara, fotos y notificaciones con un hook común (`usePermission`).
+  **No se pide ubicación** (ninguna función la usa).
+- **Avatar**: cuadrado de 256 px en JPEG comprimido, guardado en la BD (columna `avatar`);
+  iniciales si no hay foto.
+- **Sensor**: el acelerómetro solo está activo con el Catálogo enfocado y la app en primer plano.
+- **Notificaciones**: locales en A3-4 (funcionan en Expo Go); push remotas en A4-6, que se
+  prueban con el APK (Expo Go en Android no las soporta). Las locales quedan como respaldo.
+- **Login social (Google y Discord)**: OAuth mediado por el backend con el navegador del sistema
+  y deep link validado contra lista permitida. Si el correo verificado del proveedor coincide
+  con una cuenta existente, se vincula a ella; si no, se crea una cuenta nueva. No se permite
+  quitar el último método de acceso. `password_hash` pasa a ser opcional.
+- **Steam**: Steam OpenID por el backend; biblioteca con `GetOwnedGames`. Reglas por tiempo
+  jugado: < 120 min → Pendiente; ≥ 120 min → Jugando; > 3000 min (50 h) → además favorito.
+  Se guarda la fuente (steam/usuario) de estado y favorito: la re-sincronización solo cambia
+  lo que sigue con fuente steam y nunca vuelve a marcar un favorito que el usuario quitó.
+- **Pruebas del APK**: preferentemente en el celular Android del usuario; distribución del APK
+  por GitHub Releases. No se publica en tiendas (solo guía).
+- **Prioridad si falta tiempo**: A4-7 y A4-8 primero (los exige el sílabo); A4-5 y A4-6 son los
+  primeros recortables.
+
 ## Decisiones abiertas
 
 - [ ] Confirmar la rúbrica real del Avance 3 cuando el usuario la tenga y ajustar las fases.
-- [ ] A3-3: decidir si se incluye la ciudad por GPS (opcional).
-- [ ] A4-2: decidir si se incluyen estadísticas en Perfil (opcional).
-- [ ] A4-4: proveedor de nube para backend y MySQL (lo elige el usuario).
 
 ---
 
@@ -22,64 +52,80 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 ### [ ] A3-0 Migraciones de BD
 
-- **Objetivo:** poder cambiar el esquema sobre una BD existente sin borrar datos.
-- **Tema del sílabo:** base para las fases de la Unidad 3 (persistencia en backend).
+- **Objetivo:** cambiar el esquema sin borrar datos, en local y en Railway.
+- **Tema del sílabo:** base de persistencia para las fases de la Unidad 3.
 - **Tareas:**
-  - [ ] Carpeta `database/migrations/` con archivos SQL numerados (`001-...sql`).
-  - [ ] Runner en el backend: script `npm run migrate` y ejecución automática al arrancar.
-  - [ ] Tabla `schema_migrations` que registra cada migración aplicada (una sola vez, en orden).
-  - [ ] Migración base idempotente compatible con lo creado por `database/init/`.
-  - [ ] Copiar las migraciones a la imagen del backend (Dockerfile / contexto de build).
-- **Terminado cuando:** sobre la BD actual (con datos) el backend arranca, aplica solo lo
-  pendiente, no pierde datos, y un segundo arranque no aplica nada.
+  - [ ] `database/migrations/` con archivos SQL numerados (`001-...sql`).
+  - [ ] Runner en el backend: `npm run migrate` y ejecución automática al arrancar; registra lo
+    aplicado en `schema_migrations`; idempotente.
+  - [ ] Migración base compatible con lo creado por `database/init/` (BD existente) y válida
+    sobre una BD vacía (Railway).
+  - [ ] Incluir las migraciones en la imagen del backend (hoy el build solo copia `backend/src`).
+  - [ ] `config/db.js`: variables sueltas o `DATABASE_URL` / `MYSQL_URL`, y `DB_SSL` opcional.
+  - [ ] Documentar en README y `.env.example`.
+- **Terminado cuando:** sobre la BD local con datos se aplica solo lo pendiente sin perder
+  nada, un segundo arranque no aplica nada, y una BD vacía queda con el esquema completo.
 
 ### [ ] A3-1 Pendientes de unidades previas
 
-- **Objetivo:** cerrar huecos de Unidades 1-2.
-- **Tema del sílabo:** componentes y props (PropTypes); almacenamiento local (AsyncStorage).
+- **Objetivo:** cerrar huecos de Unidades 1-2 y preparar el uso sin red.
+- **Tema del sílabo:** componentes y props; almacenamiento local; rendimiento.
 - **Tareas:**
   - [ ] `prop-types` en todos los componentes de `src/components/`.
-  - [ ] AsyncStorage: búsquedas recientes (máx. 5, visibles al enfocar la barra de búsqueda).
-  - [ ] AsyncStorage: caché de la primera página del catálogo (se muestra mientras carga o sin red).
-- **Terminado cuando:** no hay warnings de PropTypes, las recientes persisten al reabrir y el
-  catálogo muestra datos en caché sin conexión.
+  - [ ] Búsquedas recientes con AsyncStorage: máx. 5, visibles al enfocar la barra, con opción
+    de borrar.
+  - [ ] Caché de la primera página del catálogo en `cacheDirectory` (expo-file-system) con
+    vencimiento de 7 días y limpieza de vencidas al iniciar; se muestra mientras carga o sin red.
+  - [ ] Imágenes con caché de disco (expo-image).
+  - [ ] Botón "Borrar caché" en Perfil (catálogo e imágenes).
+  - [ ] Documentar: en Android, "Borrar caché" (Información de la app) elimina esta caché sin
+    cerrar sesión; "Borrar almacenamiento" elimina todo.
+- **Terminado cuando:** sin warnings de PropTypes, las recientes persisten al reabrir, el
+  catálogo se ve sin red, y "Borrar caché" vacía catálogo e imágenes sin cerrar sesión.
 
 ### [ ] A3-2 Permisos y foto de perfil
 
 - **Objetivo:** foto de perfil desde cámara o galería guardada en el backend.
 - **Tema del sílabo:** permisos y cámara.
 - **Tareas:**
-  - [ ] Hook `usePermission` (concedido, denegado, bloqueado) con botón "Abrir ajustes".
-  - [ ] Tomar foto o elegir de la galería, recortar y reducir a 256 px.
+  - [ ] Hook `usePermission` para cámara, fotos y notificaciones: concedido / denegado /
+    bloqueado, explicación previa y botón "Abrir ajustes" (`Linking.openSettings`).
+    Sin permiso de ubicación.
+  - [ ] Tomar foto o elegir de la galería, recortar en cuadrado, reducir a 256 px (JPEG comprimido).
   - [ ] Migración: columna `avatar` en `users`.
-  - [ ] Endpoint autenticado para subir/borrar el avatar; incluirlo en `/auth/me`.
-  - [ ] Mostrar el avatar en Perfil y en el Header del catálogo.
-- **Terminado cuando:** la foto persiste tras cerrar sesión y volver a entrar, y los tres
-  estados de permiso se manejan en Android/iOS (en web, flujo de archivo).
+  - [ ] Endpoint autenticado para subir (validando tamaño y tipo) y eliminar el avatar;
+    incluirlo en la respuesta del usuario.
+  - [ ] Mostrar el avatar en Perfil y en el Header del catálogo; iniciales si no hay foto.
+  - [ ] Textos de uso de permisos en `app.json`.
+- **Terminado cuando:** la foto persiste tras cerrar y abrir sesión, se puede eliminar, y los
+  tres estados de permiso se manejan en Android/iOS (en web, selector de archivo).
 
-### [ ] A3-3 Sensor: "Agitar para descubrir"
+### [ ] A3-3 Sensor "Agitar para descubrir"
 
 - **Objetivo:** descubrir un juego aleatorio agitando el celular.
 - **Tema del sílabo:** sensores.
 - **Tareas:**
-  - [ ] Acelerómetro con umbral y antirrebote.
-  - [ ] Mostrar un juego aleatorio de RAWG y vibrar.
+  - [ ] Acelerómetro (expo-sensors) con umbral y antirrebote.
+  - [ ] Suscripción solo con el Catálogo enfocado y la app en primer plano (`useFocusEffect` +
+    `AppState`); desuscribir al salir.
+  - [ ] Al detectarlo: vibrar (expo-haptics), elegir un juego aleatorio de RAWG (RAWG no tiene
+    endpoint aleatorio: página aleatoria + elemento aleatorio) y abrir su detalle.
   - [ ] Interruptor en Perfil (preferencia en AsyncStorage).
-  - [ ] Opcional: ciudad en Perfil con GPS y geocodificación inversa.
-- **Terminado cuando:** agitar abre un juego aleatorio una sola vez por gesto, se puede
-  desactivar, y en web no rompe nada.
+- **Terminado cuando:** un gesto abre un solo detalle, no hay lecturas fuera del Catálogo, se
+  puede desactivar y en web la opción no rompe nada (oculta si no hay sensor).
 
 ### [ ] A3-4 Notificaciones locales
 
 - **Objetivo:** recordatorios para jugar.
 - **Tema del sílabo:** notificaciones.
 - **Tareas:**
-  - [ ] Botón "Recordarme jugar esto" en el detalle (elegir cuándo).
+  - [ ] "Recordarme jugar esto" en el detalle: en 1 hora, mañana, en una semana, o fecha y hora.
   - [ ] Recordatorio diario configurable en Perfil.
   - [ ] Tocar la notificación abre el detalle del juego.
-  - [ ] Preferencias en AsyncStorage; cancelar recordatorios al cerrar sesión.
-- **Terminado cuando:** las notificaciones llegan en Expo Go, abren el juego correcto y no
-  quedan programadas tras el logout.
+  - [ ] Lista de recordatorios activos con opción de cancelar.
+  - [ ] Preferencias en AsyncStorage; cancelar todo al cerrar sesión.
+- **Terminado cuando:** llegan en Expo Go, abren el juego correcto, se pueden cancelar y no
+  queda ninguna programada tras el logout.
 
 ### [ ] A3-5 Errores, logging y rendimiento
 
@@ -87,36 +133,36 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Tema del sílabo:** manejo de errores, logging y rendimiento.
 - **Tareas:**
   - [ ] ErrorBoundary global con pantalla de error y reintento.
-  - [ ] Aviso de sin conexión con NetInfo.
-  - [ ] Logger central en la app (detallado en desarrollo, mínimo en producción).
+  - [ ] Aviso de sin conexión (NetInfo).
+  - [ ] Logger central en la app: detallado en desarrollo, mínimo en producción, sin datos sensibles.
   - [ ] Logging de peticiones en el backend.
-  - [ ] `React.memo` en GameCard, ajustes de FlatList y caché de imágenes.
+  - [ ] `React.memo` en GameCard, ajustes de FlatList y revisión de re-renders.
 - **Terminado cuando:** un error de render muestra la pantalla de reintento, el aviso de red
-  aparece/desaparece y el backend registra cada petición.
+  aparece y desaparece, y el backend registra cada petición sin tokens ni contraseñas.
 
-### [ ] A3-6 Traducción de sinopsis
+### [ ] A3-6 Sinopsis traducidas
 
 - **Objetivo:** sinopsis en español.
-- **Tema del sílabo:** consumo de APIs externas y caché en backend.
+- **Tema del sílabo:** consumo de APIs externas y caché en el backend.
 - **Tareas:**
   - [ ] Endpoint del backend: obtiene la descripción de RAWG y la traduce con DeepL API Free.
   - [ ] Migración: tabla de caché de traducciones.
-  - [ ] `DEEPL_API_KEY` en `.env.example` y en `docker-compose.yml` (servicio backend).
+  - [ ] `DEEPL_API_KEY` y `RAWG_API_KEY` en el backend (`docker-compose.yml`, `.env.example`).
   - [ ] La app muestra la traducción, con respaldo al original y etiqueta si no hay traducción.
-- **Terminado cuando:** la segunda consulta de un juego sale de la caché y sin clave de DeepL
-  la app sigue mostrando el texto original.
+- **Terminado cuando:** la segunda consulta de un juego sale de la caché y, sin clave de DeepL,
+  la app muestra el texto original con la etiqueta.
 
 ### [ ] A3-7 Documentación del Avance 3
 
 - **Objetivo:** entregar el Avance 3.
 - **Tareas:**
-  - [ ] Actualizar README (funcionalidades, endpoints, modelo de datos, migraciones).
-  - [ ] Tabla de cumplimiento de la rúbrica del Avance 3.
-- **Terminado cuando:** README refleja el código y la tabla enlaza a cada evidencia.
+  - [ ] README actualizado (funcionalidades, endpoints, modelo de datos, migraciones, variables).
+  - [ ] Tabla de cumplimiento de la Unidad 3.
+- **Terminado cuando:** el README refleja el código y la tabla enlaza a cada evidencia.
 
 ---
 
-## AVANCE 4 / FINAL — Unidad 4: builds con Expo, APK, publicación
+## AVANCE 4 / FINAL — Unidad 4: builds con Expo, APK, publicación (más extras)
 
 ### [ ] A4-1 Proxy de RAWG y variables EXPO_PUBLIC_*
 
@@ -124,60 +170,101 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Tema del sílabo:** builds con Expo (variables de entorno).
 - **Tareas:**
   - [ ] Endpoints del backend para catálogo, búsqueda y detalle (proxy de RAWG).
-  - [ ] Quitar `RAWG_API_KEY` de la app; `RAWG_API_KEY` pasa al backend.
+  - [ ] Quitar `RAWG_API_KEY` de la app.
   - [ ] Migrar de `react-native-dotenv` (`@env`) a `EXPO_PUBLIC_*` y quitar el plugin de babel.
-- **Terminado cuando:** el bundle exportado no contiene la clave de RAWG y la app funciona
-  igual en Android y web.
+- **Terminado cuando:** el bundle exportado no contiene la clave de RAWG y la app funciona igual
+  en Android y web.
 
-### [ ] A4-2 Gestión de cuenta
+### [ ] A4-2 Backend de producción y guía de despliegue
+
+- **Objetivo:** backend listo para Railway.
+- **Tema del sílabo:** preparación para producción.
+- **Tareas:**
+  - [ ] `helmet`, límite de peticiones en `/auth`, CORS por entorno, `trust proxy`.
+  - [ ] Validación de variables al arrancar; `/health` que pruebe la BD.
+  - [ ] Imagen Docker de producción.
+  - [ ] `docs/DEPLOY.md`: desplegar backend y MySQL en Railway con HTTPS, configurar variables
+    y aplicar migraciones.
+- **Terminado cuando:** sin variables obligatorias el backend no arranca (mensaje claro),
+  `/health` falla si la BD no responde y la guía se sigue sin pasos implícitos.
+- **>>> HITO DEL USUARIO:** despliegue en Railway. A4-4 a A4-6 requieren la URL pública HTTPS.
+
+### [ ] A4-3 Gestión de cuenta y estadísticas
 
 - **Objetivo:** control de la cuenta por el usuario.
 - **Tareas:**
   - [ ] Editar nombre.
-  - [ ] Cambiar contraseña (pide la actual).
+  - [ ] Cambiar contraseña (solo cuentas con contraseña; pide la actual).
   - [ ] Eliminar cuenta con confirmación y borrado en cascada.
-  - [ ] Opcional: estadísticas en Perfil.
-- **Terminado cuando:** las tres acciones funcionan y al eliminar no quedan filas del usuario.
+  - [ ] Estadísticas en Perfil: juegos por estado, favoritos y puntuación media.
+- **Terminado cuando:** las acciones funcionan, al eliminar no quedan filas del usuario y las
+  estadísticas coinciden con la biblioteca.
 
-### [ ] A4-3 Backend listo para producción
+### [ ] A4-4 Login con Google y Discord
 
-- **Objetivo:** endurecer el backend.
+- **Objetivo:** iniciar sesión con proveedores externos.
 - **Tareas:**
-  - [ ] `helmet`.
-  - [ ] Límite de peticiones en `/auth`.
-  - [ ] CORS por entorno.
-  - [ ] Validación de variables de entorno al arrancar.
-  - [ ] `/health` que pruebe la BD.
-- **Terminado cuando:** sin variables obligatorias el backend no arranca con un mensaje claro, y
-  `/health` falla si la BD no responde.
+  - [ ] Flujo OAuth en el backend; la app abre `expo-web-browser` (`openAuthSessionAsync`) y
+    vuelve por deep link validado contra una lista permitida (Expo Go y APK).
+  - [ ] Migración: tabla de identidades vinculadas; `password_hash` opcional.
+  - [ ] Correo verificado coincidente → misma cuenta (vincular); si no → cuenta nueva.
+  - [ ] Ver y desvincular cuentas en Perfil sin quitar el último método de acceso.
+  - [ ] Guía para que el usuario cree las credenciales de Google Cloud y Discord.
+- **Terminado cuando:** ambos proveedores funcionan en Expo Go y en el APK, la vinculación por
+  correo es correcta y no se puede quedar sin método de acceso.
 
-### [ ] A4-4 Guía de despliegue (docs/DEPLOY.md)
+### [ ] A4-5 Conectar Steam
 
-- **Objetivo:** que el usuario despliegue backend y MySQL en la nube con HTTPS.
+- **Objetivo:** importar la biblioteca de Steam.
 - **Tareas:**
-  - [ ] Pasos de despliegue, variables, HTTPS y aplicación de migraciones.
-  - [ ] El agente **no** despliega.
-- **Terminado cuando:** la guía se puede seguir de principio a fin sin pasos implícitos.
+  - [ ] Verificación con Steam OpenID por el backend (mismo patrón de navegador y deep link).
+  - [ ] Importar con `GetOwnedGames` (clave de Steam solo en el backend); avisar si los detalles
+    de juego del perfil no son públicos.
+  - [ ] Correspondencia Steam → RAWG por búsqueda de nombre con tabla de caché (migración).
+  - [ ] Reglas por tiempo jugado (ver "Decisiones tomadas") y fuente de estado/favorito
+    (steam o usuario, migración).
+  - [ ] Re-sincronizar: agrega juegos nuevos y actualiza solo lo que sigue con fuente steam.
+  - [ ] Procesar por lotes con progreso visible; informar juegos no encontrados.
+- **Terminado cuando:** una importación completa respeta las reglas, una re-sincronización no
+  pisa cambios manuales y ninguna petición excede el tiempo de espera del hosting.
 
-### [ ] A4-5 EAS Build
+### [ ] A4-6 Push remotas para recordatorios
 
-- **Objetivo:** generar el APK.
+- **Objetivo:** recordatorios enviados desde el servidor.
+- **Tareas:**
+  - [ ] Registrar el token de Expo Push del dispositivo.
+  - [ ] Recordatorios guardados en el servidor (migración).
+  - [ ] Envío con Expo Push Service por un endpoint protegido que invoca un cron externo.
+  - [ ] Recordatorios locales como respaldo en Expo Go.
+  - [ ] Guía para configurar las credenciales FCM en EAS.
+- **Terminado cuando:** en el APK llega una push programada desde el servidor y en Expo Go
+  siguen funcionando las locales.
+
+### [ ] A4-7 EAS Build y pruebas del APK
+
+- **Objetivo:** generar y probar el APK.
 - **Tema del sílabo:** builds con Expo y APK.
 - **Tareas:**
-  - [ ] `app.json` de producción: nombre, icono, splash, `android.package`, versiones,
-    permisos y textos de uso.
-  - [ ] `eas.json` con perfiles `development`, `preview` (APK) y `production`.
-  - [ ] Guía para que el usuario genere el APK y configure las variables en EAS.
-- **Terminado cuando:** el usuario genera e instala el APK de `preview` y la app se conecta al
-  backend desplegado.
+  - [ ] `app.json` de producción: nombre, icono, splash, `android.package`, `scheme` para deep
+    links, versiones, permisos y textos de uso.
+  - [ ] `eas.json` con perfiles `development`, `preview` (APK) y `production`; variables en EAS.
+  - [ ] `docs/APK.md`: generar el APK y probarlo, de más ligera a más pesada:
+    1) celular Android del usuario (recomendada; las push funcionan de verdad);
+    2) emulador solo con herramientas de línea de comandos del SDK (`sdkmanager`, `avdmanager`,
+    `emulator`) e imagen "Google Play" (necesaria para push);
+    3) Android Studio completo.
+    Incluir requisitos (virtualización activada) e instalación con `adb`.
+  - [ ] Distribución del APK (GitHub Releases).
+- **Terminado cuando:** el usuario genera e instala el APK de `preview` y la app funciona contra
+  el backend en Railway.
 
-### [ ] A4-6 Entrega final
+### [ ] A4-8 Entrega final
 
 - **Objetivo:** cierre del proyecto.
 - **Tema del sílabo:** publicación.
 - **Tareas:**
   - [ ] README definitivo.
   - [ ] Política de privacidad (`docs/PRIVACY.md`).
-  - [ ] Guía del proceso de publicación en Play Store y App Store.
+  - [ ] Guía del proceso de publicación en Google Play y App Store (sin publicar).
   - [ ] `CHANGELOG.md`.
 - **Terminado cuando:** documentación completa y coherente con el código entregado.
