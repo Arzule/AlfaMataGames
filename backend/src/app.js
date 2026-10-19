@@ -9,7 +9,8 @@ const { notFound, errorHandler } = require('./middleware/error.middleware');
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+// Límite ampliado para la foto de perfil (200 KB en base64 ocupan ~270 KB).
+app.use(express.json({ limit: '400kb' }));
 
 // Comprobación de estado del servicio.
 app.get('/health', (req, res) => {
