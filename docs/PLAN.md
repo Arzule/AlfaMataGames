@@ -8,8 +8,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 ## Estado
 
 - Entregados: Avance 1 y Avance 2.
-- Avance 3: A3-0 y A3-1 terminadas.
-- **Fase actual: A3-2** (Permisos y foto de perfil).
+- Avance 3: A3-0, A3-1 y A3-2 terminadas.
+- **Fase actual: A3-3** (Sensor "Agitar para descubrir").
 
 ## Decisiones tomadas
 
@@ -24,7 +24,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Caché**: primera página del catálogo en `Paths.cache` (expo-file-system) con
   vencimiento de **7 días** y limpieza al iniciar; imágenes con caché de disco (expo-image);
   botón "Borrar caché" en Perfil.
-- **Permisos**: cámara, fotos y notificaciones con un hook común (`usePermission`).
+- **Permisos**: cámara y notificaciones con un hook común (`usePermission`). La galería no
+  requiere permiso en SDK 57 (selector del sistema).
   **No se pide ubicación** (ninguna función la usa).
 - **Avatar**: cuadrado de 256 px en JPEG comprimido, guardado en la BD (columna `avatar`);
   iniciales si no hay foto.
@@ -88,20 +89,20 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Terminado cuando:** sin warnings de PropTypes, las recientes persisten al reabrir, el
   catálogo se ve sin red, y "Borrar caché" vacía catálogo e imágenes sin cerrar sesión.
 
-### [ ] A3-2 Permisos y foto de perfil
+### [x] A3-2 Permisos y foto de perfil
 
 - **Objetivo:** foto de perfil desde cámara o galería guardada en el backend.
 - **Tema del sílabo:** permisos y cámara.
 - **Tareas:**
-  - [ ] Hook `usePermission` para cámara, fotos y notificaciones: concedido / denegado /
-    bloqueado, explicación previa y botón "Abrir ajustes" (`Linking.openSettings`).
-    Sin permiso de ubicación.
-  - [ ] Tomar foto o elegir de la galería, recortar en cuadrado, reducir a 256 px (JPEG comprimido).
-  - [ ] Migración: columna `avatar` en `users`.
-  - [ ] Endpoint autenticado para subir (validando tamaño y tipo) y eliminar el avatar;
+  - [x] Hook `usePermission` reutilizable (cámara ahora; notificaciones en A3-4): concedido /
+    denegado / bloqueado, explicación previa y botón "Abrir ajustes" (`Linking.openSettings`).
+    Sin permiso de ubicación. La galería no necesita permiso (selector del sistema).
+  - [x] Tomar foto o elegir de la galería, recortar en cuadrado, reducir a 256 px (JPEG comprimido).
+  - [x] Migración: columna `avatar` en `users`.
+  - [x] Endpoint autenticado para subir (validando tamaño y tipo) y eliminar el avatar;
     incluirlo en la respuesta del usuario.
-  - [ ] Mostrar el avatar en Perfil y en el Header del catálogo; iniciales si no hay foto.
-  - [ ] Textos de uso de permisos en `app.json`.
+  - [x] Mostrar el avatar en Perfil y en el Header del catálogo; iniciales si no hay foto.
+  - [x] Textos de uso de permisos en `app.json`.
 - **Terminado cuando:** la foto persiste tras cerrar y abrir sesión, se puede eliminar, y los
   tres estados de permiso se manejan en Android/iOS (en web, selector de archivo). Errores
   visibles al usuario, sin cierres inesperados: permiso negado o bloqueado (con "Abrir

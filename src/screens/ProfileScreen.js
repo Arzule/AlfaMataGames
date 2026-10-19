@@ -1,12 +1,22 @@
 // src/screens/ProfileScreen.js
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+  ActivityIndicator,
+} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import Header from '../components/Header';
+import Avatar from '../components/Avatar';
 import { useAuth } from '../hooks/useAuth';
+import { useAvatarPicker, CAMERA_SUPPORTED } from '../hooks/useAvatarPicker';
 import { confirmAction } from '../utils/confirm';
 import { clearCatalogCache } from '../services/catalogCache';
 
@@ -14,6 +24,8 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const [clearing, setClearing] = useState(false);
   const [cacheMessage, setCacheMessage] = useState(null);
+  const avatarPicker = useAvatarPicker();
+  const cameraBlocked = avatarPicker.cameraStatus === 'blocked';
 
   // Borra la caché del catálogo y de imágenes; no cierra sesión ni toca preferencias.
   const handleClearCache = async () => {
@@ -61,13 +73,70 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <Header title="Perfil" style={styles.header} />
 
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
-          <View style={styles.avatar}>
-            <Feather name="user" size={28} color={colors.primary} />
+          <View style={styles.avatarWrap}>
+            <Avatar uri={user?.avatar} name={user?.name} size={96} />
+            {avatarPicker.busy ? (
+              <View style={styles.avatarBusy}>
+                <ActivityIndicator color={colors.textPrimary} />
+              </View>
+            ) : null}
           </View>
           <Text style={styles.name}>{user?.name ?? 'Usuario'}</Text>
           <Text style={styles.email}>{user?.email ?? ''}</Text>
+
+          {/* Acciones de la foto de perfil */}
+          <View style={styles.photoActions}>
+            {CAMERA_SUPPORTED ? (
+              <TouchableOpacity
+                style={styles.photoBtn}
+                onPress={avatarPicker.takePhoto}
+                disabled={avatarPicker.busy}
+              >
+                <Feather name="camera" size={16} color={colors.textPrimary} />
+                <Text style={styles.photoBtnText}>Cámara</Text>
+              </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity
+              style={styles.photoBtn}
+              onPress={avatarPicker.pickPhoto}
+              disabled={avatarPicker.busy}
+            >
+              <Feather name="image" size={16} color={colors.textPrimary} />
+              <Text style={styles.photoBtnText}>Galería</Text>
+            </TouchableOpacity>
+            {user?.avatar ? (
+              <TouchableOpacity
+                style={styles.photoBtn}
+                onPress={avatarPicker.deletePhoto}
+                disabled={avatarPicker.busy}
+                accessibilityLabel="Eliminar foto de perfil"
+              >
+                <Feather name="trash-2" size={16} color={colors.textPrimary} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          {avatarPicker.feedback ? (
+            <Text
+              style={[
+                styles.feedback,
+                avatarPicker.feedback.type === 'error' && styles.feedbackError,
+                avatarPicker.feedback.type === 'success' && styles.feedbackSuccess,
+              ]}
+            >
+              {avatarPicker.feedback.text}
+            </Text>
+          ) : null}
+
+          {CAMERA_SUPPORTED && cameraBlocked ? (
+            <TouchableOpacity onPress={avatarPicker.openSettings}>
+              <Text style={styles.settingsLink}>
+                Permiso de cámara bloqueado · Abrir ajustes
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         <View style={styles.cacheBlock}>
@@ -90,7 +159,7 @@ export default function ProfileScreen() {
           <Feather name="log-out" size={18} color={colors.textPrimary} />
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -109,6 +178,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: 24,
     paddingTop: 8,
+    paddingBottom: 24,
     gap: 20,
   },
   card: {
@@ -121,16 +191,58 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 8,
   },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  avatarWrap: {
+    marginBottom: 8,
+  },
+  avatarBusy: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 48,
+    backgroundColor: colors.overlay,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  photoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    borderRadius: 8,
     backgroundColor: colors.badgeNeutral,
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
+  },
+  photoBtnText: {
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontFamily: fonts.bodySemiBold,
+  },
+  feedback: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontFamily: fonts.body,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  feedbackError: {
+    color: '#ef4444',
+  },
+  feedbackSuccess: {
+    color: colors.success,
+  },
+  settingsLink: {
+    color: colors.primary,
+    fontSize: 12,
+    fontFamily: fonts.bodyBold,
+    textAlign: 'center',
+    paddingVertical: 8,
   },
   name: {
     color: colors.textPrimary,

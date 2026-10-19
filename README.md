@@ -30,6 +30,9 @@ reutilizables, además de la documentación del proyecto.
 - Catálogo disponible sin conexión: la primera página se guarda en caché 7 días y se muestra
   mientras carga o sin red, con un aviso.
 - Imágenes con caché de disco (expo-image) y botón "Borrar caché" en Perfil.
+- Foto de perfil con la cámara o la galería: recorte cuadrado, reducción a 256 px (JPEG) y
+  guardado en el backend; se muestra en Perfil y en el encabezado del catálogo (iniciales si no hay).
+- Gestión de permisos con explicación previa, estado bloqueado y acceso a "Abrir ajustes".
 
 ---
 
@@ -50,6 +53,8 @@ Versiones tomadas de `package.json` (app), `backend/package.json` y `docker-comp
 | expo-file-system | ~57.0.7 | Caché del catálogo (nativo) |
 | expo-image | ~57.0.5 | Imágenes con caché de disco |
 | prop-types | ^15.8.1 | Validación de props de los componentes |
+| expo-image-picker | ~57.0.20 | Cámara y galería para la foto de perfil |
+| expo-image-manipulator | ~57.0.21 | Recorte y reducción de la foto a 256 px |
 | expo-font / @expo-google-fonts | ~57.0.4 / ^0.4.2 | Fuentes Sora e Inter |
 | Node.js + Express | Express ^4.21.2 (Node >= 20) | Backend / API REST |
 | MySQL | 8.0 (`mysql:8.0`) | Base de datos |
@@ -133,15 +138,15 @@ AlfaMataGames/
 │       └── utils/validators.js # Validaciones y constantes
 └── src/
     ├── components/             # Header, SearchBar, RecentSearches, CategoryButton, FormInput,
-    │                           #   EmptyState, ErrorState, GameCard, Rating, StatusChips
+    │                           #   EmptyState, ErrorState, GameCard, Rating, StatusChips, Avatar
     ├── context/                # AuthContext.js, LibraryContext.js
     ├── hooks/                  # useAuth, useLibrary, useGames, useRecentSearches, useDebounce,
-    │                           #   useGridColumns
+    │                           #   useGridColumns, usePermission, useAvatarPicker
     ├── navigation/             # AppNavigator.js (Stack + Tab)
     ├── screens/                # Login, Register, GameCatalog, GameDetail, Favorites, Profile
     ├── services/               # apiClient, authApi, libraryApi, rawgApi, catalogCache (.web)
     ├── theme/                  # colors.js, typography.js
-    └── utils/                  # storage.js, confirm.js, mapGame.js, cacheEntry.js
+    └── utils/                  # storage.js, confirm.js, mapGame.js, cacheEntry.js, avatarImage.js
 ```
 
 ---
@@ -296,6 +301,21 @@ Creadas por `database/init/02-seed.sql`:
 
 ---
 
+## Permisos
+
+| Permiso | Para qué | Cuándo se pide |
+| --- | --- | --- |
+| Cámara | Tomar la foto de perfil | Al tocar "Cámara" en Perfil, después de una explicación |
+| Fotos | — | No se pide: la galería usa el selector del sistema |
+
+- Si el permiso se niega, se puede volver a intentar; si queda **bloqueado** (el sistema ya no
+  pregunta), la app lo indica y ofrece **Abrir ajustes**. Al volver, el estado se actualiza solo.
+- La app **no pide ubicación** ni micrófono (`microphonePermission: false` en `app.json`).
+- En **web** no hay opción de cámara; "Galería" abre el selector de archivos del navegador.
+- Textos de uso de los permisos: plugin `expo-image-picker` en `app.json`.
+
+---
+
 ## Caché y almacenamiento local
 
 | Dato | Dónde se guarda | Se borra con |
@@ -344,7 +364,9 @@ Tabla generada a partir de `backend/src/routes/`.
 | GET | `/health` | No | Estado del servicio (`{ "status": "ok" }`). |
 | POST | `/auth/register` | No | Registra un usuario y devuelve `{ token, user }`. |
 | POST | `/auth/login` | No | Inicia sesión y devuelve `{ token, user }`. |
-| GET | `/auth/me` | Bearer JWT | Devuelve `{ user }` del token actual. |
+| GET | `/auth/me` | Bearer JWT | Devuelve `{ user }` del token actual (incluye `avatar`). |
+| PUT | `/auth/me/avatar` | Bearer JWT | Guarda la foto: `{ image: "data:image/jpeg;base64,..." }` (JPEG, PNG o WebP, máx. 200 KB). Devuelve `{ user }`. |
+| DELETE | `/auth/me/avatar` | Bearer JWT | Elimina la foto. Devuelve `{ user }`. |
 | GET | `/library` | Bearer JWT | Lista la biblioteca. Acepta `?favorite=true`. |
 | GET | `/library/:gameId` | Bearer JWT | Devuelve `{ entry }` de un juego (o `null`). |
 | PUT | `/library/:gameId` | Bearer JWT | Crea o actualiza (upsert parcial) la entrada. |
@@ -366,6 +388,7 @@ Definido en `database/init/01-schema.sql` (MySQL 8, `utf8mb4`).
 | `name` | VARCHAR(80) | Nombre del usuario. |
 | `email` | VARCHAR(255) | Único. |
 | `password_hash` | VARCHAR(255) | Hash bcrypt (nunca en texto plano). |
+| `avatar` | MEDIUMTEXT NULL | Foto de perfil como data URI base64 (migración `002`). |
 | `created_at` | TIMESTAMP | Por defecto `CURRENT_TIMESTAMP`. |
 
 ### Tabla `user_games`
