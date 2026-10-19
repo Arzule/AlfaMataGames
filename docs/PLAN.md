@@ -2,7 +2,8 @@
 
 Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 (`feature/<id-fase>-<nombre>`) y se integra con `merge --no-ff`. Reglas completas en
-[../AGENTS.md](../AGENTS.md).
+[../AGENTS.md](../AGENTS.md). Criterios de evaluación y cobertura por fase en
+[RUBRICAS.md](RUBRICAS.md).
 
 ## Estado
 
@@ -44,7 +45,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 ## Decisiones abiertas
 
-- [ ] Confirmar la rúbrica real del Avance 3 cuando el usuario la tenga y ajustar las fases.
+- Ninguna por ahora. Las rúbricas del APF3 y del Proyecto Final ya están en
+  [RUBRICAS.md](RUBRICAS.md).
 
 ---
 
@@ -98,7 +100,9 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   - [ ] Mostrar el avatar en Perfil y en el Header del catálogo; iniciales si no hay foto.
   - [ ] Textos de uso de permisos en `app.json`.
 - **Terminado cuando:** la foto persiste tras cerrar y abrir sesión, se puede eliminar, y los
-  tres estados de permiso se manejan en Android/iOS (en web, selector de archivo).
+  tres estados de permiso se manejan en Android/iOS (en web, selector de archivo). Errores
+  visibles al usuario, sin cierres inesperados: permiso negado o bloqueado (con "Abrir
+  ajustes"), cámara o galería canceladas, imagen inválida o fallo al subir.
 
 ### [ ] A3-3 Sensor "Agitar para descubrir"
 
@@ -112,7 +116,9 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
     endpoint aleatorio: página aleatoria + elemento aleatorio) y abrir su detalle.
   - [ ] Interruptor en Perfil (preferencia en AsyncStorage).
 - **Terminado cuando:** un gesto abre un solo detalle, no hay lecturas fuera del Catálogo, se
-  puede desactivar y en web la opción no rompe nada (oculta si no hay sensor).
+  puede desactivar y en web la opción no rompe nada (oculta si no hay sensor). Errores
+  visibles al usuario, sin cierres inesperados: sensor no disponible (por ejemplo en web) o
+  fallo al obtener el juego aleatorio.
 
 ### [ ] A3-4 Notificaciones locales
 
@@ -125,7 +131,9 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   - [ ] Lista de recordatorios activos con opción de cancelar.
   - [ ] Preferencias en AsyncStorage; cancelar todo al cerrar sesión.
 - **Terminado cuando:** llegan en Expo Go, abren el juego correcto, se pueden cancelar y no
-  queda ninguna programada tras el logout.
+  queda ninguna programada tras el logout. Errores visibles al usuario, sin cierres
+  inesperados: permiso de notificaciones negado o bloqueado (con "Abrir ajustes"), fecha
+  pasada o fallo al programar una notificación, y plataforma sin soporte (web).
 
 ### [ ] A3-5 Errores, logging y rendimiento
 
@@ -157,8 +165,13 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Objetivo:** entregar el Avance 3.
 - **Tareas:**
   - [ ] README actualizado (funcionalidades, endpoints, modelo de datos, migraciones, variables).
-  - [ ] Tabla de cumplimiento de la Unidad 3.
-- **Terminado cuando:** el README refleja el código y la tabla enlaza a cada evidencia.
+  - [ ] Tabla de cumplimiento de la Unidad 3 (criterios del APF3 en `RUBRICAS.md`).
+  - [ ] Pulido de UI/UX: revisar las pantallas nuevas contra el diseño de Figma y el tema
+    (`src/theme/`).
+  - [ ] Estados de carga, vacío y error en todas las pantallas.
+  - [ ] Revisión en pantallas pequeñas y anchas (incluida la web).
+- **Terminado cuando:** el README refleja el código, la tabla enlaza a cada evidencia y ninguna
+  pantalla queda sin estados de carga/vacío/error ni se rompe en tamaños extremos.
 
 ---
 
@@ -257,6 +270,19 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   - [ ] Distribución del APK (GitHub Releases).
 - **Terminado cuando:** el usuario genera e instala el APK de `preview` y la app funciona contra
   el backend en Railway.
+
+### [ ] A4-7b Accesibilidad y pulido final de UI
+
+- **Objetivo:** interfaz profesional y accesible para la entrega final.
+- **Tema del sílabo:** UI/UX e innovación (accesibilidad).
+- **Tareas:**
+  - [ ] `accessibilityLabel` y `accessibilityRole` en botones con icono.
+  - [ ] Zonas táctiles de al menos 44x44.
+  - [ ] Contraste suficiente entre texto y fondo.
+  - [ ] Soporte del tamaño de letra del sistema sin romper el diseño.
+  - [ ] Revisión final de coherencia visual.
+- **Terminado cuando:** todos los botones con icono se anuncian con lector de pantalla, ninguna
+  zona táctil es menor de 44x44, y con letra grande del sistema no se corta ni solapa texto.
 
 ### [ ] A4-8 Entrega final
 
