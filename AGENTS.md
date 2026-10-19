@@ -56,15 +56,18 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   `mapGame.js` (RAWG → formato de GameCard).
 
 `backend/src/`
-- `server.js` (arranque, `PORT`), `app.js` (cors, json, `/health`, rutas, errores).
-- `config/db.js` — pool mysql2/promise con variables sueltas (`DB_HOST`, `DB_PORT`, `MYSQL_*`).
+- `server.js` (aplica migraciones y escucha en `PORT`), `app.js` (cors, json, `/health`, rutas,
+  errores), `migrate.js` (runner de migraciones; `npm run migrate`).
+- `config/db.js` — pool mysql2/promise: `DATABASE_URL`/`MYSQL_URL` o variables sueltas
+  (`DB_HOST`, `DB_PORT`, `MYSQL_*`), `DB_SSL` opcional; exporta `getConnectionOptions`.
 - `controllers/` — `auth.controller.js`, `library.controller.js`.
 - `middleware/` — `auth.middleware.js` (`authRequired`), `error.middleware.js` (404 y errores JSON).
 - `routes/` — `/auth` (register, login, me) y `/library` (GET lista, GET/PUT/DELETE `:gameId`).
 - `utils/validators.js` — validaciones manuales y constantes (`STATUSES`, `REVIEW_MAX_LENGTH`).
 
 `database/init/` — `01-schema.sql` (users, user_games) y `02-seed.sql` (usuarios de prueba).
-El `Dockerfile` del backend solo copia `backend/src` (contexto de build `./backend`).
+`backend/migrations/` — migraciones SQL numeradas (`NNN-nombre.sql`), registradas en
+`schema_migrations`. El build del backend usa el contexto `./backend` (copia `src` y `migrations`).
 
 ## Decisiones vigentes
 
@@ -83,8 +86,9 @@ El `Dockerfile` del backend solo copia `backend/src` (contexto de build `./backe
 - **BD en el puerto 3307** del host (`DB_HOST_PORT`) porque hay un MySQL local en 3306.
 - **Errores del backend**: siempre JSON `{ message }`; los 401 del token devuelven
   `{ message, code }` con `TOKEN_EXPIRED` o `TOKEN_INVALID`, y `apiClient` cierra la sesión.
-- **Esquema**: todo cambio de BD va **siempre por migraciones** (`database/migrations`, desde
-  A3-0); nunca editar `database/init` de forma que rompa una BD existente.
+- **Esquema**: todo cambio de BD va **siempre por migraciones** (`backend/migrations`, archivo
+  nuevo con el siguiente número; nunca editar uno ya aplicado). `database/init` solo crea la BD
+  local desde cero con datos de prueba; no editarlo de forma que rompa una BD existente.
 - **Login social y Steam**: OAuth/OpenID mediado por el backend, con el navegador del sistema
   (`expo-web-browser`) y regreso a la app por deep link validado contra una lista permitida
   (en Expo Go el retorno es `exp://...`; en el APK, el `scheme` propio).
