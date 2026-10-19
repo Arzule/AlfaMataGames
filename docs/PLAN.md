@@ -8,13 +8,14 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 ## Estado
 
 - Entregados: Avance 1 y Avance 2.
-- **Fase actual: A3-0** (Migraciones de BD). Ninguna fase del Avance 3 iniciada.
+- Avance 3: A3-0 terminada.
+- **Fase actual: A3-1** (Pendientes de unidades previas).
 
 ## Decisiones tomadas
 
 - **Despliegue**: backend y MySQL en Railway, con HTTPS; lo hace el usuario siguiendo
   `docs/DEPLOY.md`. A4-4 a A4-6 requieren la URL pública.
-- **Esquema**: siempre por migraciones (`database/migrations` + tabla `schema_migrations`),
+- **Esquema**: siempre por migraciones (`backend/migrations` + tabla `schema_migrations`),
   compatibles con la BD local existente y con una BD nueva en Railway.
 - **Conexión a BD**: variables sueltas (como hoy) o URL única (`DATABASE_URL` / `MYSQL_URL`),
   con SSL opcional (`DB_SSL`).
@@ -52,19 +53,20 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 ## AVANCE 3 — Unidad 3: cámara, sensores, permisos, notificaciones, rendimiento, errores y logging
 
-### [ ] A3-0 Migraciones de BD
+### [x] A3-0 Migraciones de BD
 
 - **Objetivo:** cambiar el esquema sin borrar datos, en local y en Railway.
 - **Tema del sílabo:** base de persistencia para las fases de la Unidad 3.
 - **Tareas:**
-  - [ ] `database/migrations/` con archivos SQL numerados (`001-...sql`).
-  - [ ] Runner en el backend: `npm run migrate` y ejecución automática al arrancar; registra lo
+  - [x] `backend/migrations/` con archivos SQL numerados (`001-...sql`). Dentro de `backend/`
+    para que la imagen funcione igual en Docker local y en Railway (root directory `backend`).
+  - [x] Runner en el backend: `npm run migrate` y ejecución automática al arrancar; registra lo
     aplicado en `schema_migrations`; idempotente.
-  - [ ] Migración base compatible con lo creado por `database/init/` (BD existente) y válida
+  - [x] Migración base compatible con lo creado por `database/init/` (BD existente) y válida
     sobre una BD vacía (Railway).
-  - [ ] Incluir las migraciones en la imagen del backend (hoy el build solo copia `backend/src`).
-  - [ ] `config/db.js`: variables sueltas o `DATABASE_URL` / `MYSQL_URL`, y `DB_SSL` opcional.
-  - [ ] Documentar en README y `.env.example`.
+  - [x] Incluir las migraciones en la imagen del backend.
+  - [x] `config/db.js`: variables sueltas o `DATABASE_URL` / `MYSQL_URL`, y `DB_SSL` opcional.
+  - [x] Documentar en README y `.env.example`.
 - **Terminado cuando:** sobre la BD local con datos se aplica solo lo pendiente sin perder
   nada, un segundo arranque no aplica nada, y una BD vacía queda con el esquema completo.
 
