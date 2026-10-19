@@ -40,20 +40,22 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 ## Mapa del código
 
 `src/`
-- `components/` — UI reutilizable sin red: Header, SearchBar, CategoryButton, FormInput,
-  EmptyState, ErrorState, GameCard, Rating, StatusChips.
+- `components/` — UI reutilizable sin red, todos con PropTypes: Header, SearchBar,
+  RecentSearches, CategoryButton, FormInput, EmptyState, ErrorState, GameCard, Rating, StatusChips.
 - `context/` — `AuthContext.js` (sesión, token, login/register/logout, restaura con `/auth/me`);
   `LibraryContext.js` (biblioteca del usuario con cambios optimistas).
 - `hooks/` — `useAuth`, `useLibrary` (consumen contextos), `useGames` (catálogo RAWG con
-  búsqueda y paginación), `useDebounce`, `useGridColumns` (2/3/4 columnas).
+  búsqueda, paginación, caché y `offline`), `useRecentSearches` (AsyncStorage, por usuario),
+  `useDebounce`, `useGridColumns` (2/3/4 columnas).
 - `navigation/` — `AppNavigator.js`: Stack según sesión; Tabs Catálogo/Favoritos/Perfil +
   `GameDetail`.
 - `screens/` — Login, Register, GameCatalog, GameDetail, Favorites, Profile.
 - `services/` — `apiClient.js` (fetch al backend, timeout 10 s, Bearer, aviso de 401),
-  `authApi.js`, `libraryApi.js`, `rawgApi.js` (RAWG con `RAWG_API_KEY`).
+  `authApi.js`, `libraryApi.js`, `rawgApi.js` (RAWG con `RAWG_API_KEY`), `catalogCache.js` /
+  `catalogCache.web.js` (caché del catálogo: expo-file-system en nativo, AsyncStorage en web).
 - `theme/` — `colors.js`, `typography.js` (`fonts`, `fontSizes`).
 - `utils/` — `storage.js` (token seguro nativo/web), `confirm.js` (confirmación multiplataforma),
-  `mapGame.js` (RAWG → formato de GameCard).
+  `mapGame.js` (RAWG → formato de GameCard), `cacheEntry.js` (formato y vencimiento de 7 días).
 
 `backend/src/`
 - `server.js` (aplica migraciones y escucha en `PORT`), `app.js` (cors, json, `/health`, rutas,
@@ -83,6 +85,9 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   borra con `DELETE` (el backend no borra en el PUT).
 - **Fuentes Sora/Inter**: cada peso es una familia (`fonts.heading`, `fonts.bodySemiBold`...).
   Nunca combinar `fontWeight` con `fontFamily` (rompe la fuente en Android).
+- **Caché**: primera página del catálogo (sin búsqueda) en `Paths.cache` con vencimiento de 7
+  días; expo-file-system no funciona en web, por eso existe `catalogCache.web.js` (Metro elige
+  el archivo por plataforma). Imágenes con `expo-image` (no usar `Image` de react-native).
 - **BD en el puerto 3307** del host (`DB_HOST_PORT`) porque hay un MySQL local en 3306.
 - **Errores del backend**: siempre JSON `{ message }`; los 401 del token devuelven
   `{ message, code }` con `TOKEN_EXPIRED` o `TOKEN_INVALID`, y `apiClient` cierra la sesión.

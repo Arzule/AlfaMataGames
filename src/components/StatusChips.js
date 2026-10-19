@@ -2,6 +2,7 @@
 // Selector del estado de un juego. Sin lógica de red.
 // Reutiliza los colores de los badges de GameCard.
 import React from 'react';
+import PropTypes from 'prop-types';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { STATUS_STYLES } from './GameCard';
 import { fonts } from '../theme/typography';
@@ -43,6 +44,11 @@ export default function StatusChips({ value = null, onChange }) {
     </View>
   );
 }
+
+StatusChips.propTypes = {
+  value: PropTypes.oneOf(STATUSES),
+  onChange: PropTypes.func,
+};
 
 const styles = StyleSheet.create({
   row: {

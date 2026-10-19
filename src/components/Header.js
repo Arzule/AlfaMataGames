@@ -3,6 +3,7 @@
 // title: texto principal; subtitle: linea pequena que aparece encima (ej. un saludo).
 // left / right: elementos opcionales (avatar, botones, contadores, etc.).
 import React from 'react';
+import PropTypes from 'prop-types';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
@@ -29,6 +30,14 @@ export default function Header({ title, subtitle, left, right, style }) {
     </View>
   );
 }
+
+Header.propTypes = {
+  title: PropTypes.string,
+  subtitle: PropTypes.string,
+  left: PropTypes.node,
+  right: PropTypes.node,
+  style: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+};
 
 const styles = StyleSheet.create({
   bar: {

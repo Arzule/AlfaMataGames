@@ -1,6 +1,7 @@
 // src/components/CategoryButton.js
 // Chip de categoria / filtro. Sin logica de red.
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
@@ -16,6 +17,12 @@ export default function CategoryButton({ label, active = false, onPress }) {
     </TouchableOpacity>
   );
 }
+
+CategoryButton.propTypes = {
+  label: PropTypes.string.isRequired,
+  active: PropTypes.bool,
+  onPress: PropTypes.func,
+};
 
 const styles = StyleSheet.create({
   chip: {
