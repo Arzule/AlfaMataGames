@@ -41,11 +41,14 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 
 `src/`
 - `components/` — UI reutilizable sin red, todos con PropTypes: Header, SearchBar,
-  RecentSearches, CategoryButton, FormInput, EmptyState, ErrorState, GameCard, Rating, StatusChips.
+  RecentSearches, CategoryButton, FormInput, EmptyState, ErrorState, GameCard, Rating, StatusChips,
+  Avatar (foto o iniciales).
 - `context/` — `AuthContext.js` (sesión, token, login/register/logout, restaura con `/auth/me`);
   `LibraryContext.js` (biblioteca del usuario con cambios optimistas).
 - `hooks/` — `useAuth`, `useLibrary` (consumen contextos), `useGames` (catálogo RAWG con
   búsqueda, paginación, caché y `offline`), `useRecentSearches` (AsyncStorage, por usuario),
+  `usePermission` (permisos: explicación previa, bloqueado, abrir ajustes), `useAvatarPicker`
+  (cámara/galería → recorte → subida),
   `useDebounce`, `useGridColumns` (2/3/4 columnas).
 - `navigation/` — `AppNavigator.js`: Stack según sesión; Tabs Catálogo/Favoritos/Perfil +
   `GameDetail`.
@@ -55,7 +58,7 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   `catalogCache.web.js` (caché del catálogo: expo-file-system en nativo, AsyncStorage en web).
 - `theme/` — `colors.js`, `typography.js` (`fonts`, `fontSizes`).
 - `utils/` — `storage.js` (token seguro nativo/web), `confirm.js` (confirmación multiplataforma),
-  `mapGame.js` (RAWG → formato de GameCard), `cacheEntry.js` (formato y vencimiento de 7 días).
+  `mapGame.js` (RAWG → formato de GameCard), `cacheEntry.js` (formato y vencimiento de 7 días), `avatarImage.js` (recorte cuadrado 256 px JPEG).
 
 `backend/src/`
 - `server.js` (aplica migraciones y escucha en `PORT`), `app.js` (cors, json, `/health`, rutas,
@@ -64,7 +67,8 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   (`DB_HOST`, `DB_PORT`, `MYSQL_*`), `DB_SSL` opcional; exporta `getConnectionOptions`.
 - `controllers/` — `auth.controller.js`, `library.controller.js`.
 - `middleware/` — `auth.middleware.js` (`authRequired`), `error.middleware.js` (404 y errores JSON).
-- `routes/` — `/auth` (register, login, me) y `/library` (GET lista, GET/PUT/DELETE `:gameId`).
+- `routes/` — `/auth` (register, login, me, PUT/DELETE `me/avatar`) y `/library` (GET lista,
+  GET/PUT/DELETE `:gameId`). El usuario público incluye `avatar` (data URI o null).
 - `utils/validators.js` — validaciones manuales y constantes (`STATUSES`, `REVIEW_MAX_LENGTH`).
 
 `database/init/` — `01-schema.sql` (users, user_games) y `02-seed.sql` (usuarios de prueba).
@@ -88,6 +92,11 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 - **Caché**: primera página del catálogo (sin búsqueda) en `Paths.cache` con vencimiento de 7
   días; expo-file-system no funciona en web, por eso existe `catalogCache.web.js` (Metro elige
   el archivo por plataforma). Imágenes con `expo-image` (no usar `Image` de react-native).
+- **Permisos**: siempre con `usePermission` (explicación previa con `confirmAction`, estado
+  `blocked` con "Abrir ajustes"). La galería no pide permiso (selector del sistema). Nunca
+  pedir ubicación. Textos de uso en los plugins de `app.json`.
+- **Foto de perfil** como data URI en `users.avatar` (≤ 200 KB, firma del archivo validada en
+  el backend); `express.json` acepta hasta 400 KB y los 413 responden JSON.
 - **BD en el puerto 3307** del host (`DB_HOST_PORT`) porque hay un MySQL local en 3306.
 - **Errores del backend**: siempre JSON `{ message }`; los 401 del token devuelven
   `{ message, code }` con `TOKEN_EXPIRED` o `TOKEN_INVALID`, y `apiClient` cierra la sesión.
