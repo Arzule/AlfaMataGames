@@ -2,7 +2,7 @@
 // Caja de busqueda reutilizable. Sin logica de red.
 import React from 'react';
 import PropTypes from 'prop-types';
-import { View, TextInput, StyleSheet } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
@@ -11,6 +11,8 @@ export default function SearchBar({
   value,
   onChangeText,
   onSubmit,
+  onFocus,
+  onBlur,
   placeholder = 'Buscar juegos...',
   style,
 }) {
@@ -24,8 +26,19 @@ export default function SearchBar({
         value={value}
         onChangeText={onChangeText}
         onSubmitEditing={onSubmit}
+        onFocus={onFocus}
+        onBlur={onBlur}
         returnKeyType="search"
       />
+      {value ? (
+        <TouchableOpacity
+          onPress={() => onChangeText('')}
+          hitSlop={8}
+          accessibilityLabel="Limpiar búsqueda"
+        >
+          <Feather name="x" size={16} color={colors.textMuted} />
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
@@ -34,6 +47,8 @@ SearchBar.propTypes = {
   value: PropTypes.string.isRequired,
   onChangeText: PropTypes.func.isRequired,
   onSubmit: PropTypes.func,
+  onFocus: PropTypes.func,
+  onBlur: PropTypes.func,
   placeholder: PropTypes.string,
   style: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
 };

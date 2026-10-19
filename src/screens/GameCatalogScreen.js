@@ -1,17 +1,19 @@
 // src/screens/GameCatalogScreen.js
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   FlatList,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import GameCard from '../components/GameCard';
 import Header from '../components/Header';
 import SearchBar from '../components/SearchBar';
+import RecentSearches from '../components/RecentSearches';
 import CategoryButton from '../components/CategoryButton';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
@@ -20,6 +22,7 @@ import { useLibrary } from '../hooks/useLibrary';
 import { useDebounce } from '../hooks/useDebounce';
 import { useGames } from '../hooks/useGames';
 import { useGridColumns } from '../hooks/useGridColumns';
+import { useRecentSearches } from '../hooks/useRecentSearches';
 
 const CATEGORIES = ['Todos', 'Jugando', 'Completado', 'Pendiente', 'Abandonado'];
 
@@ -75,7 +78,39 @@ export default function GameCatalogScreen({ navigation }) {
     ? 'No se encontraron juegos.'
     : `Aún no tienes juegos en «${selectedCategory}».`;
 
-  const handleSearchSubmit = () => setSearchTerm(searchText);
+  // Búsquedas recientes: visibles al enfocar la barra con el campo vacío.
+  const { recent, addSearch, removeSearch, clearSearches } = useRecentSearches(user?.id);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const blurTimerRef = useRef(null);
+  useEffect(() => () => clearTimeout(blurTimerRef.current), []);
+
+  const handleSearchFocus = useCallback(() => {
+    clearTimeout(blurTimerRef.current);
+    setSearchFocused(true);
+  }, []);
+
+  // Retraso breve: en web el blur ocurre antes del clic sobre una reciente.
+  const handleSearchBlur = useCallback(() => {
+    blurTimerRef.current = setTimeout(() => setSearchFocused(false), 150);
+  }, []);
+
+  const handleSearchSubmit = () => {
+    setSearchTerm(searchText);
+    addSearch(searchText);
+  };
+
+  const handleSelectRecent = useCallback(
+    (term) => {
+      setSearchText(term);
+      setSearchTerm(term);
+      addSearch(term);
+      setSearchFocused(false);
+      Keyboard.dismiss();
+    },
+    [addSearch]
+  );
+
+  const showRecent = searchFocused && !searchText.trim() && recent.length > 0;
 
   const renderItem = useCallback(
     ({ item }) => {
@@ -86,12 +121,16 @@ export default function GameCatalogScreen({ navigation }) {
             game={item}
             status={status}
             platform={item.platform}
-            onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
+            onPress={() => {
+              // Abrir un juego desde una búsqueda la guarda como reciente.
+              if (searchTerm.trim()) addSearch(searchTerm);
+              navigation.navigate('GameDetail', { gameId: item.id });
+            }}
           />
         </View>
       );
     },
-    [isTodos, getEntry, navigation, columns]
+    [isTodos, getEntry, navigation, columns, searchTerm, addSearch]
   );
 
   const keyExtractor = useCallback((item) => String(item.id), []);
@@ -125,8 +164,18 @@ export default function GameCatalogScreen({ navigation }) {
           value={searchText}
           onChangeText={setSearchText}
           onSubmit={handleSearchSubmit}
+          onFocus={handleSearchFocus}
+          onBlur={handleSearchBlur}
           placeholder="Buscar juegos..."
         />
+        {showRecent ? (
+          <RecentSearches
+            items={recent}
+            onSelect={handleSelectRecent}
+            onRemove={removeSearch}
+            onClear={clearSearches}
+          />
+        ) : null}
       </View>
 
       {/* Categorías */}
