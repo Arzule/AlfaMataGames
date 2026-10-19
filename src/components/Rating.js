@@ -1,6 +1,7 @@
 // src/components/Rating.js
 // Estrellas de puntuación (0-5). Sin lógica de red.
 import React from 'react';
+import PropTypes from 'prop-types';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
@@ -52,6 +53,13 @@ export default function Rating({ value = null, onChange, size = 24, readOnly = f
     </View>
   );
 }
+
+Rating.propTypes = {
+  value: PropTypes.number,
+  onChange: PropTypes.func,
+  size: PropTypes.number,
+  readOnly: PropTypes.bool,
+};
 
 const styles = StyleSheet.create({
   row: {

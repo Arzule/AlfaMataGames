@@ -1,6 +1,7 @@
 // src/components/SearchBar.js
 // Caja de busqueda reutilizable. Sin logica de red.
 import React from 'react';
+import PropTypes from 'prop-types';
 import { View, TextInput, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
@@ -28,6 +29,14 @@ export default function SearchBar({
     </View>
   );
 }
+
+SearchBar.propTypes = {
+  value: PropTypes.string.isRequired,
+  onChangeText: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func,
+  placeholder: PropTypes.string,
+  style: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+};
 
 const styles = StyleSheet.create({
   box: {

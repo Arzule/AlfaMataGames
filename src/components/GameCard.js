@@ -1,5 +1,6 @@
 // src/components/GameCard.js
 import React from 'react';
+import PropTypes from 'prop-types';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
@@ -56,6 +57,18 @@ export default function GameCard({ game, onPress, status = null, platform }) {
     </TouchableOpacity>
   );
 }
+
+GameCard.propTypes = {
+  game: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+    title: PropTypes.string,
+    image: PropTypes.string,
+    rating: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  }).isRequired,
+  onPress: PropTypes.func,
+  status: PropTypes.oneOf(Object.keys(STATUS_STYLES)),
+  platform: PropTypes.string,
+};
 
 const styles = StyleSheet.create({
   card: {

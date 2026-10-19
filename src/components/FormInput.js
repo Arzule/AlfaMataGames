@@ -3,6 +3,7 @@
 // label, icon (nombre de Feather), error y el resto de props de TextInput.
 // Si recibe secureTextEntry, muestra el boton para ver/ocultar el texto.
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
@@ -37,6 +38,14 @@ export default function FormInput({ label, icon, error, secureTextEntry, style, 
     </View>
   );
 }
+
+FormInput.propTypes = {
+  label: PropTypes.string,
+  icon: PropTypes.string,
+  error: PropTypes.string,
+  secureTextEntry: PropTypes.bool,
+  style: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+};
 
 const styles = StyleSheet.create({
   field: {

@@ -1,6 +1,7 @@
 // src/components/ErrorState.js
 // Mensaje de error centrado, con boton opcional para reintentar.
 import React from 'react';
+import PropTypes from 'prop-types';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
@@ -24,6 +25,11 @@ export default function ErrorState({ message, onRetry }) {
     </View>
   );
 }
+
+ErrorState.propTypes = {
+  message: PropTypes.string.isRequired,
+  onRetry: PropTypes.func,
+};
 
 const styles = StyleSheet.create({
   centered: {
