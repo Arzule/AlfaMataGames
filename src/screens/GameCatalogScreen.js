@@ -14,6 +14,7 @@ import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import GameCard from '../components/GameCard';
 import Header from '../components/Header';
+import Avatar from '../components/Avatar';
 import SearchBar from '../components/SearchBar';
 import RecentSearches from '../components/RecentSearches';
 import CategoryButton from '../components/CategoryButton';
@@ -149,9 +150,12 @@ export default function GameCatalogScreen({ navigation }) {
         subtitle="Hola,"
         title={username}
         left={
-          <View style={styles.avatarPlaceholder}>
-            <Feather name="user" size={18} color={colors.textSecondary} />
-          </View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Perfil')}
+            accessibilityLabel="Ir a mi perfil"
+          >
+            <Avatar uri={user?.avatar} name={user?.name} size={40} />
+          </TouchableOpacity>
         }
         right={
           <TouchableOpacity style={styles.notifBtn}>
@@ -245,16 +249,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   notifBtn: {
     width: 36,

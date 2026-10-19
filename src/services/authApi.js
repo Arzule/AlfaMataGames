@@ -22,3 +22,13 @@ export function register(name, email, password) {
 export function getMe() {
   return request('/auth/me', { method: 'GET', auth: true });
 }
+
+// Sube la foto de perfil (data URI JPEG en base64). Devuelve { user }.
+export function uploadAvatar(image) {
+  return request('/auth/me/avatar', { method: 'PUT', body: { image }, auth: true });
+}
+
+// Elimina la foto de perfil. Devuelve { user }.
+export function deleteAvatar() {
+  return request('/auth/me/avatar', { method: 'DELETE', auth: true });
+}

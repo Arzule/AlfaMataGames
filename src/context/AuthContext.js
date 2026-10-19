@@ -104,8 +104,23 @@ export function AuthProvider({ children }) {
     await clearSession();
   }, [clearSession]);
 
+  // Foto de perfil: el backend devuelve el usuario actualizado.
+  const updateAvatar = useCallback(async (image) => {
+    const data = await authApi.uploadAvatar(image);
+    if (!data || !data.user) throw new Error('Respuesta inesperada del servidor');
+    setUser(data.user);
+  }, []);
+
+  const removeAvatar = useCallback(async () => {
+    const data = await authApi.deleteAvatar();
+    if (!data || !data.user) throw new Error('Respuesta inesperada del servidor');
+    setUser(data.user);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, token, loading, login, register, logout, updateAvatar, removeAvatar }}
+    >
       {children}
     </AuthContext.Provider>
   );
