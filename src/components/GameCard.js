@@ -1,7 +1,8 @@
 // src/components/GameCard.js
 import React from 'react';
 import PropTypes from 'prop-types';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
@@ -19,7 +20,13 @@ export default function GameCard({ game, onPress, status = null, platform }) {
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
-      <Image source={{ uri: game.image }} style={styles.cover} resizeMode="cover" />
+      {/* expo-image guarda la portada en caché de disco (cachePolicy por defecto: disk). */}
+      <Image
+        source={game.image ? { uri: game.image } : null}
+        style={styles.cover}
+        contentFit="cover"
+        transition={200}
+      />
       <View style={styles.details}>
         <Text style={styles.title} numberOfLines={1}>
           {game.title}
@@ -82,6 +89,7 @@ const styles = StyleSheet.create({
   cover: {
     width: '100%',
     aspectRatio: 3 / 4,
+    backgroundColor: colors.badgeNeutral,
   },
   details: {
     padding: 12,

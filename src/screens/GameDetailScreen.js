@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   ScrollView,
   TouchableOpacity,
   TextInput,
@@ -11,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import { getGameDetail } from '../services/rawgApi';
@@ -114,9 +114,10 @@ export default function GameDetailScreen({ route, navigation }) {
         {/* Hero */}
         <View style={styles.heroBlock}>
           <Image
-            source={{ uri: game.background_image }}
+            source={game.background_image ? { uri: game.background_image } : null}
             style={styles.heroImage}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={200}
           />
           <View style={styles.heroOverlay} />
           <View style={styles.heroActions}>
