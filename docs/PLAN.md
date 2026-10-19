@@ -8,8 +8,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 ## Estado
 
 - Entregados: Avance 1 y Avance 2.
-- Avance 3: A3-0 terminada.
-- **Fase actual: A3-1** (Pendientes de unidades previas).
+- Avance 3: A3-0 y A3-1 terminadas.
+- **Fase actual: A3-2** (Permisos y foto de perfil).
 
 ## Decisiones tomadas
 
@@ -21,7 +21,7 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   con SSL opcional (`DB_SSL`).
 - **Claves externas solo en el backend**: RAWG (desde A3-6/A4-1), DeepL, Steam, OAuth.
   La app usa `EXPO_PUBLIC_*` (desde A4-1) para que EAS inyecte las variables.
-- **Caché**: primera página del catálogo en `cacheDirectory` (expo-file-system) con
+- **Caché**: primera página del catálogo en `Paths.cache` (expo-file-system) con
   vencimiento de **7 días** y limpieza al iniciar; imágenes con caché de disco (expo-image);
   botón "Borrar caché" en Perfil.
 - **Permisos**: cámara, fotos y notificaciones con un hook común (`usePermission`).
@@ -70,19 +70,20 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Terminado cuando:** sobre la BD local con datos se aplica solo lo pendiente sin perder
   nada, un segundo arranque no aplica nada, y una BD vacía queda con el esquema completo.
 
-### [ ] A3-1 Pendientes de unidades previas
+### [x] A3-1 Pendientes de unidades previas
 
 - **Objetivo:** cerrar huecos de Unidades 1-2 y preparar el uso sin red.
 - **Tema del sílabo:** componentes y props; almacenamiento local; rendimiento.
 - **Tareas:**
-  - [ ] `prop-types` en todos los componentes de `src/components/`.
-  - [ ] Búsquedas recientes con AsyncStorage: máx. 5, visibles al enfocar la barra, con opción
-    de borrar.
-  - [ ] Caché de la primera página del catálogo en `cacheDirectory` (expo-file-system) con
+  - [x] `prop-types` en todos los componentes de `src/components/`.
+  - [x] Búsquedas recientes con AsyncStorage: máx. 5, visibles al enfocar la barra, con opción
+    de borrar (una lista por usuario).
+  - [x] Caché de la primera página del catálogo en `Paths.cache` (expo-file-system) con
     vencimiento de 7 días y limpieza de vencidas al iniciar; se muestra mientras carga o sin red.
-  - [ ] Imágenes con caché de disco (expo-image).
-  - [ ] Botón "Borrar caché" en Perfil (catálogo e imágenes).
-  - [ ] Documentar: en Android, "Borrar caché" (Información de la app) elimina esta caché sin
+    En web, AsyncStorage (expo-file-system no soporta web).
+  - [x] Imágenes con caché de disco (expo-image).
+  - [x] Botón "Borrar caché" en Perfil (catálogo e imágenes).
+  - [x] Documentar: en Android, "Borrar caché" (Información de la app) elimina esta caché sin
     cerrar sesión; "Borrar almacenamiento" elimina todo.
 - **Terminado cuando:** sin warnings de PropTypes, las recientes persisten al reabrir, el
   catálogo se ve sin red, y "Borrar caché" vacía catálogo e imágenes sin cerrar sesión.

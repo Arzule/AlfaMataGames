@@ -25,7 +25,11 @@ reutilizables, además de la documentación del proyecto.
 - Cambios optimistas con reversión si el backend falla.
 - Manejo de estados de carga y de error en toda la app.
 - Cuadrícula responsive (2, 3 o 4 columnas según el ancho de pantalla).
-- Interfaz con tipografías propias (Sora e Inter) y componentes reutilizables.
+- Interfaz con tipografías propias (Sora e Inter) y componentes reutilizables con PropTypes.
+- Búsquedas recientes (últimas 5 por usuario) al enfocar la barra de búsqueda, con opción de borrar.
+- Catálogo disponible sin conexión: la primera página se guarda en caché 7 días y se muestra
+  mientras carga o sin red, con un aviso.
+- Imágenes con caché de disco (expo-image) y botón "Borrar caché" en Perfil.
 
 ---
 
@@ -42,6 +46,10 @@ Versiones tomadas de `package.json` (app), `backend/package.json` y `docker-comp
 | react-native-web | ^0.21.2 | Soporte web |
 | react-native-dotenv | ^4.1.1 | Variables de entorno (`@env`) |
 | expo-secure-store | ~57.0.4 | Guardar el token (nativo) |
+| @react-native-async-storage/async-storage | 2.2.0 | Búsquedas recientes y caché en web |
+| expo-file-system | ~57.0.7 | Caché del catálogo (nativo) |
+| expo-image | ~57.0.5 | Imágenes con caché de disco |
+| prop-types | ^15.8.1 | Validación de props de los componentes |
 | expo-font / @expo-google-fonts | ~57.0.4 / ^0.4.2 | Fuentes Sora e Inter |
 | Node.js + Express | Express ^4.21.2 (Node >= 20) | Backend / API REST |
 | MySQL | 8.0 (`mysql:8.0`) | Base de datos |
@@ -124,15 +132,16 @@ AlfaMataGames/
 │       ├── routes/             # auth.routes.js, library.routes.js
 │       └── utils/validators.js # Validaciones y constantes
 └── src/
-    ├── components/             # Header, SearchBar, CategoryButton, FormInput,
+    ├── components/             # Header, SearchBar, RecentSearches, CategoryButton, FormInput,
     │                           #   EmptyState, ErrorState, GameCard, Rating, StatusChips
     ├── context/                # AuthContext.js, LibraryContext.js
-    ├── hooks/                  # useAuth, useLibrary, useGames, useDebounce, useGridColumns
+    ├── hooks/                  # useAuth, useLibrary, useGames, useRecentSearches, useDebounce,
+    │                           #   useGridColumns
     ├── navigation/             # AppNavigator.js (Stack + Tab)
     ├── screens/                # Login, Register, GameCatalog, GameDetail, Favorites, Profile
-    ├── services/               # apiClient, authApi, libraryApi, rawgApi
+    ├── services/               # apiClient, authApi, libraryApi, rawgApi, catalogCache (.web)
     ├── theme/                  # colors.js, typography.js
-    └── utils/                  # storage.js, confirm.js, mapGame.js
+    └── utils/                  # storage.js, confirm.js, mapGame.js, cacheEntry.js
 ```
 
 ---
@@ -284,6 +293,24 @@ Creadas por `database/init/02-seed.sql`:
 | --- | --- |
 | `drago@gmail.com` | `12345678` |
 | `demo@alfamatagames.com` | `Demo1234` |
+
+---
+
+## Caché y almacenamiento local
+
+| Dato | Dónde se guarda | Se borra con |
+| --- | --- | --- |
+| Token de sesión | expo-secure-store (nativo) / localStorage (web) | Cerrar sesión |
+| Búsquedas recientes | AsyncStorage, una lista por usuario | "Borrar todo" en la lista de recientes |
+| Primera página del catálogo | Carpeta de caché del sistema (`Paths.cache`, expo-file-system); en web, AsyncStorage | "Borrar caché" en Perfil; vence a los 7 días |
+| Imágenes | Caché de disco de expo-image; en web, la del navegador | "Borrar caché" en Perfil |
+
+En **Android** (Ajustes → Aplicaciones → la app → Almacenamiento):
+
+- **Borrar caché** elimina el catálogo guardado y las imágenes, **sin cerrar sesión**.
+- **Borrar almacenamiento** elimina todo: sesión, búsquedas recientes y caché.
+
+En Expo Go esto aplica a la app Expo Go completa, no solo a AlfaMataGames.
 
 ---
 
