@@ -2,6 +2,7 @@
 -- Esquema base de AlfaMataGames (MySQL 8).
 -- Este script se ejecuta automáticamente al inicializar el contenedor MySQL,
 -- sobre la base de datos definida en MYSQL_DATABASE.
+-- Los cambios de esquema nuevos van como migraciones en backend/migrations/.
 
 SET NAMES utf8mb4;
 

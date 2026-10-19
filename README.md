@@ -113,10 +113,12 @@ AlfaMataGames/
 ├── backend/
 │   ├── Dockerfile              # Imagen Node 20 para el backend
 │   ├── package.json            # Dependencias del backend
+│   ├── migrations/             # Migraciones SQL numeradas (001-esquema-base.sql, ...)
 │   └── src/
-│       ├── server.js           # Arranque del servidor (puerto desde PORT)
+│       ├── server.js           # Arranque: aplica migraciones y escucha en PORT
+│       ├── migrate.js          # Runner de migraciones (npm run migrate)
 │       ├── app.js              # Express: middlewares, /health y rutas
-│       ├── config/db.js        # Pool de conexiones MySQL (mysql2)
+│       ├── config/db.js        # Pool MySQL (mysql2): URL única o variables sueltas, SSL opcional
 │       ├── controllers/        # auth.controller.js, library.controller.js
 │       ├── middleware/         # auth.middleware.js, error.middleware.js
 │       ├── routes/             # auth.routes.js, library.routes.js
@@ -180,6 +182,8 @@ cp .env.example .env
 | `MYSQL_USER` | Usuario de la aplicación. **No puede ser `root`.** |
 | `MYSQL_PASSWORD` | Contraseña del usuario de la aplicación. |
 | `DB_HOST_PORT` | Puerto del host para la base de datos. Por defecto `3307` (para no chocar con un MySQL local en `3306`). |
+| `DATABASE_URL` / `MYSQL_URL` | Opcional (nube). URL única `mysql://usuario:contraseña@host:puerto/bd`; si existe, reemplaza a las variables sueltas. En local no se usa. |
+| `DB_SSL` / `DB_SSL_REJECT_UNAUTHORIZED` | Opcional. `DB_SSL=true` activa SSL; `DB_SSL_REJECT_UNAUTHORIZED=false` acepta certificados autofirmados. |
 | `JWT_SECRET` | Clave secreta para firmar los tokens JWT. |
 | `JWT_EXPIRES_IN` | Duración del token (ej. `7d`). |
 | `BACKEND_PORT` | Puerto del host para el backend. Por defecto `3000`. |
@@ -205,7 +209,8 @@ docker compose up -d --build
 ```
 
 Esto construye el backend y levanta `db`, `backend` y `adminer`. La primera vez, MySQL
-ejecuta automáticamente los scripts de `database/init/` (esquema y datos de prueba).
+ejecuta automáticamente los scripts de `database/init/` (esquema y datos de prueba). Al
+arrancar, el backend aplica las migraciones pendientes (ver [Migraciones](#migraciones-de-base-de-datos)).
 
 Comprueba que el backend responde:
 
@@ -249,6 +254,25 @@ Abre `http://localhost:8080` y conéctate con:
 - **Database:** el valor de `MYSQL_DATABASE`
 
 También puedes conectar un cliente MySQL externo a `localhost:3307` (el valor de `DB_HOST_PORT`).
+
+---
+
+## Migraciones de base de datos
+
+Los cambios de esquema se hacen con archivos SQL numerados en `backend/migrations/`
+(`001-esquema-base.sql`, `002-...sql`). Así se puede modificar una BD que ya tiene datos, en
+local o en la nube, sin borrarla.
+
+- **Automático:** al arrancar, el backend aplica en orden las migraciones que faltan y las
+  registra en la tabla `schema_migrations`. Si una falla, el backend no arranca y muestra el error.
+- **Manual:** `docker compose exec backend npm run migrate` (o `npm run migrate` dentro de
+  `backend/` con las variables de entorno configuradas).
+- Cada migración se aplica una sola vez; volver a arrancar no repite nada.
+- `001-esquema-base.sql` usa `CREATE TABLE IF NOT EXISTS`: en una BD creada por
+  `database/init/` solo queda registrada, y en una BD vacía crea las tablas.
+- **Reglas:** nunca editar una migración ya aplicada (el runner avisa si cambia); crear una
+  nueva con el siguiente número. `database/init/` solo corre con el volumen vacío y se mantiene
+  para crear la BD local con datos de prueba.
 
 ---
 
