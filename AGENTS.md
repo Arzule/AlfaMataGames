@@ -1,7 +1,8 @@
 # AGENTS.md — AlfaMataGames
 
 Contexto para agentes. Detalle completo en [README.md](README.md); roadmap, estado y
-decisiones en [docs/PLAN.md](docs/PLAN.md). Leer ambos archivos al empezar una sesión.
+decisiones en [docs/PLAN.md](docs/PLAN.md); criterios de evaluación en
+[docs/RUBRICAS.md](docs/RUBRICAS.md). Leer los tres al empezar una sesión.
 
 > **Expo HAS CHANGED.** Lee la documentación versionada exacta en
 > https://docs.expo.dev/versions/v57.0.0/ antes de escribir código.
