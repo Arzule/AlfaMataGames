@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
+  Text,
   FlatList,
   TouchableOpacity,
   StyleSheet,
@@ -10,6 +11,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/typography';
 import GameCard from '../components/GameCard';
 import Header from '../components/Header';
 import SearchBar from '../components/SearchBar';
@@ -41,7 +43,7 @@ export default function GameCatalogScreen({ navigation }) {
     setSearchTerm(debouncedSearch);
   }, [debouncedSearch]);
 
-  const { games, loading, loadingMore, error, hasMore, loadMore, reload } = useGames({
+  const { games, loading, loadingMore, error, offline, loadMore, reload } = useGames({
     search: searchTerm,
   });
 
@@ -190,6 +192,16 @@ export default function GameCatalogScreen({ navigation }) {
         ))}
       </View>
 
+      {/* Aviso: sin conexión, se muestra el catálogo guardado */}
+      {isTodos && offline && !isLoading ? (
+        <TouchableOpacity style={styles.offlineBanner} onPress={reload} activeOpacity={0.8}>
+          <Feather name="wifi-off" size={14} color={colors.warning} />
+          <Text style={styles.offlineText}>
+            Sin conexión: mostrando el catálogo guardado. Toca para reintentar.
+          </Text>
+        </TouchableOpacity>
+      ) : null}
+
       {/* Contenido */}
       {isLoading ? (
         <View style={styles.centered}>
@@ -276,6 +288,23 @@ const styles = StyleSheet.create({
   },
   cell: {
     flex: 1,
+  },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 24,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.warningBg,
+  },
+  offlineText: {
+    flex: 1,
+    color: colors.warning,
+    fontSize: 12,
+    fontFamily: fonts.bodySemiBold,
   },
   footerSpinner: {
     paddingVertical: 16,

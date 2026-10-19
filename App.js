@@ -1,5 +1,5 @@
 // App.js
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -9,8 +9,14 @@ import { AuthProvider } from './src/context/AuthContext';
 import { LibraryProvider } from './src/context/LibraryContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { colors } from './src/theme/colors';
+import { cleanExpiredCache } from './src/services/catalogCache';
 
 export default function App() {
+  // Al iniciar, borrar las entradas de caché vencidas (más de 7 días).
+  useEffect(() => {
+    cleanExpiredCache();
+  }, []);
+
   // Carga las fuentes Sora e Inter antes de mostrar la app.
   const [fontsLoaded, fontError] = useFonts({
     Sora_600SemiBold,
