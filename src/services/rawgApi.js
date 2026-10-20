@@ -52,6 +52,38 @@ export async function getGameDetail(id) {
   return response.json();
 }
 
+// Juegos populares entre los que se elige al azar (100 páginas x 40 = 4000 juegos).
+const RANDOM_MAX_PAGE = 100;
+const RANDOM_PAGE_SIZE = 40;
+
+/**
+ * Elige un juego al azar. RAWG no tiene endpoint aleatorio: se pide una página
+ * aleatoria de los juegos más agregados y se toma un elemento al azar.
+ * @returns {Promise<{id: number, name: string}>}
+ */
+export async function getRandomGame() {
+  const page = 1 + Math.floor(Math.random() * RANDOM_MAX_PAGE);
+  const params = new URLSearchParams({
+    key: RAWG_API_KEY,
+    page: String(page),
+    page_size: String(RANDOM_PAGE_SIZE),
+    ordering: '-added',
+  });
+
+  const response = await fetch(`${BASE_URL}/games?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error(`Error al obtener un juego al azar: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const results = Array.isArray(data.results) ? data.results.filter((g) => g?.id) : [];
+  if (!results.length) {
+    throw new Error('RAWG no devolvió juegos.');
+  }
+  return results[Math.floor(Math.random() * results.length)];
+}
+
 /**
  * Obtiene el listado de géneros disponibles en RAWG.
  */
