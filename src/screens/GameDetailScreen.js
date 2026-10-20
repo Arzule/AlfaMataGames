@@ -22,9 +22,11 @@ import Rating from '../components/Rating';
 import StatusChips from '../components/StatusChips';
 import ErrorState from '../components/ErrorState';
 import ReviewCard from '../components/ReviewCard';
+import Synopsis from '../components/Synopsis';
 import ReminderSheet from '../components/ReminderSheet';
 import DateTimePickerModal from '../components/DateTimePickerModal';
 import { useGameReviews } from '../hooks/useGameReviews';
+import { useGameDescription } from '../hooks/useGameDescription';
 import { useGameReminder, REMINDER_PRESETS } from '../hooks/useGameReminder';
 import { formatDateTime } from '../utils/dateFormat';
 
@@ -52,6 +54,8 @@ export default function GameDetailScreen({ route, navigation }) {
   }, [savedReview]);
 
   const community = useGameReviews(gameId);
+  // Sinopsis en español desde el backend; si falla, la original de RAWG.
+  const description = useGameDescription(gameId, game?.description_raw);
 
   // Recordatorio para jugar: hoja de opciones y selector de fecha propio.
   const gameReminder = useGameReminder({ gameId, gameName: game?.name ?? 'este juego' });
@@ -242,12 +246,13 @@ export default function GameDetailScreen({ route, navigation }) {
               </View>
             </View>
 
-            <View style={styles.synopsisBlock}>
-              <Text style={styles.sectionTitle}>SINOPSIS</Text>
-              <Text style={styles.synopsisText} numberOfLines={6}>
-                {game.description_raw ?? 'Sin descripción disponible.'}
-              </Text>
-            </View>
+            <Synopsis
+              text={description.text}
+              original={description.original}
+              translated={description.translated}
+              notice={description.notice}
+              loading={description.loading}
+            />
 
             {/* Mi biblioteca */}
             <View style={styles.libraryBlock}>
@@ -574,19 +579,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: fonts.bodyBold,
   },
-  synopsisBlock: {
-    gap: 8,
-  },
   sectionTitle: {
     color: colors.textPrimary,
     fontSize: 13,
     fontFamily: fonts.heading,
-  },
-  synopsisText: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontFamily: fonts.body,
-    lineHeight: 18,
   },
   libraryBlock: {
     gap: 12,

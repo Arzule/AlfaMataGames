@@ -43,6 +43,9 @@ reutilizables, además de la documentación del proyecto.
   mañana, en una semana o fecha y hora a elección), recordatorio diario configurable en Perfil,
   pantalla de recordatorios activos (campana del Catálogo) con opción de cancelar. Tocar la
   notificación abre el juego. Al cerrar sesión se cancelan todos.
+- **Sinopsis en español**: el backend traduce la descripción de RAWG con DeepL API Free y la
+  guarda en caché; la app indica si el texto es traducido (con "Ver original") o el original sin
+  traducir, y permite expandirlo con "Ver más".
 - **Robustez**: pantalla "Algo salió mal" con "Reintentar" ante cualquier error de render
   (ErrorBoundary global) y aviso en la parte inferior cuando no hay conexión, que pasa a
   "Conexión restablecida" al volver la red.
@@ -156,7 +159,8 @@ AlfaMataGames/
 │       ├── migrate.js          # Runner de migraciones (npm run migrate)
 │       ├── app.js              # Express: middlewares, /health y rutas
 │       ├── config/db.js        # Pool MySQL (mysql2): URL única o variables sueltas, SSL opcional
-│       ├── controllers/        # auth.controller.js, library.controller.js, reviews.controller.js
+│       ├── controllers/        # auth, library, reviews y descriptions (sinopsis traducida)
+│       ├── services/           # rawg.service.js y deepl.service.js (clientes de APIs externas)
 │       ├── middleware/         # auth, error y requestLogger (registro de cada petición)
 │       ├── routes/             # auth.routes.js, library.routes.js, games.routes.js
 │       └── utils/              # validators.js (validaciones y constantes), logger.js
@@ -164,17 +168,17 @@ AlfaMataGames/
     ├── components/             # Header, SearchBar, RecentSearches, CategoryButton, FormInput,
     │                           #   EmptyState, ErrorState, GameCard, Rating, StatusChips, Avatar,
     │                           #   ReviewCard, ReminderSheet, DateTimePickerModal, ErrorBoundary,
-    │                           #   OfflineBanner
+    │                           #   OfflineBanner, Synopsis
     ├── context/                # AuthContext.js, LibraryContext.js
     ├── hooks/                  # useAuth, useLibrary, useGames, useRecentSearches, useDebounce,
     │                           #   useGridColumns, usePermission, useAvatarPicker,
     │                           #   useShakeDetector, useRandomGame, useGameReviews, useNotificationPermission,
     │                           #   useGameReminder, useDailyReminder, useNotificationBridge,
-    │                           #   useNetworkStatus
+    │                           #   useNetworkStatus, useGameDescription
     ├── navigation/             # AppNavigator.js (Stack + Tab)
     ├── screens/                # Login, Register, GameCatalog, GameDetail, Favorites, Profile,
     │                           #   Reminders
-    ├── services/               # apiClient, authApi, libraryApi, reviewsApi, rawgApi,
+    ├── services/               # apiClient, authApi, libraryApi, reviewsApi, gamesApi, rawgApi,
     │                           #   catalogCache (.web), preferences, notifications (.web)
     ├── shims/                  # TopicSubscriptionModule.android.js (ver metro.config.js)
     ├── theme/                  # colors.js, typography.js
@@ -222,7 +226,9 @@ cp .env.example .env
 
 | Variable | Descripción |
 | --- | --- |
-| `RAWG_API_KEY` | Tu API key de RAWG (https://rawg.io/apidocs). La usa la app, no el backend. |
+| `RAWG_API_KEY` | Tu API key de RAWG (https://rawg.io/apidocs). La usan la app (catálogo) y el backend (sinopsis). |
+| `DEEPL_API_KEY` | Opcional. Clave de DeepL API Free para traducir las sinopsis (solo el backend). Si falta, se muestra el texto original con una etiqueta. Ver [Sinopsis traducidas](#sinopsis-traducidas). |
+| `DEEPL_API_URL` | Opcional. Fuerza el endpoint de DeepL; por defecto, `api-free.deepl.com` si la clave termina en `:fx` y `api.deepl.com` si no. |
 | `API_URL` | URL base del backend, con la **IP local de tu PC**, ej. `http://192.168.1.10:3000`. No uses `localhost`: el celular no puede resolverlo. |
 | `MYSQL_ROOT_PASSWORD` | Contraseña del usuario `root` de MySQL (la usa el contenedor). |
 | `MYSQL_DATABASE` | Nombre de la base de datos que se crea al inicializar MySQL. |
@@ -390,6 +396,24 @@ En Expo Go esto aplica a la app Expo Go completa, no solo a AlfaMataGames.
 
 ---
 
+## Sinopsis traducidas
+
+- `GET /games/:gameId/description` obtiene la descripción de RAWG y la traduce al español con
+  **DeepL API Free**. La traducción se guarda en la tabla `game_translations` (migración
+  `004`): la segunda consulta de un juego sale de la caché, sin llamar a RAWG ni a DeepL.
+- Las claves de RAWG y DeepL quedan en el servidor; la app nunca recibe la de DeepL.
+- Si no se puede traducir (sin clave, cuota agotada o DeepL caído) se devuelve el texto
+  original con un aviso (`notice`) y **no** se guarda nada, para traducir en cuanto el servicio
+  esté disponible. Si el backend no responde, la app usa la descripción que ya tiene de RAWG.
+- Para proteger la cuota (500 000 caracteres al mes) se traducen como máximo 6000 caracteres
+  por juego, y dos consultas simultáneas del mismo juego comparten una sola traducción.
+- **Obtener la clave**: crea una cuenta en https://www.deepl.com/pro-api (plan *DeepL API Free*;
+  puede pedir una tarjeta solo para verificar la identidad; el plan Free no cobra). En *Account → API Keys* copia la clave (termina
+  en `:fx`), agrégala al `.env` como `DEEPL_API_KEY=...` y reinicia el backend con
+  `docker compose up -d`.
+
+---
+
 ## Errores, logging y rendimiento
 
 - **ErrorBoundary** (`src/components/ErrorBoundary.js`) envuelve toda la app: un error de
@@ -457,6 +481,7 @@ Tabla generada a partir de `backend/src/routes/`.
 | GET | `/library/:gameId` | Bearer JWT | Devuelve `{ entry }` de un juego (o `null`). |
 | PUT | `/library/:gameId` | Bearer JWT | Crea o actualiza (upsert parcial) la entrada. |
 | DELETE | `/library/:gameId` | Bearer JWT | Elimina la entrada de un juego (204). |
+| GET | `/games/:gameId/description` | Bearer JWT | Sinopsis en español. Devuelve `{ gameId, lang, text, original, translated, source, notice }`: `source` es `cache`, `deepl` o `null`; `notice` es `null`, `empty`, `same-language`, `not-configured`, `quota` o `unavailable` (en esos casos `text` es el original). 404 si el juego no existe en RAWG; 502/503 si RAWG no responde o no está configurado. |
 | GET | `/games/:gameId/reviews` | Bearer JWT | Reseñas de los demás usuarios, la más reciente primero. `?page=1&pageSize=10` (máx. 30). Devuelve `{ items, page, hasMore }`; cada item trae `review`, `userScore`, `status`, `date` y `user { id, name, avatar }`. |
 
 Las rutas de `/library` requieren la cabecera `Authorization: Bearer <token>`.
@@ -465,7 +490,8 @@ Las rutas de `/library` requieren la cabecera `Authorization: Bearer <token>`.
 
 ## Modelo de datos
 
-Definido en `database/init/01-schema.sql` (MySQL 8, `utf8mb4`).
+Definido en `database/init/01-schema.sql` y las migraciones de `backend/migrations/`
+(MySQL 8, `utf8mb4`).
 
 ### Tabla `users`
 
@@ -498,6 +524,21 @@ Definido en `database/init/01-schema.sql` (MySQL 8, `utf8mb4`).
 
 Restricciones: `UNIQUE (user_id, game_id)` y `CHECK (user_score BETWEEN 0 AND 5)`.
 
+### Tabla `game_translations` (migración `004`)
+
+Caché de sinopsis traducidas. Clave primaria `(game_id, lang)`.
+
+| Columna | Tipo | Notas |
+| --- | --- | --- |
+| `game_id` | INT | Id del juego en RAWG. |
+| `lang` | VARCHAR(8) | Idioma destino (`es`). |
+| `source_hash` | CHAR(64) | SHA-256 del texto original (detecta si RAWG lo cambió). |
+| `source_lang` | VARCHAR(8) NULL | Idioma detectado por DeepL (ej. `EN`). |
+| `original_text` | MEDIUMTEXT | Descripción de RAWG que se tradujo. |
+| `translated_text` | MEDIUMTEXT | Traducción. |
+| `provider` | VARCHAR(20) | `deepl`. |
+| `created_at` / `updated_at` | TIMESTAMP | Fechas de creación y actualización. |
+
 ---
 
 ## Cumplimiento de la rúbrica del Avance 2
@@ -528,9 +569,6 @@ Las ramas se integran a `develop` con `git merge --no-ff` para conservar el hist
 
 ## Trabajo futuro
 
-- **Traducir al español las descripciones de los juegos.** Hoy se muestran en su idioma
-  original (RAWG las entrega en inglés). Se planea traducirlas **en el backend** y guardar la
-  traducción en caché en la base de datos, para no depender de un servicio externo en cada petición.
 - Mejoras menores: más datos en el detalle, filtros por género/plataforma, mejoras de UI y
   accesibilidad, y pruebas automatizadas.
 

@@ -44,7 +44,8 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   RecentSearches, CategoryButton, FormInput, EmptyState, ErrorState, GameCard, Rating, StatusChips,
   Avatar (foto o iniciales), ReviewCard (reseña de otro usuario), ReminderSheet (opciones de
   recordatorio), DateTimePickerModal (fecha/hora: diálogos en Android, modal en iOS),
-  ErrorBoundary (pantalla de reintento global), OfflineBanner (aviso de red).
+  ErrorBoundary (pantalla de reintento global), OfflineBanner (aviso de red), Synopsis
+  (sinopsis con etiqueta de traducción, "Ver original" y "Ver más").
 - `context/` — `AuthContext.js` (sesión, token, login/register/logout, restaura con `/auth/me`);
   `LibraryContext.js` (biblioteca del usuario con cambios optimistas).
 - `hooks/` — `useAuth`, `useLibrary` (consumen contextos), `useGames` (catálogo RAWG con
@@ -55,13 +56,14 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   RAWG), `useGameReviews` (reseñas de la comunidad paginadas), `useNotificationPermission`,
   `useGameReminder` (recordatorio de un juego), `useDailyReminder` (diario, por usuario),
   `useNotificationBridge` (tocar notificación → navegar; restaura el diario al iniciar sesión),
-  `useNetworkStatus` (NetInfo), `useDebounce`, `useGridColumns` (2/3/4 columnas y
+  `useNetworkStatus` (NetInfo), `useGameDescription` (sinopsis traducida con respaldo a RAWG),
+  `useDebounce`, `useGridColumns` (2/3/4 columnas y
   `GRID_PERFORMANCE_PROPS` para las FlatList).
 - `navigation/` — `AppNavigator.js`: Stack según sesión; Tabs Catálogo/Favoritos/Perfil +
   `GameDetail` + `Reminders`; `navigationRef` para navegar desde notificaciones.
 - `screens/` — Login, Register, GameCatalog, GameDetail, Favorites, Profile, Reminders.
 - `services/` — `apiClient.js` (fetch al backend, timeout 10 s, Bearer, aviso de 401),
-  `authApi.js`, `libraryApi.js`, `reviewsApi.js`, `rawgApi.js` (RAWG con `RAWG_API_KEY`; incluye
+  `authApi.js`, `libraryApi.js`, `reviewsApi.js`, `gamesApi.js` (sinopsis traducida), `rawgApi.js` (RAWG con `RAWG_API_KEY`; incluye
   `getRandomGame`), `catalogCache.js` / `catalogCache.web.js` (caché del catálogo: expo-file-system
   en nativo, AsyncStorage en web), `preferences.js` (preferencias en AsyncStorage),
   `notifications.js` / `notifications.web.js` (expo-notifications; en web, misma API sin efecto).
@@ -76,11 +78,15 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   errores), `migrate.js` (runner de migraciones; `npm run migrate`).
 - `config/db.js` — pool mysql2/promise: `DATABASE_URL`/`MYSQL_URL` o variables sueltas
   (`DB_HOST`, `DB_PORT`, `MYSQL_*`), `DB_SSL` opcional; exporta `getConnectionOptions`.
-- `controllers/` — `auth.controller.js`, `library.controller.js`, `reviews.controller.js`.
+- `controllers/` — `auth.controller.js`, `library.controller.js`, `reviews.controller.js`,
+  `descriptions.controller.js` (sinopsis: caché → RAWG → DeepL).
+- `services/` — `rawg.service.js` y `deepl.service.js` (APIs externas con timeout; sus errores
+  llevan `status`/`code` o `reason`).
 - `middleware/` — `auth.middleware.js` (`authRequired`), `error.middleware.js` (404 y errores JSON),
   `requestLogger.middleware.js` (una línea por petición, `req.id` y `X-Request-Id`).
 - `routes/` — `/auth` (register, login, me, PUT/DELETE `me/avatar`), `/library` (GET lista,
-  GET/PUT/DELETE `:gameId`) y `/games` (GET `:gameId/reviews`: reseñas de los demás usuarios).
+  GET/PUT/DELETE `:gameId`) y `/games` (GET `:gameId/reviews`: reseñas de los demás usuarios;
+  GET `:gameId/description`: sinopsis en español).
   El usuario público incluye `avatar` (data URI o null).
 - `utils/validators.js` — validaciones manuales y constantes (`STATUSES`, `REVIEW_MAX_LENGTH`).
 - `utils/logger.js` — `createLogger(ambito)`; nivel con `LOG_LEVEL`; oculta campos sensibles.
@@ -131,6 +137,10 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   `utils/logger.js`; nunca registrar cuerpos, cabeceras, query strings, contraseñas ni tokens.
 - **Errores de render**: `ErrorBoundary` global en `App.js` (envuelve también los contextos);
   "Reintentar" vuelve a montar el árbol.
+- **Sinopsis traducidas**: el backend traduce con DeepL (`target_lang` `ES`) y guarda en
+  `game_translations`; un acierto de caché no llama a RAWG ni a DeepL. Sin traducción (sin
+  clave, cuota, error) devuelve el original con `notice` y no guarda nada. La app nunca
+  muestra la sinopsis vacía por un error: usa `description_raw` de RAWG como respaldo.
 - **Rendimiento**: componentes de listas con `React.memo` y handlers estables (`onPress`
   recibe el elemento); valores de contexto con `useMemo`.
 - **Esquema**: todo cambio de BD va **siempre por migraciones** (`backend/migrations`, archivo
