@@ -1,5 +1,5 @@
 // src/screens/ProfileScreen.js
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Platform,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -19,6 +20,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useAvatarPicker, CAMERA_SUPPORTED } from '../hooks/useAvatarPicker';
 import { confirmAction } from '../utils/confirm';
 import { clearCatalogCache } from '../services/catalogCache';
+import { getShakeEnabled, setShakeEnabled } from '../services/preferences';
+import { SHAKE_SUPPORTED, checkShakeAvailable } from '../hooks/useShakeDetector';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -26,6 +29,34 @@ export default function ProfileScreen() {
   const [cacheMessage, setCacheMessage] = useState(null);
   const avatarPicker = useAvatarPicker();
   const cameraBlocked = avatarPicker.cameraStatus === 'blocked';
+
+  // "Agitar para descubrir": null mientras se comprueba el sensor.
+  const [shakeAvailable, setShakeAvailable] = useState(null);
+  const [shakeEnabled, setShakeEnabledState] = useState(true);
+  const [shakeMessage, setShakeMessage] = useState(null);
+  useEffect(() => {
+    if (!SHAKE_SUPPORTED) return undefined;
+    let active = true;
+    (async () => {
+      const [available, enabled] = await Promise.all([checkShakeAvailable(), getShakeEnabled()]);
+      if (!active) return;
+      setShakeAvailable(available);
+      setShakeEnabledState(enabled);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleToggleShake = async (value) => {
+    setShakeEnabledState(value);
+    setShakeMessage(null);
+    const saved = await setShakeEnabled(value);
+    if (!saved) {
+      setShakeEnabledState(!value);
+      setShakeMessage('No se pudo guardar la preferencia.');
+    }
+  };
 
   // Borra la caché del catálogo y de imágenes; no cierra sesión ni toca preferencias.
   const handleClearCache = async () => {
@@ -138,6 +169,32 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           ) : null}
         </View>
+
+        {/* En web no hay sensor: la opción se oculta (queda el botón "Juego al azar"). */}
+        {SHAKE_SUPPORTED ? (
+          <View style={styles.settingCard}>
+            <View style={styles.settingRow}>
+              <Feather name="smartphone" size={18} color={colors.textPrimary} />
+              <View style={styles.settingTexts}>
+                <Text style={styles.settingTitle}>Agitar para descubrir</Text>
+                <Text style={styles.settingHint}>
+                  {shakeAvailable === false
+                    ? 'Tu dispositivo no tiene acelerómetro disponible.'
+                    : 'Agita el celular en el Catálogo para abrir un juego al azar.'}
+                </Text>
+              </View>
+              <Switch
+                value={shakeAvailable !== false && shakeEnabled}
+                onValueChange={handleToggleShake}
+                disabled={!shakeAvailable}
+                trackColor={{ false: colors.badgeNeutral, true: colors.primary }}
+                thumbColor={colors.textPrimary}
+                accessibilityLabel="Agitar para descubrir"
+              />
+            </View>
+            {shakeMessage ? <Text style={[styles.feedback, styles.feedbackError]}>{shakeMessage}</Text> : null}
+          </View>
+        ) : null}
 
         <View style={styles.cacheBlock}>
           <TouchableOpacity
@@ -252,6 +309,33 @@ const styles = StyleSheet.create({
   email: {
     color: colors.textSecondary,
     fontSize: 13,
+    fontFamily: fonts.body,
+  },
+  settingCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  settingTexts: {
+    flex: 1,
+    gap: 2,
+  },
+  settingTitle: {
+    color: colors.textPrimary,
+    fontSize: 14,
+    fontFamily: fonts.bodySemiBold,
+  },
+  settingHint: {
+    color: colors.textSecondary,
+    fontSize: 12,
     fontFamily: fonts.body,
   },
   cacheBlock: {

@@ -10,6 +10,8 @@ import {
   Keyboard,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import GameCard from '../components/GameCard';
@@ -26,6 +28,9 @@ import { useDebounce } from '../hooks/useDebounce';
 import { useGames } from '../hooks/useGames';
 import { useGridColumns } from '../hooks/useGridColumns';
 import { useRecentSearches } from '../hooks/useRecentSearches';
+import { useShakeDetector } from '../hooks/useShakeDetector';
+import { useRandomGame } from '../hooks/useRandomGame';
+import { getShakeEnabled } from '../services/preferences';
 
 const CATEGORIES = ['Todos', 'Jugando', 'Completado', 'Pendiente', 'Abandonado'];
 
@@ -113,6 +118,34 @@ export default function GameCatalogScreen({ navigation }) {
     [addSearch]
   );
 
+  // Descubrir un juego al azar: agitando el celular o con el botón del encabezado.
+  const { discovering, error: discoverError, discover, clearError } = useRandomGame();
+  const openRandomGame = useCallback(async () => {
+    const gameId = await discover();
+    if (gameId) navigation.navigate('GameDetail', { gameId });
+  }, [discover, navigation]);
+
+  // La preferencia se relee al volver al Catálogo (se cambia en Perfil).
+  const [shakeEnabled, setShakeEnabledState] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      getShakeEnabled().then((value) => {
+        if (active) setShakeEnabledState(value);
+      });
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
+
+  const handleShake = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+    openRandomGame();
+  }, [openRandomGame]);
+
+  useShakeDetector({ enabled: shakeEnabled, onShake: handleShake });
+
   const showRecent = searchFocused && !searchText.trim() && recent.length > 0;
 
   const renderItem = useCallback(
@@ -158,9 +191,19 @@ export default function GameCatalogScreen({ navigation }) {
           </TouchableOpacity>
         }
         right={
-          <TouchableOpacity style={styles.notifBtn}>
-            <Feather name="bell" size={18} color={colors.textPrimary} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.notifBtn}
+              onPress={openRandomGame}
+              disabled={discovering}
+              accessibilityLabel="Abrir un juego al azar"
+            >
+              <Feather name="shuffle" size={18} color={colors.textPrimary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.notifBtn}>
+              <Feather name="bell" size={18} color={colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
         }
       />
 
@@ -195,6 +238,29 @@ export default function GameCatalogScreen({ navigation }) {
           />
         ))}
       </View>
+
+      {/* Juego al azar: buscando o error */}
+      {discovering ? (
+        <View style={[styles.offlineBanner, styles.infoBanner]}>
+          <ActivityIndicator color={colors.info} size="small" />
+          <Text style={[styles.offlineText, styles.infoText]}>Buscando un juego al azar...</Text>
+        </View>
+      ) : discoverError ? (
+        <TouchableOpacity
+          style={styles.offlineBanner}
+          onPress={() => {
+            clearError();
+            openRandomGame();
+          }}
+          activeOpacity={0.8}
+        >
+          <Feather name="alert-triangle" size={14} color={colors.warning} />
+          <Text style={styles.offlineText}>{discoverError} Toca para reintentar.</Text>
+          <TouchableOpacity onPress={clearError} accessibilityLabel="Cerrar aviso" hitSlop={8}>
+            <Feather name="x" size={14} color={colors.warning} />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      ) : null}
 
       {/* Aviso: sin conexión, se muestra el catálogo guardado */}
       {isTodos && offline && !isLoading ? (
@@ -250,6 +316,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   notifBtn: {
     width: 36,
     height: 36,
@@ -299,6 +369,12 @@ const styles = StyleSheet.create({
     color: colors.warning,
     fontSize: 12,
     fontFamily: fonts.bodySemiBold,
+  },
+  infoBanner: {
+    backgroundColor: colors.infoBg,
+  },
+  infoText: {
+    color: colors.info,
   },
   footerSpinner: {
     paddingVertical: 16,

@@ -4,6 +4,7 @@ const cors = require('cors');
 
 const authRoutes = require('./routes/auth.routes');
 const libraryRoutes = require('./routes/library.routes');
+const gamesRoutes = require('./routes/games.routes');
 const { notFound, errorHandler } = require('./middleware/error.middleware');
 
 const app = express();
@@ -19,6 +20,7 @@ app.get('/health', (req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/library', libraryRoutes);
+app.use('/games', gamesRoutes);
 
 // 404 y manejador de errores (siempre JSON).
 app.use(notFound);

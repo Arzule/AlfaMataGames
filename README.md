@@ -33,6 +33,12 @@ reutilizables, además de la documentación del proyecto.
 - Foto de perfil con la cámara o la galería: recorte cuadrado, reducción a 256 px (JPEG) y
   guardado en el backend; se muestra en Perfil y en el encabezado del catálogo (iniciales si no hay).
 - Gestión de permisos con explicación previa, estado bloqueado y acceso a "Abrir ajustes".
+- **Agitar para descubrir**: agitando el celular en el Catálogo se abre un juego al azar (con
+  vibración); también con el botón "Juego al azar" del encabezado (única opción en web).
+  Se puede desactivar en Perfil.
+- Reseñas de la comunidad en el detalle del juego: las de los demás usuarios, la más reciente
+  primero, con "Ver más".
+- El campo de reseña se mantiene visible sobre el teclado.
 
 ---
 
@@ -55,6 +61,8 @@ Versiones tomadas de `package.json` (app), `backend/package.json` y `docker-comp
 | prop-types | ^15.8.1 | Validación de props de los componentes |
 | expo-image-picker | ~57.0.20 | Cámara y galería para la foto de perfil |
 | expo-image-manipulator | ~57.0.21 | Recorte y reducción de la foto a 256 px |
+| expo-sensors | ~57.0.3 | Acelerómetro para "Agitar para descubrir" |
+| expo-haptics | ~57.0.3 | Vibración al detectar la sacudida |
 | expo-font / @expo-google-fonts | ~57.0.4 / ^0.4.2 | Fuentes Sora e Inter |
 | Node.js + Express | Express ^4.21.2 (Node >= 20) | Backend / API REST |
 | MySQL | 8.0 (`mysql:8.0`) | Base de datos |
@@ -132,19 +140,22 @@ AlfaMataGames/
 │       ├── migrate.js          # Runner de migraciones (npm run migrate)
 │       ├── app.js              # Express: middlewares, /health y rutas
 │       ├── config/db.js        # Pool MySQL (mysql2): URL única o variables sueltas, SSL opcional
-│       ├── controllers/        # auth.controller.js, library.controller.js
+│       ├── controllers/        # auth.controller.js, library.controller.js, reviews.controller.js
 │       ├── middleware/         # auth.middleware.js, error.middleware.js
-│       ├── routes/             # auth.routes.js, library.routes.js
+│       ├── routes/             # auth.routes.js, library.routes.js, games.routes.js
 │       └── utils/validators.js # Validaciones y constantes
 └── src/
     ├── components/             # Header, SearchBar, RecentSearches, CategoryButton, FormInput,
-    │                           #   EmptyState, ErrorState, GameCard, Rating, StatusChips, Avatar
+    │                           #   EmptyState, ErrorState, GameCard, Rating, StatusChips, Avatar,
+    │                           #   ReviewCard
     ├── context/                # AuthContext.js, LibraryContext.js
     ├── hooks/                  # useAuth, useLibrary, useGames, useRecentSearches, useDebounce,
-    │                           #   useGridColumns, usePermission, useAvatarPicker
+    │                           #   useGridColumns, usePermission, useAvatarPicker,
+    │                           #   useShakeDetector, useRandomGame, useGameReviews
     ├── navigation/             # AppNavigator.js (Stack + Tab)
     ├── screens/                # Login, Register, GameCatalog, GameDetail, Favorites, Profile
-    ├── services/               # apiClient, authApi, libraryApi, rawgApi, catalogCache (.web)
+    ├── services/               # apiClient, authApi, libraryApi, reviewsApi, rawgApi,
+    │                           #   catalogCache (.web), preferences
     ├── theme/                  # colors.js, typography.js
     └── utils/                  # storage.js, confirm.js, mapGame.js, cacheEntry.js, avatarImage.js
 ```
@@ -313,6 +324,9 @@ Creadas por `database/init/02-seed.sql`:
 - La app **no pide ubicación** ni micrófono (`microphonePermission: false` en `app.json`).
 - En **web** no hay opción de cámara; "Galería" abre el selector de archivos del navegador.
 - Textos de uso de los permisos: plugin `expo-image-picker` en `app.json`.
+- El **acelerómetro** no necesita permiso en Android/iOS. Solo se lee con el Catálogo en
+  pantalla y la app en primer plano; al salir se desuscribe. En web no se usa (la opción de
+  Perfil se oculta y queda el botón "Juego al azar").
 
 ---
 
@@ -371,6 +385,7 @@ Tabla generada a partir de `backend/src/routes/`.
 | GET | `/library/:gameId` | Bearer JWT | Devuelve `{ entry }` de un juego (o `null`). |
 | PUT | `/library/:gameId` | Bearer JWT | Crea o actualiza (upsert parcial) la entrada. |
 | DELETE | `/library/:gameId` | Bearer JWT | Elimina la entrada de un juego (204). |
+| GET | `/games/:gameId/reviews` | Bearer JWT | Reseñas de los demás usuarios, la más reciente primero. `?page=1&pageSize=10` (máx. 30). Devuelve `{ items, page, hasMore }`; cada item trae `review`, `userScore`, `status`, `date` y `user { id, name, avatar }`. |
 
 Las rutas de `/library` requieren la cabecera `Authorization: Bearer <token>`.
 
@@ -405,6 +420,7 @@ Definido en `database/init/01-schema.sql` (MySQL 8, `utf8mb4`).
 | `status` | ENUM(...) NULL | `Jugando`, `Completado`, `Pendiente`, `Abandonado`. |
 | `user_score` | TINYINT NULL | 0-5 (con `CHECK`). |
 | `review` | TEXT NULL | Reseña del usuario. |
+| `review_updated_at` | TIMESTAMP NULL | Última edición del texto de la reseña (orden de las reseñas de la comunidad). |
 | `created_at` | TIMESTAMP | Por defecto `CURRENT_TIMESTAMP`. |
 | `updated_at` | TIMESTAMP | Con `ON UPDATE CURRENT_TIMESTAMP`. |
 

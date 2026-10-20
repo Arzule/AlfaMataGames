@@ -1,5 +1,5 @@
 // src/screens/GameDetailScreen.js
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,9 @@ import {
   TextInput,
   StyleSheet,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Keyboard,
+  Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -18,6 +21,11 @@ import { useLibrary } from '../hooks/useLibrary';
 import Rating from '../components/Rating';
 import StatusChips from '../components/StatusChips';
 import ErrorState from '../components/ErrorState';
+import ReviewCard from '../components/ReviewCard';
+import { useGameReviews } from '../hooks/useGameReviews';
+
+// Margen sobre la reseña al desplazarla para que quede a la vista con el teclado abierto.
+const REVIEW_SCROLL_MARGIN = 16;
 
 export default function GameDetailScreen({ route, navigation }) {
   const { gameId } = route.params;
@@ -38,6 +46,53 @@ export default function GameDetailScreen({ route, navigation }) {
   useEffect(() => {
     setReviewText(savedReview);
   }, [savedReview]);
+
+  const community = useGameReviews(gameId);
+
+  // Teclado: la reseña se desplaza a la vista y el pie se oculta para dar espacio.
+  const scrollRef = useRef(null);
+  const contentRef = useRef(null);
+  const reviewRowRef = useRef(null);
+  const reviewFocusedRef = useRef(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  const scrollToReview = useCallback(() => {
+    // Espera a que KeyboardAvoidingView aplique su espacio antes de medir.
+    setTimeout(() => {
+      if (!reviewRowRef.current || !contentRef.current) return;
+      reviewRowRef.current.measureLayout(
+        contentRef.current,
+        (x, y) => {
+          scrollRef.current?.scrollTo({
+            y: Math.max(0, y - REVIEW_SCROLL_MARGIN),
+            animated: true,
+          });
+        },
+        () => {}
+      );
+    }, 150);
+  }, []);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+      if (reviewFocusedRef.current) scrollToReview();
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [scrollToReview]);
+
+  const handleReviewFocus = () => {
+    reviewFocusedRef.current = true;
+    // Si el teclado ya estaba abierto no llega un nuevo keyboardDidShow.
+    if (keyboardVisible) scrollToReview();
+  };
+  const handleReviewBlur = () => {
+    reviewFocusedRef.current = false;
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -109,140 +164,195 @@ export default function GameDetailScreen({ route, navigation }) {
     runSave('review', { review: reviewText.trim() ? reviewText.trim() : null });
 
   return (
-    <View style={styles.flex}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Hero */}
-        <View style={styles.heroBlock}>
-          <Image
-            source={game.background_image ? { uri: game.background_image } : null}
-            style={styles.heroImage}
-            contentFit="cover"
-            transition={200}
-          />
-          <View style={styles.heroOverlay} />
-          <View style={styles.heroActions}>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
-              <Feather name="arrow-left" size={16} color={colors.textPrimary} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Meta */}
-        <View style={styles.metaSection}>
-          <View style={styles.tagsRow}>
-            <View style={styles.yearBadge}>
-              <Text style={styles.yearText}>{year}</Text>
-            </View>
-          </View>
-
-          <Text style={styles.title}>{game.name}</Text>
-          <Text style={styles.developer}>{developer}</Text>
-
-          <View style={styles.ratingSection}>
-            <Text style={styles.ratingLabel}>VALORACIÓN</Text>
-            <View style={styles.starsRow}>
-              <Feather name="star" size={16} color={colors.warning} />
-              <Text style={styles.ratingValue}>{game.rating?.toFixed(1) ?? '0.0'}</Text>
-            </View>
-          </View>
-
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Feather name="monitor" size={14} color={colors.textSecondary} />
-              <Text style={styles.statLabel}>PLATAFORMAS</Text>
-              <Text style={styles.statValue} numberOfLines={2}>
-                {platforms}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.synopsisBlock}>
-            <Text style={styles.sectionTitle}>SINOPSIS</Text>
-            <Text style={styles.synopsisText} numberOfLines={6}>
-              {game.description_raw ?? 'Sin descripción disponible.'}
-            </Text>
-          </View>
-
-          {/* Mi biblioteca */}
-          <View style={styles.libraryBlock}>
-            <Text style={styles.sectionTitle}>MI BIBLIOTECA</Text>
-
-            <View style={styles.libraryRow}>
-              <Text style={styles.fieldLabel}>Estado</Text>
-              <StatusChips
-                value={entry?.status ?? null}
-                onChange={canEdit ? handleStatusChange : undefined}
-              />
-            </View>
-
-            <View style={styles.libraryRow}>
-              <Text style={styles.fieldLabel}>Tu puntuación</Text>
-              <Rating
-                value={entry?.userScore ?? null}
-                onChange={canEdit ? handleScoreChange : undefined}
-                readOnly={!canEdit}
-              />
-            </View>
-
-            <View style={styles.libraryRow}>
-              <Text style={styles.fieldLabel}>Tu reseña</Text>
-              <TextInput
-                style={styles.reviewInput}
-                placeholder="Escribe tu reseña..."
-                placeholderTextColor={colors.textMuted}
-                value={reviewText}
-                onChangeText={setReviewText}
-                multiline
-                maxLength={500}
-                editable={!libraryLoading}
-              />
-              <TouchableOpacity
-                style={[styles.reviewBtn, (libraryLoading || busy) && styles.btnDisabled]}
-                onPress={handleSaveReview}
-                disabled={libraryLoading || busy}
-              >
-                {saving === 'review' ? (
-                  <ActivityIndicator color={colors.textPrimary} size="small" />
-                ) : (
-                  <Text style={styles.reviewBtnText}>Guardar reseña</Text>
-                )}
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'web' ? undefined : 'padding'}
+    >
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View ref={contentRef} collapsable={false}>
+          {/* Hero */}
+          <View style={styles.heroBlock}>
+            <Image
+              source={game.background_image ? { uri: game.background_image } : null}
+              style={styles.heroImage}
+              contentFit="cover"
+              transition={200}
+            />
+            <View style={styles.heroOverlay} />
+            <View style={styles.heroActions}>
+              <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
+                <Feather name="arrow-left" size={16} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
+          </View>
 
-            {libraryLoading ? (
-              <Text style={styles.hintText}>Cargando tu biblioteca...</Text>
-            ) : null}
-            {saveError ? <Text style={styles.saveErrorText}>{saveError}</Text> : null}
+          {/* Meta */}
+          <View style={styles.metaSection}>
+            <View style={styles.tagsRow}>
+              <View style={styles.yearBadge}>
+                <Text style={styles.yearText}>{year}</Text>
+              </View>
+            </View>
+
+            <Text style={styles.title}>{game.name}</Text>
+            <Text style={styles.developer}>{developer}</Text>
+
+            <View style={styles.ratingSection}>
+              <Text style={styles.ratingLabel}>VALORACIÓN</Text>
+              <View style={styles.starsRow}>
+                <Feather name="star" size={16} color={colors.warning} />
+                <Text style={styles.ratingValue}>{game.rating?.toFixed(1) ?? '0.0'}</Text>
+              </View>
+            </View>
+
+            <View style={styles.statsRow}>
+              <View style={styles.statBox}>
+                <Feather name="monitor" size={14} color={colors.textSecondary} />
+                <Text style={styles.statLabel}>PLATAFORMAS</Text>
+                <Text style={styles.statValue} numberOfLines={2}>
+                  {platforms}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.synopsisBlock}>
+              <Text style={styles.sectionTitle}>SINOPSIS</Text>
+              <Text style={styles.synopsisText} numberOfLines={6}>
+                {game.description_raw ?? 'Sin descripción disponible.'}
+              </Text>
+            </View>
+
+            {/* Mi biblioteca */}
+            <View style={styles.libraryBlock}>
+              <Text style={styles.sectionTitle}>MI BIBLIOTECA</Text>
+
+              <View style={styles.libraryRow}>
+                <Text style={styles.fieldLabel}>Estado</Text>
+                <StatusChips
+                  value={entry?.status ?? null}
+                  onChange={canEdit ? handleStatusChange : undefined}
+                />
+              </View>
+
+              <View style={styles.libraryRow}>
+                <Text style={styles.fieldLabel}>Tu puntuación</Text>
+                <Rating
+                  value={entry?.userScore ?? null}
+                  onChange={canEdit ? handleScoreChange : undefined}
+                  readOnly={!canEdit}
+                />
+              </View>
+
+              <View ref={reviewRowRef} collapsable={false} style={styles.libraryRow}>
+                <Text style={styles.fieldLabel}>Tu reseña</Text>
+                <TextInput
+                  style={styles.reviewInput}
+                  placeholder="Escribe tu reseña..."
+                  placeholderTextColor={colors.textMuted}
+                  value={reviewText}
+                  onChangeText={setReviewText}
+                  onFocus={handleReviewFocus}
+                  onBlur={handleReviewBlur}
+                  multiline
+                  maxLength={500}
+                  editable={!libraryLoading}
+                />
+                <TouchableOpacity
+                  style={[styles.reviewBtn, (libraryLoading || busy) && styles.btnDisabled]}
+                  onPress={handleSaveReview}
+                  disabled={libraryLoading || busy}
+                >
+                  {saving === 'review' ? (
+                    <ActivityIndicator color={colors.textPrimary} size="small" />
+                  ) : (
+                    <Text style={styles.reviewBtnText}>Guardar reseña</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {libraryLoading ? (
+                <Text style={styles.hintText}>Cargando tu biblioteca...</Text>
+              ) : null}
+              {saveError ? <Text style={styles.saveErrorText}>{saveError}</Text> : null}
+            </View>
+
+            {/* Reseñas de otros usuarios, la más reciente primero */}
+            <View style={styles.communityBlock}>
+              <Text style={styles.sectionTitle}>RESEÑAS DE LA COMUNIDAD</Text>
+
+              {community.loading ? (
+                <ActivityIndicator color={colors.primary} style={styles.communitySpinner} />
+              ) : community.error && !community.reviews.length ? (
+                <View style={styles.communityMessage}>
+                  <Text style={styles.hintText}>{community.error}</Text>
+                  <TouchableOpacity onPress={community.reload}>
+                    <Text style={styles.linkText}>Reintentar</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : !community.reviews.length ? (
+                <Text style={styles.hintText}>
+                  Nadie más ha reseñado este juego todavía.
+                </Text>
+              ) : (
+                <>
+                  {community.reviews.map((review) => (
+                    <ReviewCard key={review.id} review={review} />
+                  ))}
+                  {community.error ? (
+                    <Text style={styles.saveErrorText}>{community.error}</Text>
+                  ) : null}
+                  {community.hasMore ? (
+                    <TouchableOpacity
+                      style={styles.moreBtn}
+                      onPress={community.loadMore}
+                      disabled={community.loadingMore}
+                    >
+                      {community.loadingMore ? (
+                        <ActivityIndicator color={colors.primary} size="small" />
+                      ) : (
+                        <Text style={styles.linkText}>Ver más reseñas</Text>
+                      )}
+                    </TouchableOpacity>
+                  ) : null}
+                </>
+              )}
+            </View>
           </View>
         </View>
       </ScrollView>
 
-      {/* Footer */}
-      <View style={styles.footerBar}>
-        <TouchableOpacity
-          style={[styles.favoriteBtn, (libraryLoading || busy) && styles.btnDisabled]}
-          onPress={handleToggleFavorite}
-          disabled={libraryLoading || busy}
-        >
-          {saving === 'favorite' ? (
-            <ActivityIndicator
-              color={colors.primary}
-              size="small"
-            />
-          ) : (
-            <Feather
-              name="heart"
-              size={20}
-              color={favorite ? colors.primary : colors.textSecondary}
-              fill={favorite ? colors.primary : 'none'}
-            />
-          )}
-          <Text style={styles.favoriteBtnText}>
-            {favorite ? 'En favoritos' : 'Agregar a favoritos'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      {/* Footer (oculto con el teclado abierto para dejar espacio a la reseña) */}
+      {keyboardVisible ? null : (
+        <View style={styles.footerBar}>
+          <TouchableOpacity
+            style={[styles.favoriteBtn, (libraryLoading || busy) && styles.btnDisabled]}
+            onPress={handleToggleFavorite}
+            disabled={libraryLoading || busy}
+          >
+            {saving === 'favorite' ? (
+              <ActivityIndicator
+                color={colors.primary}
+                size="small"
+              />
+            ) : (
+              <Feather
+                name="heart"
+                size={20}
+                color={favorite ? colors.primary : colors.textSecondary}
+                fill={favorite ? colors.primary : 'none'}
+              />
+            )}
+            <Text style={styles.favoriteBtnText}>
+              {favorite ? 'En favoritos' : 'Agregar a favoritos'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </KeyboardAvoidingView>
   );
 }
 
@@ -431,6 +541,28 @@ const styles = StyleSheet.create({
     color: colors.warning,
     fontSize: 12,
     fontFamily: fonts.body,
+  },
+  communityBlock: {
+    gap: 12,
+    paddingBottom: 32,
+  },
+  communitySpinner: {
+    paddingVertical: 16,
+  },
+  communityMessage: {
+    gap: 4,
+  },
+  linkText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontFamily: fonts.bodyBold,
+  },
+  moreBtn: {
+    alignSelf: 'center',
+    minHeight: 44,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   footerBar: {
     flexDirection: 'row',
