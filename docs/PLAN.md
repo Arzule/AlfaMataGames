@@ -8,8 +8,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 ## Estado
 
 - Entregados: Avance 1 y Avance 2.
-- Avance 3: A3-0 a A3-5 terminadas.
-- **Fase actual: A3-6** (Sinopsis traducidas).
+- Avance 3: A3-0 a A3-6 terminadas.
+- **Fase actual: A3-7** (Documentación del Avance 3).
 
 ## Decisiones tomadas
 
@@ -156,15 +156,15 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Terminado cuando:** un error de render muestra la pantalla de reintento, el aviso de red
   aparece y desaparece, y el backend registra cada petición sin tokens ni contraseñas.
 
-### [ ] A3-6 Sinopsis traducidas
+### [x] A3-6 Sinopsis traducidas
 
 - **Objetivo:** sinopsis en español.
 - **Tema del sílabo:** consumo de APIs externas y caché en el backend.
 - **Tareas:**
-  - [ ] Endpoint del backend: obtiene la descripción de RAWG y la traduce con DeepL API Free.
-  - [ ] Migración: tabla de caché de traducciones.
-  - [ ] `DEEPL_API_KEY` y `RAWG_API_KEY` en el backend (`docker-compose.yml`, `.env.example`).
-  - [ ] La app muestra la traducción, con respaldo al original y etiqueta si no hay traducción.
+  - [x] Endpoint del backend: obtiene la descripción de RAWG y la traduce con DeepL API Free.
+  - [x] Migración: tabla de caché de traducciones.
+  - [x] `DEEPL_API_KEY` y `RAWG_API_KEY` en el backend (`docker-compose.yml`, `.env.example`).
+  - [x] La app muestra la traducción, con respaldo al original y etiqueta si no hay traducción.
 - **Terminado cuando:** la segunda consulta de un juego sale de la caché y, sin clave de DeepL,
   la app muestra el texto original con la etiqueta.
 
