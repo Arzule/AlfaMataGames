@@ -39,6 +39,10 @@ reutilizables, además de la documentación del proyecto.
 - Reseñas de la comunidad en el detalle del juego: las de los demás usuarios, la más reciente
   primero, con "Ver más".
 - El campo de reseña se mantiene visible sobre el teclado.
+- **Recordatorios (notificaciones locales)**: "Recordarme jugar esto" en el detalle (en 1 hora,
+  mañana, en una semana o fecha y hora a elección), recordatorio diario configurable en Perfil,
+  pantalla de recordatorios activos (campana del Catálogo) con opción de cancelar. Tocar la
+  notificación abre el juego. Al cerrar sesión se cancelan todos.
 
 ---
 
@@ -63,6 +67,8 @@ Versiones tomadas de `package.json` (app), `backend/package.json` y `docker-comp
 | expo-image-manipulator | ~57.0.21 | Recorte y reducción de la foto a 256 px |
 | expo-sensors | ~57.0.3 | Acelerómetro para "Agitar para descubrir" |
 | expo-haptics | ~57.0.3 | Vibración al detectar la sacudida |
+| expo-notifications | ~57.0.23 | Recordatorios con notificaciones locales |
+| @react-native-community/datetimepicker | 9.1.0 | Selector de fecha y hora del recordatorio |
 | expo-font / @expo-google-fonts | ~57.0.4 / ^0.4.2 | Fuentes Sora e Inter |
 | Node.js + Express | Express ^4.21.2 (Node >= 20) | Backend / API REST |
 | MySQL | 8.0 (`mysql:8.0`) | Base de datos |
@@ -147,17 +153,20 @@ AlfaMataGames/
 └── src/
     ├── components/             # Header, SearchBar, RecentSearches, CategoryButton, FormInput,
     │                           #   EmptyState, ErrorState, GameCard, Rating, StatusChips, Avatar,
-    │                           #   ReviewCard
+    │                           #   ReviewCard, ReminderSheet, DateTimePickerModal
     ├── context/                # AuthContext.js, LibraryContext.js
     ├── hooks/                  # useAuth, useLibrary, useGames, useRecentSearches, useDebounce,
     │                           #   useGridColumns, usePermission, useAvatarPicker,
-    │                           #   useShakeDetector, useRandomGame, useGameReviews
+    │                           #   useShakeDetector, useRandomGame, useGameReviews, useNotificationPermission,
+    │                           #   useGameReminder, useDailyReminder, useNotificationBridge
     ├── navigation/             # AppNavigator.js (Stack + Tab)
-    ├── screens/                # Login, Register, GameCatalog, GameDetail, Favorites, Profile
+    ├── screens/                # Login, Register, GameCatalog, GameDetail, Favorites, Profile,
+    │                           #   Reminders
     ├── services/               # apiClient, authApi, libraryApi, reviewsApi, rawgApi,
-    │                           #   catalogCache (.web), preferences
+    │                           #   catalogCache (.web), preferences, notifications (.web)
     ├── theme/                  # colors.js, typography.js
-    └── utils/                  # storage.js, confirm.js, mapGame.js, cacheEntry.js, avatarImage.js
+    └── utils/                  # storage.js, confirm.js, mapGame.js, cacheEntry.js, avatarImage.js,
+                                #   dateFormat.js
 ```
 
 ---
@@ -318,6 +327,7 @@ Creadas por `database/init/02-seed.sql`:
 | --- | --- | --- |
 | Cámara | Tomar la foto de perfil | Al tocar "Cámara" en Perfil, después de una explicación |
 | Fotos | — | No se pide: la galería usa el selector del sistema |
+| Notificaciones | Recordatorios para jugar | Al programar el primer recordatorio o activar el diario, después de una explicación |
 
 - Si el permiso se niega, se puede volver a intentar; si queda **bloqueado** (el sistema ya no
   pregunta), la app lo indica y ofrece **Abrir ajustes**. Al volver, el estado se actualiza solo.
@@ -345,6 +355,20 @@ En **Android** (Ajustes → Aplicaciones → la app → Almacenamiento):
 - **Borrar almacenamiento** elimina todo: sesión, búsquedas recientes y caché.
 
 En Expo Go esto aplica a la app Expo Go completa, no solo a AlfaMataGames.
+
+---
+
+## Notificaciones
+
+- Son **locales** (programadas en el propio celular) y funcionan en **Expo Go**. Las push
+  remotas llegan en el Avance 4 y se prueban con el APK.
+- En Expo Go aparecen dos avisos amarillos de `expo-notifications` sobre las push remotas;
+  son esperables y no afectan a las locales.
+- Un recordatorio por juego (programar otro lo reemplaza) y un recordatorio diario por usuario
+  (preferencia en AsyncStorage). Al cerrar sesión se cancelan todos; el diario se vuelve a
+  programar al iniciar sesión si estaba activado.
+- Android puede retrasar unos minutos un recordatorio por el ahorro de batería.
+- En **web** no hay notificaciones: la app lo indica y oculta las opciones.
 
 ---
 

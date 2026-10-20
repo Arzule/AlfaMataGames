@@ -8,8 +8,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 ## Estado
 
 - Entregados: Avance 1 y Avance 2.
-- Avance 3: A3-0, A3-1, A3-2 y A3-3 terminadas.
-- **Fase actual: A3-4** (Notificaciones locales).
+- Avance 3: A3-0 a A3-4 terminadas.
+- **Fase actual: A3-5** (Errores, logging y rendimiento).
 
 ## Decisiones tomadas
 
@@ -128,16 +128,16 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   visibles al usuario, sin cierres inesperados: sensor no disponible (por ejemplo en web) o
   fallo al obtener el juego aleatorio.
 
-### [ ] A3-4 Notificaciones locales
+### [x] A3-4 Notificaciones locales
 
 - **Objetivo:** recordatorios para jugar.
 - **Tema del sílabo:** notificaciones.
 - **Tareas:**
-  - [ ] "Recordarme jugar esto" en el detalle: en 1 hora, mañana, en una semana, o fecha y hora.
-  - [ ] Recordatorio diario configurable en Perfil.
-  - [ ] Tocar la notificación abre el detalle del juego.
-  - [ ] Lista de recordatorios activos con opción de cancelar.
-  - [ ] Preferencias en AsyncStorage; cancelar todo al cerrar sesión.
+  - [x] "Recordarme jugar esto" en el detalle: en 1 hora, mañana, en una semana, o fecha y hora.
+  - [x] Recordatorio diario configurable en Perfil.
+  - [x] Tocar la notificación abre el detalle del juego.
+  - [x] Lista de recordatorios activos con opción de cancelar (campana del Catálogo).
+  - [x] Preferencias en AsyncStorage; cancelar todo al cerrar sesión.
 - **Terminado cuando:** llegan en Expo Go, abren el juego correcto, se pueden cancelar y no
   queda ninguna programada tras el logout. Errores visibles al usuario, sin cierres
   inesperados: permiso de notificaciones negado o bloqueado (con "Abrir ajustes"), fecha
