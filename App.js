@@ -2,12 +2,14 @@
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { Sora_600SemiBold, Sora_700Bold, Sora_800ExtraBold } from '@expo-google-fonts/sora';
 import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { AuthProvider } from './src/context/AuthContext';
 import { LibraryProvider } from './src/context/LibraryContext';
 import AppNavigator from './src/navigation/AppNavigator';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import { colors } from './src/theme/colors';
 import { cleanExpiredCache } from './src/services/catalogCache';
 import { configureNotifications } from './src/services/notifications';
@@ -40,17 +42,29 @@ export default function App() {
     );
   }
 
+  // ErrorBoundary envuelve también a los contextos: un error de render en cualquier
+  // parte muestra la pantalla de reintento en lugar de cerrar la app.
   return (
-    <AuthProvider>
-      <LibraryProvider>
-        <StatusBar style="light" />
-        <AppNavigator />
-      </LibraryProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <StatusBar style="light" />
+      <ErrorBoundary>
+        <AuthProvider>
+          <LibraryProvider>
+            <View style={styles.root}>
+              <AppNavigator />
+            </View>
+          </LibraryProvider>
+        </AuthProvider>
+      </ErrorBoundary>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   loading: {
     flex: 1,
     backgroundColor: colors.background,
