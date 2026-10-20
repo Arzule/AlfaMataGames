@@ -136,6 +136,10 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 - **`database/init` solo corre con el volumen vacío**; `docker compose down -v` borra los datos.
 - **Expo Go en Android no soporta push remotas**: se prueban con el APK; en Expo Go solo
   funcionan las notificaciones locales.
+- **"Cannot find native module 'ExpoTopicSubscriptionModule'"** en Expo Go Android: lo evita
+  `metro.config.js` (sustituye ese módulo por `src/shims/TopicSubscriptionModule.android.js`).
+  No borrar el shim ni el `resolveRequest`; al actualizar expo-notifications, revisar si sigue
+  haciendo falta.
 - "Respuesta inesperada del servidor" suele indicar un `API_URL` incorrecto.
 
 ## Reglas de trabajo para el agente
