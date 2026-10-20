@@ -8,8 +8,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 ## Estado
 
 - Entregados: Avance 1 y Avance 2.
-- Avance 3: A3-0 a A3-4 terminadas.
-- **Fase actual: A3-5** (Errores, logging y rendimiento).
+- Avance 3: A3-0 a A3-5 terminadas.
+- **Fase actual: A3-6** (Sinopsis traducidas).
 
 ## Decisiones tomadas
 
@@ -143,16 +143,16 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   inesperados: permiso de notificaciones negado o bloqueado (con "Abrir ajustes"), fecha
   pasada o fallo al programar una notificación, y plataforma sin soporte (web).
 
-### [ ] A3-5 Errores, logging y rendimiento
+### [x] A3-5 Errores, logging y rendimiento
 
 - **Objetivo:** app robusta y fluida.
 - **Tema del sílabo:** manejo de errores, logging y rendimiento.
 - **Tareas:**
-  - [ ] ErrorBoundary global con pantalla de error y reintento.
-  - [ ] Aviso de sin conexión (NetInfo).
-  - [ ] Logger central en la app: detallado en desarrollo, mínimo en producción, sin datos sensibles.
-  - [ ] Logging de peticiones en el backend.
-  - [ ] `React.memo` en GameCard, ajustes de FlatList y revisión de re-renders.
+  - [x] ErrorBoundary global con pantalla de error y reintento.
+  - [x] Aviso de sin conexión (NetInfo).
+  - [x] Logger central en la app: detallado en desarrollo, mínimo en producción, sin datos sensibles.
+  - [x] Logging de peticiones en el backend.
+  - [x] `React.memo` en GameCard, ajustes de FlatList y revisión de re-renders.
 - **Terminado cuando:** un error de render muestra la pantalla de reintento, el aviso de red
   aparece y desaparece, y el backend registra cada petición sin tokens ni contraseñas.
 

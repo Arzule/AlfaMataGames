@@ -43,6 +43,14 @@ reutilizables, además de la documentación del proyecto.
   mañana, en una semana o fecha y hora a elección), recordatorio diario configurable en Perfil,
   pantalla de recordatorios activos (campana del Catálogo) con opción de cancelar. Tocar la
   notificación abre el juego. Al cerrar sesión se cancelan todos.
+- **Robustez**: pantalla "Algo salió mal" con "Reintentar" ante cualquier error de render
+  (ErrorBoundary global) y aviso en la parte inferior cuando no hay conexión, que pasa a
+  "Conexión restablecida" al volver la red.
+- **Logging**: logger central en la app (detallado en desarrollo, solo advertencias y errores en
+  producción, sin datos sensibles) y registro de cada petición en el backend con un id
+  (`X-Request-Id`).
+- **Rendimiento**: tarjetas memorizadas (`React.memo`), contextos memorizados y grillas con
+  ajustes de virtualización.
 
 ---
 
@@ -69,6 +77,7 @@ Versiones tomadas de `package.json` (app), `backend/package.json` y `docker-comp
 | expo-haptics | ~57.0.3 | Vibración al detectar la sacudida |
 | expo-notifications | ~57.0.23 | Recordatorios con notificaciones locales |
 | @react-native-community/datetimepicker | 9.1.0 | Selector de fecha y hora del recordatorio |
+| @react-native-community/netinfo | 12.0.1 | Aviso de sin conexión |
 | expo-font / @expo-google-fonts | ~57.0.4 / ^0.4.2 | Fuentes Sora e Inter |
 | Node.js + Express | Express ^4.21.2 (Node >= 20) | Backend / API REST |
 | MySQL | 8.0 (`mysql:8.0`) | Base de datos |
@@ -126,6 +135,7 @@ AlfaMataGames/
 ├── index.js                    # Punto de entrada de Expo (registerRootComponent)
 ├── app.json                    # Configuración de Expo (name, slug, icon, plugins)
 ├── babel.config.js             # Preset de Expo + plugin react-native-dotenv (@env)
+├── metro.config.js             # Config. de Metro: shim de expo-notifications para Expo Go Android
 ├── package.json                # Dependencias y scripts de la app
 ├── docker-compose.yml          # Servicios db, backend y adminer
 ├── .env.example                # Plantilla de variables de entorno (sin valores reales)
@@ -147,26 +157,29 @@ AlfaMataGames/
 │       ├── app.js              # Express: middlewares, /health y rutas
 │       ├── config/db.js        # Pool MySQL (mysql2): URL única o variables sueltas, SSL opcional
 │       ├── controllers/        # auth.controller.js, library.controller.js, reviews.controller.js
-│       ├── middleware/         # auth.middleware.js, error.middleware.js
+│       ├── middleware/         # auth, error y requestLogger (registro de cada petición)
 │       ├── routes/             # auth.routes.js, library.routes.js, games.routes.js
-│       └── utils/validators.js # Validaciones y constantes
+│       └── utils/              # validators.js (validaciones y constantes), logger.js
 └── src/
     ├── components/             # Header, SearchBar, RecentSearches, CategoryButton, FormInput,
     │                           #   EmptyState, ErrorState, GameCard, Rating, StatusChips, Avatar,
-    │                           #   ReviewCard, ReminderSheet, DateTimePickerModal
+    │                           #   ReviewCard, ReminderSheet, DateTimePickerModal, ErrorBoundary,
+    │                           #   OfflineBanner
     ├── context/                # AuthContext.js, LibraryContext.js
     ├── hooks/                  # useAuth, useLibrary, useGames, useRecentSearches, useDebounce,
     │                           #   useGridColumns, usePermission, useAvatarPicker,
     │                           #   useShakeDetector, useRandomGame, useGameReviews, useNotificationPermission,
-    │                           #   useGameReminder, useDailyReminder, useNotificationBridge
+    │                           #   useGameReminder, useDailyReminder, useNotificationBridge,
+    │                           #   useNetworkStatus
     ├── navigation/             # AppNavigator.js (Stack + Tab)
     ├── screens/                # Login, Register, GameCatalog, GameDetail, Favorites, Profile,
     │                           #   Reminders
     ├── services/               # apiClient, authApi, libraryApi, reviewsApi, rawgApi,
     │                           #   catalogCache (.web), preferences, notifications (.web)
+    ├── shims/                  # TopicSubscriptionModule.android.js (ver metro.config.js)
     ├── theme/                  # colors.js, typography.js
     └── utils/                  # storage.js, confirm.js, mapGame.js, cacheEntry.js, avatarImage.js,
-                                #   dateFormat.js
+                                #   dateFormat.js, logger.js
 ```
 
 ---
@@ -221,6 +234,7 @@ cp .env.example .env
 | `JWT_SECRET` | Clave secreta para firmar los tokens JWT. |
 | `JWT_EXPIRES_IN` | Duración del token (ej. `7d`). |
 | `BACKEND_PORT` | Puerto del host para el backend. Por defecto `3000`. |
+| `LOG_LEVEL` | Opcional. Nivel mínimo de los logs del backend: `debug`, `info` (por defecto), `warn` o `error`. |
 
 Notas importantes:
 
@@ -373,6 +387,36 @@ En Expo Go esto aplica a la app Expo Go completa, no solo a AlfaMataGames.
   programar al iniciar sesión si estaba activado.
 - Android puede retrasar unos minutos un recordatorio por el ahorro de batería.
 - En **web** no hay notificaciones: la app lo indica y oculta las opciones.
+
+---
+
+## Errores, logging y rendimiento
+
+- **ErrorBoundary** (`src/components/ErrorBoundary.js`) envuelve toda la app: un error de
+  render muestra "Algo salió mal" con "Reintentar", que vuelve a montar la app (la sesión se
+  restaura sola). En desarrollo muestra el mensaje del error y Perfil tiene el botón "Simular
+  error (solo desarrollo)" para probarlo. Los errores de red y de acciones se siguen mostrando
+  en cada pantalla.
+- **Sin conexión** (`OfflineBanner` + `useNetworkStatus`, con NetInfo): franja inferior en toda
+  la app. En nativo cuenta como sin red estar desconectado o conectado sin internet; en web solo
+  se usa el estado del navegador.
+- **Logger de la app** (`src/utils/logger.js`): `createLogger('ambito')` con `debug`, `info`,
+  `warn` y `error`. En desarrollo registra todo con detalles; en producción solo `warn` y
+  `error`, sin el contexto. Siempre oculta contraseñas, tokens, claves (`?key=` de RAWG,
+  `Bearer ...`) y fotos en base64. Nunca usar `console.*` directamente.
+- **Logs del backend**: una línea por petición con método, ruta (sin query string), status,
+  duración, id y usuario; nunca cuerpos ni cabeceras. Las respuestas llevan `X-Request-Id`
+  con el mismo id. Los errores 500 registran la traza y responden un mensaje genérico (no
+  exponen detalles internos como el SQL). `/health` y los preflight de CORS solo aparecen con
+  `LOG_LEVEL=debug`. Ver los logs: `docker logs -f alfamatagames-api`.
+
+  ```
+  2026-10-20T06:46:51.040Z INFO  [http] GET /auth/me 200 6ms id=c9087e15 user=3 bytes=94
+  2026-10-20T06:47:11.344Z ERROR [error] getaddrinfo ENOTFOUND db id=9ebf3801 method=POST path=/auth/login
+  ```
+- **Rendimiento**: `GameCard` y `ReviewCard` con `React.memo` y un handler estable por
+  pantalla; valores de `AuthContext` y `LibraryContext` memorizados; `getEntry` usa un índice
+  por id; las grillas usan `GRID_PERFORMANCE_PROPS` (`useGridColumns.js`).
 
 ---
 
