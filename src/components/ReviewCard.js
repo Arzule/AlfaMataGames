@@ -9,7 +9,8 @@ import Avatar from './Avatar';
 import Rating from './Rating';
 import { formatDate } from '../utils/dateFormat';
 
-export default function ReviewCard({ review }) {
+// Memorizada: escribir la reseña propia en el detalle no vuelve a dibujar las de la comunidad.
+function ReviewCard({ review }) {
   const date = formatDate(review.date);
 
   return (
@@ -30,6 +31,8 @@ export default function ReviewCard({ review }) {
     </View>
   );
 }
+
+export default React.memo(ReviewCard);
 
 ReviewCard.propTypes = {
   review: PropTypes.shape({

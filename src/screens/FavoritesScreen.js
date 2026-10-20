@@ -16,7 +16,7 @@ import Header from '../components/Header';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
 import { useLibrary } from '../hooks/useLibrary';
-import { useGridColumns } from '../hooks/useGridColumns';
+import { useGridColumns, GRID_PERFORMANCE_PROPS } from '../hooks/useGridColumns';
 
 export default function FavoritesScreen({ navigation }) {
   const { items, loading, error, refresh } = useLibrary();
@@ -39,17 +39,20 @@ export default function FavoritesScreen({ navigation }) {
     [items]
   );
 
+  const handleOpenGame = useCallback(
+    (game) => navigation.navigate('GameDetail', { gameId: game.id }),
+    [navigation]
+  );
+
+  const cellStyle = useMemo(() => [styles.cell, { maxWidth: `${100 / columns}%` }], [columns]);
+
   const renderItem = useCallback(
     ({ item }) => (
-      <View style={[styles.cell, { maxWidth: `${100 / columns}%` }]}>
-        <GameCard
-          game={item}
-          status={item.status}
-          onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
-        />
+      <View style={cellStyle}>
+        <GameCard game={item} status={item.status} onPress={handleOpenGame} />
       </View>
     ),
-    [navigation, columns]
+    [cellStyle, handleOpenGame]
   );
 
   const keyExtractor = useCallback((item) => String(item.id), []);
@@ -82,6 +85,7 @@ export default function FavoritesScreen({ navigation }) {
           numColumns={columns}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.gridContent}
+          {...GRID_PERFORMANCE_PROPS}
           refreshControl={
             <RefreshControl
               refreshing={loading}

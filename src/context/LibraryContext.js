@@ -5,6 +5,7 @@ import React, {
   createContext,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -77,10 +78,16 @@ export function LibraryProvider({ children }) {
     await load();
   }, [userId, load]);
 
+  // Índice por gameId: cada tarjeta del catálogo consulta su estado sin recorrer la lista.
+  const entriesById = useMemo(
+    () => new Map(items.map((item) => [item.gameId, item])),
+    [items]
+  );
+
   // Devuelve la entrada guardada de un juego (o undefined).
   const getEntry = useCallback(
-    (gameId) => items.find((item) => item.gameId === Number(gameId)),
-    [items]
+    (gameId) => entriesById.get(Number(gameId)),
+    [entriesById]
   );
 
   // ¿El juego está marcado como favorito?
@@ -179,16 +186,20 @@ export function LibraryProvider({ children }) {
     [removeEntry]
   );
 
-  const value = {
-    items,
-    loading,
-    error,
-    getEntry,
-    isFavorite,
-    saveEntry,
-    removeEntry,
-    refresh,
-  };
+  // Valor memorizado: los consumidores solo se vuelven a dibujar cuando algo cambia.
+  const value = useMemo(
+    () => ({
+      items,
+      loading,
+      error,
+      getEntry,
+      isFavorite,
+      saveEntry,
+      removeEntry,
+      refresh,
+    }),
+    [items, loading, error, getEntry, isFavorite, saveEntry, removeEntry, refresh]
+  );
 
   return <LibraryContext.Provider value={value}>{children}</LibraryContext.Provider>;
 }

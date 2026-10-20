@@ -15,11 +15,17 @@ export const STATUS_STYLES = {
   Abandonado: { bg: colors.badgeNeutral, text: colors.textSecondary },
 };
 
-export default function GameCard({ game, onPress, status = null, platform }) {
+// Memorizada: en las grillas solo se vuelve a dibujar la tarjeta cuyas props cambian.
+// onPress recibe el juego, así la pantalla puede pasar un único handler estable.
+function GameCard({ game, onPress, status = null, platform }) {
   const statusStyle = status ? STATUS_STYLES[status] : null;
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress ? () => onPress(game) : undefined}
+      activeOpacity={0.85}
+    >
       {/* expo-image guarda la portada en caché de disco (cachePolicy por defecto: disk). */}
       <Image
         source={game.image ? { uri: game.image } : null}
@@ -64,6 +70,8 @@ export default function GameCard({ game, onPress, status = null, platform }) {
     </TouchableOpacity>
   );
 }
+
+export default React.memo(GameCard);
 
 GameCard.propTypes = {
   game: PropTypes.shape({
