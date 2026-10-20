@@ -364,6 +364,10 @@ En Expo Go esto aplica a la app Expo Go completa, no solo a AlfaMataGames.
   remotas llegan en el Avance 4 y se prueban con el APK.
 - En Expo Go aparecen dos avisos amarillos de `expo-notifications` sobre las push remotas;
   son esperables y no afectan a las locales.
+- Expo Go en Android no trae el módulo nativo de temas push (`ExpoTopicSubscriptionModule`) y
+  `expo-notifications` fallaba al importarse ("Cannot find native module"). `metro.config.js`
+  lo sustituye en Android por `src/shims/TopicSubscriptionModule.android.js`, que no falla si
+  el módulo falta. La app no usa temas push.
 - Un recordatorio por juego (programar otro lo reemplaza) y un recordatorio diario por usuario
   (preferencia en AsyncStorage). Al cerrar sesión se cancelan todos; el diario se vuelve a
   programar al iniciar sesión si estaba activado.
