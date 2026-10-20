@@ -16,12 +16,15 @@ import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import Header from '../components/Header';
 import Avatar from '../components/Avatar';
+import DateTimePickerModal from '../components/DateTimePickerModal';
 import { useAuth } from '../hooks/useAuth';
 import { useAvatarPicker, CAMERA_SUPPORTED } from '../hooks/useAvatarPicker';
 import { confirmAction } from '../utils/confirm';
 import { clearCatalogCache } from '../services/catalogCache';
 import { getShakeEnabled, setShakeEnabled } from '../services/preferences';
 import { SHAKE_SUPPORTED, checkShakeAvailable } from '../hooks/useShakeDetector';
+import { useDailyReminder } from '../hooks/useDailyReminder';
+import { formatTime } from '../utils/dateFormat';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -47,6 +50,12 @@ export default function ProfileScreen() {
       active = false;
     };
   }, []);
+
+  // Recordatorio diario (notificación local).
+  const daily = useDailyReminder(user?.id);
+  const [timePickerVisible, setTimePickerVisible] = useState(false);
+  const dailyTime = new Date();
+  dailyTime.setHours(daily.pref.hour, daily.pref.minute, 0, 0);
 
   const handleToggleShake = async (value) => {
     setShakeEnabledState(value);
@@ -196,6 +205,73 @@ export default function ProfileScreen() {
           </View>
         ) : null}
 
+        {/* Recordatorio diario */}
+        <View style={styles.settingCard}>
+          <View style={styles.settingRow}>
+            <Feather name="bell" size={18} color={colors.textPrimary} />
+            <View style={styles.settingTexts}>
+              <Text style={styles.settingTitle}>Recordatorio diario</Text>
+              <Text style={styles.settingHint}>
+                {daily.supported
+                  ? 'Una notificación al día para jugar algo de tu biblioteca.'
+                  : 'Las notificaciones están disponibles en la app del celular.'}
+              </Text>
+            </View>
+            {daily.supported ? (
+              <Switch
+                value={daily.pref.enabled}
+                onValueChange={daily.setEnabled}
+                disabled={!daily.loaded || daily.busy}
+                trackColor={{ false: colors.badgeNeutral, true: colors.primary }}
+                thumbColor={colors.textPrimary}
+                accessibilityLabel="Recordatorio diario"
+              />
+            ) : null}
+          </View>
+          {daily.supported && daily.pref.enabled ? (
+            <TouchableOpacity
+              style={styles.timeRow}
+              onPress={() => setTimePickerVisible(true)}
+              disabled={daily.busy}
+            >
+              <Text style={styles.settingHint}>Hora</Text>
+              <Text style={styles.timeValue}>{formatTime(daily.pref.hour, daily.pref.minute)}</Text>
+              <Text style={styles.settingsLinkInline}>Cambiar</Text>
+            </TouchableOpacity>
+          ) : null}
+          {daily.feedback ? (
+            <Text
+              style={[
+                styles.feedback,
+                daily.feedback.type === 'error' && styles.feedbackError,
+                daily.feedback.type === 'success' && styles.feedbackSuccess,
+              ]}
+            >
+              {daily.feedback.text}
+            </Text>
+          ) : null}
+          {daily.supported && daily.permissionStatus === 'blocked' ? (
+            <TouchableOpacity onPress={daily.openSettings}>
+              <Text style={styles.settingsLink}>
+                Notificaciones bloqueadas · Abrir ajustes
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+        {daily.supported ? (
+          <DateTimePickerModal
+            visible={timePickerVisible}
+            mode="time"
+            value={dailyTime}
+            title="Hora del recordatorio"
+            onConfirm={(date) => {
+              setTimePickerVisible(false);
+              daily.setTime(date);
+            }}
+            onCancel={() => setTimePickerVisible(false)}
+          />
+        ) : null}
+
         <View style={styles.cacheBlock}>
           <TouchableOpacity
             style={styles.secondaryBtn}
@@ -337,6 +413,24 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 12,
     fontFamily: fonts.body,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 44,
+    paddingLeft: 30,
+  },
+  timeValue: {
+    flex: 1,
+    color: colors.textPrimary,
+    fontSize: 14,
+    fontFamily: fonts.bodyBold,
+  },
+  settingsLinkInline: {
+    color: colors.primary,
+    fontSize: 12,
+    fontFamily: fonts.bodyBold,
   },
   cacheBlock: {
     gap: 8,
