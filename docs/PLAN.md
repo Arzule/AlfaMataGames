@@ -8,8 +8,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 ## Estado
 
 - Entregados: Avance 1 y Avance 2.
-- Avance 3: A3-0, A3-1 y A3-2 terminadas.
-- **Fase actual: A3-3** (Sensor "Agitar para descubrir").
+- Avance 3: A3-0, A3-1, A3-2 y A3-3 terminadas.
+- **Fase actual: A3-4** (Notificaciones locales).
 
 ## Decisiones tomadas
 
@@ -108,17 +108,21 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   visibles al usuario, sin cierres inesperados: permiso negado o bloqueado (con "Abrir
   ajustes"), cámara o galería canceladas, imagen inválida o fallo al subir.
 
-### [ ] A3-3 Sensor "Agitar para descubrir"
+### [x] A3-3 Sensor "Agitar para descubrir"
 
 - **Objetivo:** descubrir un juego aleatorio agitando el celular.
 - **Tema del sílabo:** sensores.
 - **Tareas:**
-  - [ ] Acelerómetro (expo-sensors) con umbral y antirrebote.
-  - [ ] Suscripción solo con el Catálogo enfocado y la app en primer plano (`useFocusEffect` +
+  - [x] Acelerómetro (expo-sensors) con umbral y antirrebote.
+  - [x] Suscripción solo con el Catálogo enfocado y la app en primer plano (`useFocusEffect` +
     `AppState`); desuscribir al salir.
-  - [ ] Al detectarlo: vibrar (expo-haptics), elegir un juego aleatorio de RAWG (RAWG no tiene
+  - [x] Al detectarlo: vibrar (expo-haptics), elegir un juego aleatorio de RAWG (RAWG no tiene
     endpoint aleatorio: página aleatoria + elemento aleatorio) y abrir su detalle.
-  - [ ] Interruptor en Perfil (preferencia en AsyncStorage).
+  - [x] Interruptor en Perfil (preferencia en AsyncStorage).
+  - [x] Extra: botón "Juego al azar" en el encabezado del Catálogo (alternativa en web).
+  - [x] Pedido del usuario: reseñas de los demás usuarios en el detalle (orden cronológico, la
+    más reciente primero, con "Ver más"); migración 003 con `review_updated_at`.
+  - [x] Pedido del usuario: el campo de reseña queda visible sobre el teclado.
 - **Terminado cuando:** un gesto abre un solo detalle, no hay lecturas fuera del Catálogo, se
   puede desactivar y en web la opción no rompe nada (oculta si no hay sensor). Errores
   visibles al usuario, sin cierres inesperados: sensor no disponible (por ejemplo en web) o

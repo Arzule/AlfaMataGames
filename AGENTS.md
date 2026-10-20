@@ -42,20 +42,23 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 `src/`
 - `components/` — UI reutilizable sin red, todos con PropTypes: Header, SearchBar,
   RecentSearches, CategoryButton, FormInput, EmptyState, ErrorState, GameCard, Rating, StatusChips,
-  Avatar (foto o iniciales).
+  Avatar (foto o iniciales), ReviewCard (reseña de otro usuario).
 - `context/` — `AuthContext.js` (sesión, token, login/register/logout, restaura con `/auth/me`);
   `LibraryContext.js` (biblioteca del usuario con cambios optimistas).
 - `hooks/` — `useAuth`, `useLibrary` (consumen contextos), `useGames` (catálogo RAWG con
   búsqueda, paginación, caché y `offline`), `useRecentSearches` (AsyncStorage, por usuario),
   `usePermission` (permisos: explicación previa, bloqueado, abrir ajustes), `useAvatarPicker`
-  (cámara/galería → recorte → subida),
+  (cámara/galería → recorte → subida), `useShakeDetector` (acelerómetro con umbral y
+  antirrebote, solo con la pantalla enfocada y la app activa), `useRandomGame` (juego al azar de
+  RAWG), `useGameReviews` (reseñas de la comunidad paginadas),
   `useDebounce`, `useGridColumns` (2/3/4 columnas).
 - `navigation/` — `AppNavigator.js`: Stack según sesión; Tabs Catálogo/Favoritos/Perfil +
   `GameDetail`.
 - `screens/` — Login, Register, GameCatalog, GameDetail, Favorites, Profile.
 - `services/` — `apiClient.js` (fetch al backend, timeout 10 s, Bearer, aviso de 401),
-  `authApi.js`, `libraryApi.js`, `rawgApi.js` (RAWG con `RAWG_API_KEY`), `catalogCache.js` /
-  `catalogCache.web.js` (caché del catálogo: expo-file-system en nativo, AsyncStorage en web).
+  `authApi.js`, `libraryApi.js`, `reviewsApi.js`, `rawgApi.js` (RAWG con `RAWG_API_KEY`; incluye
+  `getRandomGame`), `catalogCache.js` / `catalogCache.web.js` (caché del catálogo: expo-file-system
+  en nativo, AsyncStorage en web), `preferences.js` (preferencias del dispositivo en AsyncStorage).
 - `theme/` — `colors.js`, `typography.js` (`fonts`, `fontSizes`).
 - `utils/` — `storage.js` (token seguro nativo/web), `confirm.js` (confirmación multiplataforma),
   `mapGame.js` (RAWG → formato de GameCard), `cacheEntry.js` (formato y vencimiento de 7 días), `avatarImage.js` (recorte cuadrado 256 px JPEG).
@@ -65,10 +68,11 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   errores), `migrate.js` (runner de migraciones; `npm run migrate`).
 - `config/db.js` — pool mysql2/promise: `DATABASE_URL`/`MYSQL_URL` o variables sueltas
   (`DB_HOST`, `DB_PORT`, `MYSQL_*`), `DB_SSL` opcional; exporta `getConnectionOptions`.
-- `controllers/` — `auth.controller.js`, `library.controller.js`.
+- `controllers/` — `auth.controller.js`, `library.controller.js`, `reviews.controller.js`.
 - `middleware/` — `auth.middleware.js` (`authRequired`), `error.middleware.js` (404 y errores JSON).
-- `routes/` — `/auth` (register, login, me, PUT/DELETE `me/avatar`) y `/library` (GET lista,
-  GET/PUT/DELETE `:gameId`). El usuario público incluye `avatar` (data URI o null).
+- `routes/` — `/auth` (register, login, me, PUT/DELETE `me/avatar`), `/library` (GET lista,
+  GET/PUT/DELETE `:gameId`) y `/games` (GET `:gameId/reviews`: reseñas de los demás usuarios).
+  El usuario público incluye `avatar` (data URI o null).
 - `utils/validators.js` — validaciones manuales y constantes (`STATUSES`, `REVIEW_MAX_LENGTH`).
 
 `database/init/` — `01-schema.sql` (users, user_games) y `02-seed.sql` (usuarios de prueba).
@@ -97,6 +101,13 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   pedir ubicación. Textos de uso en los plugins de `app.json`.
 - **Foto de perfil** como data URI en `users.avatar` (≤ 200 KB, firma del archivo validada en
   el backend); `express.json` acepta hasta 400 KB y los 413 responden JSON.
+- **Agitar para descubrir**: acelerómetro solo con el Catálogo enfocado y la app activa
+  (`useFocusEffect` + `AppState`); preferencia en AsyncStorage (activada por defecto). En web no
+  hay sensor: se oculta el interruptor y queda el botón "Juego al azar" del encabezado.
+- **Reseñas de la comunidad**: excluyen la del usuario actual y se ordenan por
+  `review_updated_at` (solo cambia al editar el texto, no con favorito/estado).
+- **Teclado**: pantallas con campos de texto usan `KeyboardAvoidingView` (`padding` en nativo) y
+  desplazan el campo enfocado a la vista; `react-native-keyboard-controller` no sirve en Expo Go.
 - **BD en el puerto 3307** del host (`DB_HOST_PORT`) porque hay un MySQL local en 3306.
 - **Errores del backend**: siempre JSON `{ message }`; los 401 del token devuelven
   `{ message, code }` con `TOKEN_EXPIRED` o `TOKEN_INVALID`, y `apiClient` cierra la sesión.
