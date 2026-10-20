@@ -4,6 +4,7 @@ import React, {
   createContext,
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 import { setAuthToken, setUnauthorizedHandler } from '../services/apiClient';
@@ -120,11 +121,11 @@ export function AuthProvider({ children }) {
     setUser(data.user);
   }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{ user, token, loading, login, register, logout, updateAvatar, removeAvatar }}
-    >
-      {children}
-    </AuthContext.Provider>
+  // Valor memorizado: evita volver a dibujar todos los consumidores en cada render.
+  const value = useMemo(
+    () => ({ user, token, loading, login, register, logout, updateAvatar, removeAvatar }),
+    [user, token, loading, login, register, logout, updateAvatar, removeAvatar]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -6,10 +6,13 @@ const authRoutes = require('./routes/auth.routes');
 const libraryRoutes = require('./routes/library.routes');
 const gamesRoutes = require('./routes/games.routes');
 const { notFound, errorHandler } = require('./middleware/error.middleware');
+const { requestLogger } = require('./middleware/requestLogger.middleware');
 
 const app = express();
 
-app.use(cors());
+// Primero el registro de peticiones, para medir también las que fallen después.
+app.use(requestLogger);
+app.use(cors({ exposedHeaders: ['X-Request-Id'] }));
 // Límite ampliado para la foto de perfil (200 KB en base64 ocupan ~270 KB).
 app.use(express.json({ limit: '400kb' }));
 

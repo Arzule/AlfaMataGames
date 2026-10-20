@@ -4,6 +4,9 @@
 // Funcionan en Expo Go (solo las push remotas requieren el APK).
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('notificaciones');
 
 export const NOTIFICATIONS_SUPPORTED = true;
 
@@ -32,6 +35,7 @@ export async function configureNotifications() {
       });
     }
   } catch (err) {
+    log.warn('No se pudieron configurar las notificaciones', err);
     // Sin configuración las notificaciones no se muestran, pero la app sigue.
   }
 }
@@ -101,7 +105,7 @@ export async function cancelAllReminders() {
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
   } catch (err) {
-    // Nada que cancelar o módulo no disponible.
+    log.warn('No se pudieron cancelar los recordatorios', err);
   }
 }
 
@@ -168,6 +172,7 @@ export async function getInitialNotificationTap() {
     if (tap) await Notifications.clearLastNotificationResponseAsync().catch(() => {});
     return tap;
   } catch (err) {
+    log.warn('No se pudo leer la notificación inicial', err);
     return null;
   }
 }

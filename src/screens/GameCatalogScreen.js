@@ -26,7 +26,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useLibrary } from '../hooks/useLibrary';
 import { useDebounce } from '../hooks/useDebounce';
 import { useGames } from '../hooks/useGames';
-import { useGridColumns } from '../hooks/useGridColumns';
+import { useGridColumns, GRID_PERFORMANCE_PROPS } from '../hooks/useGridColumns';
 import { useRecentSearches } from '../hooks/useRecentSearches';
 import { useShakeDetector } from '../hooks/useShakeDetector';
 import { useRandomGame } from '../hooks/useRandomGame';
@@ -148,25 +148,33 @@ export default function GameCatalogScreen({ navigation }) {
 
   const showRecent = searchFocused && !searchText.trim() && recent.length > 0;
 
+  // Handler único para todas las tarjetas (GameCard está memorizada).
+  const handleOpenGame = useCallback(
+    (game) => {
+      // Abrir un juego desde una búsqueda la guarda como reciente.
+      if (searchTerm.trim()) addSearch(searchTerm);
+      navigation.navigate('GameDetail', { gameId: game.id });
+    },
+    [navigation, searchTerm, addSearch]
+  );
+
+  const cellStyle = useMemo(() => [styles.cell, { maxWidth: `${100 / columns}%` }], [columns]);
+
   const renderItem = useCallback(
     ({ item }) => {
       const status = isTodos ? getEntry(item.id)?.status ?? null : item.status;
       return (
-        <View style={[styles.cell, { maxWidth: `${100 / columns}%` }]}>
+        <View style={cellStyle}>
           <GameCard
             game={item}
             status={status}
             platform={item.platform}
-            onPress={() => {
-              // Abrir un juego desde una búsqueda la guarda como reciente.
-              if (searchTerm.trim()) addSearch(searchTerm);
-              navigation.navigate('GameDetail', { gameId: item.id });
-            }}
+            onPress={handleOpenGame}
           />
         </View>
       );
     },
-    [isTodos, getEntry, navigation, columns, searchTerm, addSearch]
+    [isTodos, getEntry, cellStyle, handleOpenGame]
   );
 
   const keyExtractor = useCallback((item) => String(item.id), []);
@@ -294,6 +302,7 @@ export default function GameCatalogScreen({ navigation }) {
           renderItem={renderItem}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.4}
+          {...GRID_PERFORMANCE_PROPS}
           ListFooterComponent={
             isTodos && loadingMore ? (
               <ActivityIndicator

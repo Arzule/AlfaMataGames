@@ -26,10 +26,16 @@ import { SHAKE_SUPPORTED, checkShakeAvailable } from '../hooks/useShakeDetector'
 import { useDailyReminder } from '../hooks/useDailyReminder';
 import { formatTime } from '../utils/dateFormat';
 
+// Solo en desarrollo: lanza durante el render para probar la pantalla de ErrorBoundary.
+function RenderCrashTest() {
+  throw new Error('Error de prueba simulado desde Perfil.');
+}
+
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const [clearing, setClearing] = useState(false);
   const [cacheMessage, setCacheMessage] = useState(null);
+  const [crashTest, setCrashTest] = useState(false);
   const avatarPicker = useAvatarPicker();
   const cameraBlocked = avatarPicker.cameraStatus === 'blocked';
 
@@ -287,6 +293,14 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           {cacheMessage ? <Text style={styles.cacheMessage}>{cacheMessage}</Text> : null}
         </View>
+
+        {__DEV__ ? (
+          <TouchableOpacity style={styles.secondaryBtn} onPress={() => setCrashTest(true)}>
+            <Feather name="alert-octagon" size={18} color={colors.warning} />
+            <Text style={styles.secondaryText}>Simular error (solo desarrollo)</Text>
+          </TouchableOpacity>
+        ) : null}
+        {crashTest ? <RenderCrashTest /> : null}
 
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Feather name="log-out" size={18} color={colors.textPrimary} />

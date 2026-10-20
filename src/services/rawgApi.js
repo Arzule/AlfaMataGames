@@ -1,7 +1,26 @@
 // src/services/rawgApi.js
 import { RAWG_API_KEY } from '@env';
+import { createLogger } from '../utils/logger';
 
 const BASE_URL = 'https://api.rawg.io/api';
+const log = createLogger('rawg');
+
+// GET a RAWG. Registra solo la ruta y el status (la URL lleva la clave).
+async function rawgGet(path, params, errorMessage) {
+  let response;
+  try {
+    response = await fetch(`${BASE_URL}${path}?${params.toString()}`);
+  } catch (err) {
+    log.info(`GET ${path} -> sin conexión`);
+    throw err;
+  }
+  log.debug(`GET ${path} -> ${response.status}`);
+  if (!response.ok) {
+    log.warn(`GET ${path} -> ${response.status}`);
+    throw new Error(`${errorMessage}: ${response.status}`);
+  }
+  return response.json();
+}
 
 /**
  * Obtiene un listado de videojuegos.
@@ -22,13 +41,8 @@ export async function getGames({ search = '', page = 1, pageSize = 20 } = {}) {
     params.append('search', search);
   }
 
-  const response = await fetch(`${BASE_URL}/games?${params.toString()}`);
+  const data = await rawgGet('/games', params, 'Error al obtener juegos');
 
-  if (!response.ok) {
-    throw new Error(`Error al obtener juegos: ${response.status}`);
-  }
-
-  const data = await response.json();
   return {
     results: Array.isArray(data.results) ? data.results : [],
     // RAWG devuelve `next` con la URL de la página siguiente (null al final).
@@ -43,13 +57,7 @@ export async function getGames({ search = '', page = 1, pageSize = 20 } = {}) {
 export async function getGameDetail(id) {
   const params = new URLSearchParams({ key: RAWG_API_KEY });
 
-  const response = await fetch(`${BASE_URL}/games/${id}?${params.toString()}`);
-
-  if (!response.ok) {
-    throw new Error(`Error al obtener el detalle del juego: ${response.status}`);
-  }
-
-  return response.json();
+  return rawgGet(`/games/${id}`, params, 'Error al obtener el detalle del juego');
 }
 
 // Juegos populares entre los que se elige al azar (100 páginas x 40 = 4000 juegos).
@@ -70,13 +78,8 @@ export async function getRandomGame() {
     ordering: '-added',
   });
 
-  const response = await fetch(`${BASE_URL}/games?${params.toString()}`);
+  const data = await rawgGet('/games', params, 'Error al obtener un juego al azar');
 
-  if (!response.ok) {
-    throw new Error(`Error al obtener un juego al azar: ${response.status}`);
-  }
-
-  const data = await response.json();
   const results = Array.isArray(data.results) ? data.results.filter((g) => g?.id) : [];
   if (!results.length) {
     throw new Error('RAWG no devolvió juegos.');
@@ -90,12 +93,7 @@ export async function getRandomGame() {
 export async function getGenres() {
   const params = new URLSearchParams({ key: RAWG_API_KEY });
 
-  const response = await fetch(`${BASE_URL}/genres?${params.toString()}`);
+  const data = await rawgGet('/genres', params, 'Error al obtener géneros');
 
-  if (!response.ok) {
-    throw new Error(`Error al obtener géneros: ${response.status}`);
-  }
-
-  const data = await response.json();
   return data.results;
 }

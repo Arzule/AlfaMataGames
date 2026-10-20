@@ -43,7 +43,8 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 - `components/` — UI reutilizable sin red, todos con PropTypes: Header, SearchBar,
   RecentSearches, CategoryButton, FormInput, EmptyState, ErrorState, GameCard, Rating, StatusChips,
   Avatar (foto o iniciales), ReviewCard (reseña de otro usuario), ReminderSheet (opciones de
-  recordatorio), DateTimePickerModal (fecha/hora: diálogos en Android, modal en iOS).
+  recordatorio), DateTimePickerModal (fecha/hora: diálogos en Android, modal en iOS),
+  ErrorBoundary (pantalla de reintento global), OfflineBanner (aviso de red).
 - `context/` — `AuthContext.js` (sesión, token, login/register/logout, restaura con `/auth/me`);
   `LibraryContext.js` (biblioteca del usuario con cambios optimistas).
 - `hooks/` — `useAuth`, `useLibrary` (consumen contextos), `useGames` (catálogo RAWG con
@@ -54,7 +55,8 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   RAWG), `useGameReviews` (reseñas de la comunidad paginadas), `useNotificationPermission`,
   `useGameReminder` (recordatorio de un juego), `useDailyReminder` (diario, por usuario),
   `useNotificationBridge` (tocar notificación → navegar; restaura el diario al iniciar sesión),
-  `useDebounce`, `useGridColumns` (2/3/4 columnas).
+  `useNetworkStatus` (NetInfo), `useDebounce`, `useGridColumns` (2/3/4 columnas y
+  `GRID_PERFORMANCE_PROPS` para las FlatList).
 - `navigation/` — `AppNavigator.js`: Stack según sesión; Tabs Catálogo/Favoritos/Perfil +
   `GameDetail` + `Reminders`; `navigationRef` para navegar desde notificaciones.
 - `screens/` — Login, Register, GameCatalog, GameDetail, Favorites, Profile, Reminders.
@@ -66,7 +68,8 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 - `theme/` — `colors.js`, `typography.js` (`fonts`, `fontSizes`).
 - `utils/` — `storage.js` (token seguro nativo/web), `confirm.js` (confirmación multiplataforma),
   `mapGame.js` (RAWG → formato de GameCard), `cacheEntry.js` (formato y vencimiento de 7 días), `avatarImage.js` (recorte cuadrado 256 px JPEG),
-  `dateFormat.js` (fechas y horas sin Intl).
+  `dateFormat.js` (fechas y horas sin Intl), `logger.js` (logger central).
+- `shims/` — `TopicSubscriptionModule.android.js` (lo usa `metro.config.js`).
 
 `backend/src/`
 - `server.js` (aplica migraciones y escucha en `PORT`), `app.js` (cors, json, `/health`, rutas,
@@ -74,11 +77,13 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 - `config/db.js` — pool mysql2/promise: `DATABASE_URL`/`MYSQL_URL` o variables sueltas
   (`DB_HOST`, `DB_PORT`, `MYSQL_*`), `DB_SSL` opcional; exporta `getConnectionOptions`.
 - `controllers/` — `auth.controller.js`, `library.controller.js`, `reviews.controller.js`.
-- `middleware/` — `auth.middleware.js` (`authRequired`), `error.middleware.js` (404 y errores JSON).
+- `middleware/` — `auth.middleware.js` (`authRequired`), `error.middleware.js` (404 y errores JSON),
+  `requestLogger.middleware.js` (una línea por petición, `req.id` y `X-Request-Id`).
 - `routes/` — `/auth` (register, login, me, PUT/DELETE `me/avatar`), `/library` (GET lista,
   GET/PUT/DELETE `:gameId`) y `/games` (GET `:gameId/reviews`: reseñas de los demás usuarios).
   El usuario público incluye `avatar` (data URI o null).
 - `utils/validators.js` — validaciones manuales y constantes (`STATUSES`, `REVIEW_MAX_LENGTH`).
+- `utils/logger.js` — `createLogger(ambito)`; nivel con `LOG_LEVEL`; oculta campos sensibles.
 
 `database/init/` — `01-schema.sql` (users, user_games) y `02-seed.sql` (usuarios de prueba).
 `backend/migrations/` — migraciones SQL numeradas (`NNN-nombre.sql`), registradas en
@@ -120,6 +125,14 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 - **BD en el puerto 3307** del host (`DB_HOST_PORT`) porque hay un MySQL local en 3306.
 - **Errores del backend**: siempre JSON `{ message }`; los 401 del token devuelven
   `{ message, code }` con `TOKEN_EXPIRED` o `TOKEN_INVALID`, y `apiClient` cierra la sesión.
+  Los 500 responden "Error interno del servidor" (el detalle solo va al log).
+- **Logging**: en la app, siempre `createLogger` de `src/utils/logger.js` (nunca `console.*`);
+  fallos de red esperados en `info`, para no abrir LogBox. En el backend, `createLogger` de
+  `utils/logger.js`; nunca registrar cuerpos, cabeceras, query strings, contraseñas ni tokens.
+- **Errores de render**: `ErrorBoundary` global en `App.js` (envuelve también los contextos);
+  "Reintentar" vuelve a montar el árbol.
+- **Rendimiento**: componentes de listas con `React.memo` y handlers estables (`onPress`
+  recibe el elemento); valores de contexto con `useMemo`.
 - **Esquema**: todo cambio de BD va **siempre por migraciones** (`backend/migrations`, archivo
   nuevo con el siguiente número; nunca editar uno ya aplicado). `database/init` solo crea la BD
   local desde cero con datos de prueba; no editarlo de forma que rompa una BD existente.
