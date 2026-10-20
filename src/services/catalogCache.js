@@ -4,6 +4,9 @@
 // cerrar sesión. En web se usa catalogCache.web.js. Ninguna función lanza errores.
 import { Directory, File, Paths } from 'expo-file-system';
 import { parseEntry, serializeEntry } from '../utils/cacheEntry';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('cache');
 
 const CATALOG_FILE = 'catalog-page1.json';
 
@@ -18,6 +21,7 @@ export async function readCatalogCache() {
     if (!file.exists) return null;
     return parseEntry(await file.text());
   } catch (err) {
+    log.warn('No se pudo leer la caché del catálogo', err);
     return null;
   }
 }
@@ -30,6 +34,7 @@ export async function writeCatalogCache(data) {
     if (!file.exists) file.create();
     file.write(serializeEntry(data));
   } catch (err) {
+    log.warn('No se pudo guardar la caché del catálogo', err);
     // Sin caché la app sigue funcionando.
   }
 }
@@ -50,7 +55,8 @@ export async function cleanExpiredCache() {
       if (!valid) item.delete();
     }
   } catch (err) {
-    // Ignorar: se reintenta en el próximo inicio.
+    log.warn('No se pudo limpiar la caché vencida', err);
+    // Se reintenta en el próximo inicio.
   }
 }
 
@@ -60,6 +66,6 @@ export async function clearCatalogCache() {
     const dir = cacheDir();
     if (dir.exists) dir.delete();
   } catch (err) {
-    // Ignorar.
+    log.warn('No se pudo borrar la caché', err);
   }
 }
