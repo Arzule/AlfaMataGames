@@ -10,6 +10,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import { LibraryProvider } from './src/context/LibraryContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
+import OfflineBanner from './src/components/OfflineBanner';
 import { colors } from './src/theme/colors';
 import { cleanExpiredCache } from './src/services/catalogCache';
 import { configureNotifications } from './src/services/notifications';
@@ -52,6 +53,7 @@ export default function App() {
           <LibraryProvider>
             <View style={styles.root}>
               <AppNavigator />
+              <OfflineBanner />
             </View>
           </LibraryProvider>
         </AuthProvider>
