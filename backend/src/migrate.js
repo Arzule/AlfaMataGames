@@ -7,6 +7,7 @@ const path = require('path');
 const crypto = require('crypto');
 const mysql = require('mysql2/promise');
 const { getConnectionOptions } = require('./config/db');
+const { createLogger } = require('./utils/logger');
 
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'migrations');
 const FILE_PATTERN = /^\d{3}-[\w-]+\.sql$/;
@@ -15,7 +16,8 @@ const LOCK_TIMEOUT_S = 30;
 const CONNECT_RETRIES = 10;
 const RETRY_DELAY_MS = 3000;
 
-const log = (msg) => console.log(`[migrate] ${msg}`);
+const logger = createLogger('migrate');
+const log = (msg) => logger.info(msg);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Checksum independiente del fin de línea (CRLF en Windows, LF en Linux).
@@ -107,7 +109,7 @@ if (require.main === module) {
   runMigrations()
     .then(() => process.exit(0))
     .catch((err) => {
-      console.error(`[migrate] ${err.message}`);
+      logger.error(err.message);
       process.exit(1);
     });
 }
