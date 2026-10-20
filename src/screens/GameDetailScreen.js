@@ -22,7 +22,11 @@ import Rating from '../components/Rating';
 import StatusChips from '../components/StatusChips';
 import ErrorState from '../components/ErrorState';
 import ReviewCard from '../components/ReviewCard';
+import ReminderSheet from '../components/ReminderSheet';
+import DateTimePickerModal from '../components/DateTimePickerModal';
 import { useGameReviews } from '../hooks/useGameReviews';
+import { useGameReminder, REMINDER_PRESETS } from '../hooks/useGameReminder';
+import { formatDateTime } from '../utils/dateFormat';
 
 // Margen sobre la reseña al desplazarla para que quede a la vista con el teclado abierto.
 const REVIEW_SCROLL_MARGIN = 16;
@@ -48,6 +52,25 @@ export default function GameDetailScreen({ route, navigation }) {
   }, [savedReview]);
 
   const community = useGameReviews(gameId);
+
+  // Recordatorio para jugar: hoja de opciones y selector de fecha propio.
+  const gameReminder = useGameReminder({ gameId, gameName: game?.name ?? 'este juego' });
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [pickerVisible, setPickerVisible] = useState(false);
+
+  const handleSelectPreset = (key) => {
+    setSheetVisible(false);
+    const preset = REMINDER_PRESETS.find((item) => item.key === key);
+    if (preset) gameReminder.schedule(preset.getDate());
+  };
+  const handlePickCustom = () => {
+    setSheetVisible(false);
+    setPickerVisible(true);
+  };
+  const handleCustomDate = (date) => {
+    setPickerVisible(false);
+    gameReminder.schedule(date);
+  };
 
   // Teclado: la reseña se desplaza a la vista y el pie se oculta para dar espacio.
   const scrollRef = useRef(null);
@@ -274,6 +297,61 @@ export default function GameDetailScreen({ route, navigation }) {
                 </TouchableOpacity>
               </View>
 
+              {/* Recordatorio para jugar (notificación local; no disponible en web) */}
+              <View style={styles.libraryRow}>
+                <Text style={styles.fieldLabel}>Recordatorio</Text>
+                {!gameReminder.supported ? (
+                  <Text style={styles.hintText}>
+                    Los recordatorios están disponibles en la app del celular.
+                  </Text>
+                ) : gameReminder.reminder ? (
+                  <View style={styles.reminderActive}>
+                    <Feather name="bell" size={16} color={colors.primary} />
+                    <Text style={styles.reminderText}>
+                      {formatDateTime(gameReminder.reminder.fireAt)}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={gameReminder.cancel}
+                      disabled={gameReminder.busy}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.linkText}>Cancelar</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.reminderBtn, gameReminder.busy && styles.btnDisabled]}
+                    onPress={() => setSheetVisible(true)}
+                    disabled={gameReminder.busy}
+                  >
+                    {gameReminder.busy ? (
+                      <ActivityIndicator color={colors.textPrimary} size="small" />
+                    ) : (
+                      <Feather name="bell" size={16} color={colors.textPrimary} />
+                    )}
+                    <Text style={styles.reminderBtnText}>Recordarme jugar esto</Text>
+                  </TouchableOpacity>
+                )}
+                {gameReminder.feedback ? (
+                  <Text
+                    style={[
+                      styles.hintText,
+                      gameReminder.feedback.type === 'error' && styles.saveErrorText,
+                      gameReminder.feedback.type === 'success' && styles.successText,
+                    ]}
+                  >
+                    {gameReminder.feedback.text}
+                  </Text>
+                ) : null}
+                {gameReminder.permissionStatus === 'blocked' ? (
+                  <TouchableOpacity onPress={gameReminder.openSettings}>
+                    <Text style={styles.linkText}>
+                      Notificaciones bloqueadas · Abrir ajustes
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+
               {libraryLoading ? (
                 <Text style={styles.hintText}>Cargando tu biblioteca...</Text>
               ) : null}
@@ -352,6 +430,26 @@ export default function GameDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
       )}
+
+      <ReminderSheet
+        visible={sheetVisible}
+        title="Recordarme jugar esto"
+        options={REMINDER_PRESETS}
+        onSelect={handleSelectPreset}
+        onPickCustom={handlePickCustom}
+        onClose={() => setSheetVisible(false)}
+      />
+      {gameReminder.supported ? (
+        <DateTimePickerModal
+          visible={pickerVisible}
+          mode="datetime"
+          value={new Date(Date.now() + 60 * 60 * 1000)}
+          minimumDate={new Date()}
+          title="Fecha y hora del recordatorio"
+          onConfirm={handleCustomDate}
+          onCancel={() => setPickerVisible(false)}
+        />
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
@@ -523,6 +621,37 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  reminderBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: colors.badgeNeutral,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  reminderBtnText: {
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontFamily: fonts.bodySemiBold,
+  },
+  reminderActive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  reminderText: {
+    flex: 1,
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontFamily: fonts.bodySemiBold,
+  },
+  successText: {
+    color: colors.success,
   },
   reviewBtnText: {
     color: colors.textPrimary,

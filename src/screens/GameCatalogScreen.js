@@ -200,7 +200,11 @@ export default function GameCatalogScreen({ navigation }) {
             >
               <Feather name="shuffle" size={18} color={colors.textPrimary} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.notifBtn}>
+            <TouchableOpacity
+              style={styles.notifBtn}
+              onPress={() => navigation.navigate('Reminders')}
+              accessibilityLabel="Ver recordatorios"
+            >
               <Feather name="bell" size={18} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>

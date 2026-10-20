@@ -7,14 +7,7 @@ import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import Avatar from './Avatar';
 import Rating from './Rating';
-
-// ISO -> "dd/mm/aaaa" en la hora local; vacío si la fecha no es válida.
-function formatDate(value) {
-  const date = value ? new Date(value) : null;
-  if (!date || Number.isNaN(date.getTime())) return '';
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
-}
+import { formatDate } from '../utils/dateFormat';
 
 export default function ReviewCard({ review }) {
   const date = formatDate(review.date);

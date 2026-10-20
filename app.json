@@ -31,6 +31,13 @@
           "cameraPermission": "AlfaMataGames usa la cámara para que tomes tu foto de perfil.",
           "microphonePermission": false
         }
+      ],
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "color": "#8b5cf6"
+        }
       ]
     ]
   }

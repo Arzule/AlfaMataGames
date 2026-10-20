@@ -42,7 +42,8 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 `src/`
 - `components/` — UI reutilizable sin red, todos con PropTypes: Header, SearchBar,
   RecentSearches, CategoryButton, FormInput, EmptyState, ErrorState, GameCard, Rating, StatusChips,
-  Avatar (foto o iniciales), ReviewCard (reseña de otro usuario).
+  Avatar (foto o iniciales), ReviewCard (reseña de otro usuario), ReminderSheet (opciones de
+  recordatorio), DateTimePickerModal (fecha/hora: diálogos en Android, modal en iOS).
 - `context/` — `AuthContext.js` (sesión, token, login/register/logout, restaura con `/auth/me`);
   `LibraryContext.js` (biblioteca del usuario con cambios optimistas).
 - `hooks/` — `useAuth`, `useLibrary` (consumen contextos), `useGames` (catálogo RAWG con
@@ -50,18 +51,22 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   `usePermission` (permisos: explicación previa, bloqueado, abrir ajustes), `useAvatarPicker`
   (cámara/galería → recorte → subida), `useShakeDetector` (acelerómetro con umbral y
   antirrebote, solo con la pantalla enfocada y la app activa), `useRandomGame` (juego al azar de
-  RAWG), `useGameReviews` (reseñas de la comunidad paginadas),
+  RAWG), `useGameReviews` (reseñas de la comunidad paginadas), `useNotificationPermission`,
+  `useGameReminder` (recordatorio de un juego), `useDailyReminder` (diario, por usuario),
+  `useNotificationBridge` (tocar notificación → navegar; restaura el diario al iniciar sesión),
   `useDebounce`, `useGridColumns` (2/3/4 columnas).
 - `navigation/` — `AppNavigator.js`: Stack según sesión; Tabs Catálogo/Favoritos/Perfil +
-  `GameDetail`.
-- `screens/` — Login, Register, GameCatalog, GameDetail, Favorites, Profile.
+  `GameDetail` + `Reminders`; `navigationRef` para navegar desde notificaciones.
+- `screens/` — Login, Register, GameCatalog, GameDetail, Favorites, Profile, Reminders.
 - `services/` — `apiClient.js` (fetch al backend, timeout 10 s, Bearer, aviso de 401),
   `authApi.js`, `libraryApi.js`, `reviewsApi.js`, `rawgApi.js` (RAWG con `RAWG_API_KEY`; incluye
   `getRandomGame`), `catalogCache.js` / `catalogCache.web.js` (caché del catálogo: expo-file-system
-  en nativo, AsyncStorage en web), `preferences.js` (preferencias del dispositivo en AsyncStorage).
+  en nativo, AsyncStorage en web), `preferences.js` (preferencias en AsyncStorage),
+  `notifications.js` / `notifications.web.js` (expo-notifications; en web, misma API sin efecto).
 - `theme/` — `colors.js`, `typography.js` (`fonts`, `fontSizes`).
 - `utils/` — `storage.js` (token seguro nativo/web), `confirm.js` (confirmación multiplataforma),
-  `mapGame.js` (RAWG → formato de GameCard), `cacheEntry.js` (formato y vencimiento de 7 días), `avatarImage.js` (recorte cuadrado 256 px JPEG).
+  `mapGame.js` (RAWG → formato de GameCard), `cacheEntry.js` (formato y vencimiento de 7 días), `avatarImage.js` (recorte cuadrado 256 px JPEG),
+  `dateFormat.js` (fechas y horas sin Intl).
 
 `backend/src/`
 - `server.js` (aplica migraciones y escucha en `PORT`), `app.js` (cors, json, `/health`, rutas,
@@ -101,6 +106,10 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   pedir ubicación. Textos de uso en los plugins de `app.json`.
 - **Foto de perfil** como data URI en `users.avatar` (≤ 200 KB, firma del archivo validada en
   el backend); `express.json` acepta hasta 400 KB y los 413 responden JSON.
+- **Notificaciones locales**: siempre por `services/notifications` (nunca importar
+  expo-notifications en pantallas; en web no existe). Identificadores fijos: `game-<id>` (uno
+  por juego) y `daily-reminder`; `data` lleva `type`, `userId` y `fireAt`. `clearSession` cancela
+  todas; tocar una de otra cuenta no navega.
 - **Agitar para descubrir**: acelerómetro solo con el Catálogo enfocado y la app activa
   (`useFocusEffect` + `AppState`); preferencia en AsyncStorage (activada por defecto). En web no
   hay sensor: se oculta el interruptor y queda el botón "Juego al azar" del encabezado.
