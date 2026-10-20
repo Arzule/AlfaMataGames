@@ -1,7 +1,7 @@
 // src/navigation/AppNavigator.js
 import React from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
@@ -12,12 +12,16 @@ import GameCatalogScreen from '../screens/GameCatalogScreen';
 import GameDetailScreen from '../screens/GameDetailScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import RemindersScreen from '../screens/RemindersScreen';
 import { useAuth } from '../hooks/useAuth';
+import { useNotificationBridge } from '../hooks/useNotificationBridge';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+// Permite navegar desde fuera de las pantallas (al tocar una notificación).
+const navigationRef = createNavigationContainerRef();
 
 function MainTabs() {
   return (
@@ -78,6 +82,7 @@ function LoadingScreen() {
 
 export default function AppNavigator() {
   const { loading, user } = useAuth();
+  const { onNavigationReady } = useNotificationBridge({ user, navigationRef });
 
   // Mientras se comprueba si hay sesión, mostrar un indicador.
   if (loading) {
@@ -85,12 +90,13 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef} onReady={onNavigationReady}>
       {user ? (
         // Sesión iniciada: catálogo (tabs), detalle y perfil.
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen name="GameDetail" component={GameDetailScreen} />
+          <Stack.Screen name="Reminders" component={RemindersScreen} />
         </Stack.Navigator>
       ) : (
         // Sin sesión: login y registro.
