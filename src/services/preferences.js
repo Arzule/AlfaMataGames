@@ -22,3 +22,34 @@ export async function setShakeEnabled(enabled) {
     return false;
   }
 }
+
+// Recordatorio diario, por usuario: { enabled, hour, minute }. Por defecto apagado a las 20:00.
+const DAILY_DEFAULT = { enabled: false, hour: 20, minute: 0 };
+const dailyKey = (userId) => `alfamatagames.prefs.dailyReminder.${userId ?? 'anon'}`;
+
+export async function getDailyReminderPref(userId) {
+  try {
+    const raw = await AsyncStorage.getItem(dailyKey(userId));
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (
+      parsed &&
+      typeof parsed.enabled === 'boolean' &&
+      Number.isInteger(parsed.hour) &&
+      Number.isInteger(parsed.minute)
+    ) {
+      return parsed;
+    }
+  } catch (err) {
+    // Preferencia dañada o almacenamiento no disponible: valores por defecto.
+  }
+  return { ...DAILY_DEFAULT };
+}
+
+export async function setDailyReminderPref(userId, pref) {
+  try {
+    await AsyncStorage.setItem(dailyKey(userId), JSON.stringify(pref));
+    return true;
+  } catch (err) {
+    return false;
+  }
+}

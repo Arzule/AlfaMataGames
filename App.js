@@ -10,11 +10,14 @@ import { LibraryProvider } from './src/context/LibraryContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { colors } from './src/theme/colors';
 import { cleanExpiredCache } from './src/services/catalogCache';
+import { configureNotifications } from './src/services/notifications';
 
 export default function App() {
   // Al iniciar, borrar las entradas de caché vencidas (más de 7 días).
   useEffect(() => {
     cleanExpiredCache();
+    // Mostrar notificaciones con la app abierta y crear el canal de Android.
+    configureNotifications();
   }, []);
 
   // Carga las fuentes Sora e Inter antes de mostrar la app.
