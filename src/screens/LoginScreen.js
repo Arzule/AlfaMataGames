@@ -80,7 +80,7 @@ export default function LoginScreen({ navigation }) {
           <FormInput
             label="CORREO ELECTRÓNICO"
             icon="mail"
-            placeholder="drago@gmail.com"
+            placeholder="tucorreo@ejemplo.com"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -92,7 +92,7 @@ export default function LoginScreen({ navigation }) {
           <FormInput
             label="CONTRASEÑA"
             icon="lock"
-            placeholder="••••••••••••"
+            placeholder="Ingresa tu contraseña"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
