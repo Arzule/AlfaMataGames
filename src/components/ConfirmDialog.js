@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   confirmText: {
-    color: '#ffffff',
+    color: colors.textPrimary,
     fontSize: 14,
     fontFamily: fonts.bodyBold,
     textAlign: 'center',
