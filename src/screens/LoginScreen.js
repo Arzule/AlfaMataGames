@@ -123,10 +123,6 @@ export default function LoginScreen({ navigation }) {
           >
             <Text style={styles.linkText}>¿No tienes cuenta? Regístrate</Text>
           </TouchableOpacity>
-
-          <Text style={styles.hint}>
-            Prueba con: drago@gmail.com / 12345678
-          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -205,12 +201,5 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 13,
     fontFamily: fonts.bodySemiBold,
-  },
-  hint: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontFamily: fonts.body,
-    textAlign: 'center',
-    marginTop: 16,
   },
 });
