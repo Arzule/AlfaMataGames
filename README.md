@@ -168,7 +168,7 @@ AlfaMataGames/
     ├── components/             # Header, SearchBar, RecentSearches, CategoryButton, FormInput,
     │                           #   EmptyState, ErrorState, GameCard, Rating, StatusChips, Avatar,
     │                           #   ReviewCard, ReminderSheet, DateTimePickerModal, ErrorBoundary,
-    │                           #   OfflineBanner, Synopsis
+    │                           #   OfflineBanner, Synopsis, ConfirmDialog
     ├── context/                # AuthContext.js, LibraryContext.js
     ├── hooks/                  # useAuth, useLibrary, useGames, useRecentSearches, useDebounce,
     │                           #   useGridColumns, usePermission, useAvatarPicker,
