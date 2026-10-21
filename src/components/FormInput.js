@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   inputBoxError: {
-    borderColor: '#ef4444',
+    borderColor: colors.danger,
   },
   input: {
     flex: 1,
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
   },
   errorText: {
-    color: '#ef4444',
+    color: colors.danger,
     fontSize: 12,
     fontFamily: fonts.body,
     marginTop: 6,

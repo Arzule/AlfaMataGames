@@ -5,10 +5,13 @@ registrarse e iniciar sesión con autenticación real (JWT), explorar un catálo
 ver el detalle de cada uno, marcarlos como favoritos y guardar su propio progreso: estado,
 puntuación y reseña.
 
-Este repositorio corresponde al Avance 2 del proyecto: se conectó la app móvil con un
-backend propio (autenticación y biblioteca por usuario), se agregó el catálogo con búsqueda
-y paginación, la pantalla de detalle, la sección de favoritos y un conjunto de componentes
-reutilizables, además de la documentación del proyecto.
+Este repositorio corresponde al **Avance 3** del proyecto. Sobre la base del Avance 2 (app
+conectada a un backend propio con autenticación JWT, catálogo, detalle, favoritos y biblioteca
+por usuario) se agregaron funcionalidades nativas (cámara y galería, acelerómetro y vibración,
+notificaciones locales, sistema de archivos y estado de la red), sinopsis traducidas al español,
+reseñas de la comunidad, manejo de errores y logging, y un pulido de la interfaz para distintos
+tamaños de pantalla. La tabla de [cumplimiento de la rúbrica del Avance 3](#cumplimiento-de-la-rúbrica-del-avance-3)
+enlaza cada criterio con su evidencia.
 
 ---
 
@@ -23,8 +26,9 @@ reutilizables, además de la documentación del proyecto.
 - Biblioteca por usuario: favorito, estado, puntuación (0-5) y reseña (hasta 1000 caracteres).
 - Pantalla de Favoritos con actualización por *pull-to-refresh*.
 - Cambios optimistas con reversión si el backend falla.
-- Manejo de estados de carga y de error en toda la app.
-- Cuadrícula responsive (2, 3 o 4 columnas según el ancho de pantalla).
+- Estados de carga, vacío y error en todas las pantallas, con "Reintentar" donde aplica.
+- Cuadrícula responsive (de 2 a 6 columnas según el ancho de pantalla) y contenido con ancho
+  máximo en tablets y web.
 - Interfaz con tipografías propias (Sora e Inter) y componentes reutilizables con PropTypes.
 - Búsquedas recientes (últimas 5 por usuario) al enfocar la barra de búsqueda, con opción de borrar.
 - Catálogo disponible sin conexión: la primera página se guarda en caché 7 días y se muestra
@@ -54,6 +58,10 @@ reutilizables, además de la documentación del proyecto.
   (`X-Request-Id`).
 - **Rendimiento**: tarjetas memorizadas (`React.memo`), contextos memorizados y grillas con
   ajustes de virtualización.
+- **Confirmaciones con el estilo de la app** (borrar caché, cerrar sesión, eliminar foto,
+  cancelar recordatorios y explicaciones de permisos) en lugar de los diálogos del sistema.
+- Logo propio en el inicio de sesión y como icono de la app (incluido el icono adaptativo y
+  monocromático de Android).
 
 ---
 
@@ -81,6 +89,7 @@ Versiones tomadas de `package.json` (app), `backend/package.json` y `docker-comp
 | expo-notifications | ~57.0.23 | Recordatorios con notificaciones locales |
 | @react-native-community/datetimepicker | 9.1.0 | Selector de fecha y hora del recordatorio |
 | @react-native-community/netinfo | 12.0.1 | Aviso de sin conexión |
+| react-native-safe-area-context | ~5.7.0 | Márgenes de la barra de estado, el notch y la barra de navegación |
 | expo-font / @expo-google-fonts | ~57.0.4 / ^0.4.2 | Fuentes Sora e Inter |
 | Node.js + Express | Express ^4.21.2 (Node >= 20) | Backend / API REST |
 | MySQL | 8.0 (`mysql:8.0`) | Base de datos |
@@ -90,42 +99,49 @@ Versiones tomadas de `package.json` (app), `backend/package.json` y `docker-comp
 | mysql2 | ^3.11.5 | Conexión a MySQL |
 | cors | ^2.8.5 | CORS en el backend |
 | API de RAWG | `https://api.rawg.io/api` | Datos de videojuegos |
+| DeepL API Free | `https://api-free.deepl.com/v2` | Traducción de las sinopsis (solo desde el backend) |
 
 ---
 
 ## Arquitectura
 
 La app Expo corre en el celular (Expo Go) o en el navegador. La app consume la API de RAWG
-directamente para los datos de los juegos, y consume el backend propio (Node/Express) para
-la autenticación y la biblioteca del usuario. El backend y MySQL corren en Docker.
+directamente para el catálogo y el detalle, y el backend propio (Node/Express) para la
+autenticación, la biblioteca, las reseñas de la comunidad, la foto de perfil y las sinopsis
+traducidas. El backend consulta RAWG y DeepL para las sinopsis. El backend y MySQL corren en
+Docker. (En el Avance 4 el catálogo de RAWG pasa a consultarse a través del backend.)
 
 ```
-        Celular (Expo Go) / Navegador (web)
-     +-----------------------------------------+
-     |            App AlfaMataGames            |
-     |              (Expo / RN)                |
-     +--------------------+--------------------+
-              |                        |
-      HTTPS   |                        |  HTTP (API_URL, ej. :3000)
-              v                        v
+          Celular (Expo Go) / Navegador (web)
+       +-----------------------------------------+
+       |            App AlfaMataGames            |
+       |              (Expo / RN)                |
+       +--------------------+--------------------+
+                |                        |
+        HTTPS   |                        |  HTTP (API_URL, ej. :3000)
+                v                        v
    +---------------------+   +-------------------------------------------+
-   |   API de RAWG       |   |              Docker (PC)                  |
-   |   api.rawg.io/api   |   |                                           |
-   |  (catálogo/detalle) |   |  +----------------+   +----------------+  |
-   +---------------------+   |  | backend (api)  |   | MySQL 8 (db)   |  |
-                             |  | Node + Express |-->| user_games     |  |
-                             |  | puerto 3000    |   | puerto 3306    |  |
-                             |  +----------------+   +--------+-------+  |
-                             |                           |  volumen      |
-                             |  +----------------+       |  db_data      |
-                             |  | Adminer :8080  |-------+               |
+   |    API de RAWG      |   |               Docker (PC)                 |
+   | (catálogo, detalle) |   |                                           |
+   +---------------------+   |  +----------------+   +----------------+  |
+             ^               |  | backend (api)  |   | MySQL 8 (db)   |  |
+             |  sinopsis     |  | Node + Express |-->| users          |  |
+             +---------------+--| puerto 3000    |   | user_games     |  |
+   +---------------------+   |  |                |   | game_transl... |  |
+   |   DeepL API Free    |<--+--|                |   | puerto 3306    |  |
+   |    (traducción)     |   |  +----------------+   +--------+-------+  |
+   +---------------------+   |                                |          |
+                             |  +----------------+   volumen db_data     |
+                             |  | Adminer :8080  |------------+          |
                              |  +----------------+                       |
                              +-------------------------------------------+
 ```
 
 - **App (Expo):** pantallas, componentes, contextos y servicios. Habla con RAWG y con el backend.
-- **backend (`alfamatagames-api`):** API REST en Express; valida, cifra contraseñas y firma tokens.
-- **db (`alfamatagames-db`):** MySQL 8 con las tablas `users` y `user_games`.
+- **backend (`alfamatagames-api`):** API REST en Express; valida, cifra contraseñas, firma
+  tokens, aplica las migraciones y traduce las sinopsis (RAWG + DeepL, con caché).
+- **db (`alfamatagames-db`):** MySQL 8 con las tablas `users`, `user_games`,
+  `game_translations` y `schema_migrations`.
 - **adminer (`alfamatagames-adminer`):** interfaz web para inspeccionar la base de datos.
 
 ---
@@ -317,6 +333,13 @@ Los cambios de esquema se hacen con archivos SQL numerados en `backend/migration
 (`001-esquema-base.sql`, `002-...sql`). Así se puede modificar una BD que ya tiene datos, en
 local o en la nube, sin borrarla.
 
+| Migración | Cambio |
+| --- | --- |
+| `001-esquema-base.sql` | Tablas `users` y `user_games` (igual a `database/init/01-schema.sql`). |
+| `002-avatar-usuario.sql` | Columna `users.avatar` para la foto de perfil. |
+| `003-fecha-resena.sql` | Columna `user_games.review_updated_at` e índice para las reseñas de la comunidad. |
+| `004-traducciones.sql` | Tabla `game_translations` (caché de sinopsis traducidas). |
+
 - **Automático:** al arrancar, el backend aplica en orden las migraciones que faltan y las
   registra en la tabla `schema_migrations`. Si una falla, el backend no arranca y muestra el error.
 - **Manual:** `docker compose exec backend npm run migrate` (o `npm run migrate` dentro de
@@ -405,8 +428,8 @@ En Expo Go esto aplica a la app Expo Go completa, no solo a AlfaMataGames.
 - Si no se puede traducir (sin clave, cuota agotada o DeepL caído) se devuelve el texto
   original con un aviso (`notice`) y **no** se guarda nada, para traducir en cuanto el servicio
   esté disponible. Si el backend no responde, la app usa la descripción que ya tiene de RAWG.
-- Para proteger la cuota (500 000 caracteres al mes) se traducen como máximo 6000 caracteres
-  por juego, y dos consultas simultáneas del mismo juego comparten una sola traducción.
+- Para proteger la cuota mensual del plan Free (se ve en *Account* de DeepL) se traducen
+  como máximo 6000 caracteres por juego, y dos consultas simultáneas del mismo juego comparten una sola traducción.
 - **Obtener la clave**: crea una cuenta en https://www.deepl.com/pro-api (plan *DeepL API Free*;
   puede pedir una tarjeta solo para verificar la identidad; el plan Free no cobra). En *Account → API Keys* copia la clave (termina
   en `:fx`), agrégala al `.env` como `DEEPL_API_KEY=...` y reinicia el backend con
@@ -441,6 +464,27 @@ En Expo Go esto aplica a la app Expo Go completa, no solo a AlfaMataGames.
 - **Rendimiento**: `GameCard` y `ReviewCard` con `React.memo` y un handler estable por
   pantalla; valores de `AuthContext` y `LibraryContext` memorizados; `getEntry` usa un índice
   por id; las grillas usan `GRID_PERFORMANCE_PROPS` (`useGridColumns.js`).
+
+---
+
+## Diseño y adaptabilidad
+
+- **Tema único** en `src/theme/` (`colors.js`, `typography.js`): fondo oscuro, morado como
+  color principal, rojo (`danger`) para acciones destructivas; títulos en Sora e interfaz en
+  Inter. Las pantallas no usan colores sueltos.
+- **Componentes reutilizables** (`src/components/`, todos con PropTypes): encabezado, tarjetas,
+  chips de estado, puntuación, campos de formulario, estados vacío y de error, diálogo de
+  confirmación (`ConfirmDialog`), hoja de opciones de recordatorio, sinopsis y aviso de red.
+- **Estados** en cada pantalla: indicador de carga, mensaje vacío con icono (`EmptyState`) y
+  error con "Reintentar" (`ErrorState`). El detalle del juego mantiene el botón de volver
+  mientras carga o si falla, y Favoritos conserva la lista al refrescar.
+- **Área segura**: el encabezado (`Header`), el detalle del juego y el aviso de red respetan
+  la barra de estado, el notch y la barra de navegación (`react-native-safe-area-context`).
+- **Tamaños de pantalla**: grillas de 2 columnas en celulares, 3 en tablets y de 4 a 6 en
+  pantallas anchas (`useGridColumns`); formularios (420 px), Perfil (480 px), detalle y
+  Recordatorios (720 px) y diálogos (380 px) con ancho máximo y centrados.
+- **Identidad**: logo en el inicio de sesión (`assets/logo.png`) y como icono de la app;
+  prototipo inicial en Figma (inicio de sesión, catálogo y detalle).
 
 ---
 
@@ -484,7 +528,9 @@ Tabla generada a partir de `backend/src/routes/`.
 | GET | `/games/:gameId/description` | Bearer JWT | Sinopsis en español. Devuelve `{ gameId, lang, text, original, translated, source, notice }`: `source` es `cache`, `deepl` o `null`; `notice` es `null`, `empty`, `same-language`, `not-configured`, `quota` o `unavailable` (en esos casos `text` es el original). 404 si el juego no existe en RAWG; 502/503 si RAWG no responde o no está configurado. |
 | GET | `/games/:gameId/reviews` | Bearer JWT | Reseñas de los demás usuarios, la más reciente primero. `?page=1&pageSize=10` (máx. 30). Devuelve `{ items, page, hasMore }`; cada item trae `review`, `userScore`, `status`, `date` y `user { id, name, avatar }`. |
 
-Las rutas de `/library` requieren la cabecera `Authorization: Bearer <token>`.
+Las rutas marcadas con *Bearer JWT* requieren la cabecera `Authorization: Bearer <token>`. Si
+el token venció o no es válido responden 401 con `code` `TOKEN_EXPIRED` o `TOKEN_INVALID`, y la
+app cierra la sesión. Todos los errores son JSON `{ message }`.
 
 ---
 
@@ -541,6 +587,21 @@ Caché de sinopsis traducidas. Clave primaria `(game_id, lang)`.
 
 ---
 
+## Cumplimiento de la rúbrica del Avance 3
+
+Criterios del APF3 (resumen en [`docs/RUBRICAS.md`](docs/RUBRICAS.md)).
+
+| Criterio (peso) | Cómo se cumple | Evidencia |
+| --- | --- | --- |
+| Arquitectura y estructura (15%) | Capas separadas (pantallas, componentes, hooks, contextos, servicios, utilidades); navegación Stack + Tabs según la sesión; backend por rutas, controladores, servicios y middlewares; esquema por migraciones; logger central; variables documentadas; ramas y Conventional Commits. | [`src/`](src), [`AppNavigator.js`](src/navigation/AppNavigator.js), [`backend/src/`](backend/src), [`backend/migrations/`](backend/migrations), [`logger.js`](src/utils/logger.js), [`.env.example`](.env.example), [Estructura](#estructura-del-repositorio), [Flujo de trabajo en Git](#flujo-de-trabajo-en-git) |
+| Integración con backend REST / JWT (20%) | JWT validado en cada ruta privada con códigos `TOKEN_EXPIRED`/`TOKEN_INVALID`; la app cierra la sesión ante un 401; timeout de 10 s; errores siempre JSON y 500 genéricos; nuevos endpoints de foto de perfil, reseñas de la comunidad y sinopsis traducida; registro de cada petición con `X-Request-Id`. | [`auth.middleware.js`](backend/src/middleware/auth.middleware.js), [`apiClient.js`](src/services/apiClient.js), [`reviews.controller.js`](backend/src/controllers/reviews.controller.js), [`descriptions.controller.js`](backend/src/controllers/descriptions.controller.js), [API REST](#api-rest), [Errores y logging](#errores-logging-y-rendimiento) |
+| Funcionalidades nativas (25%) | **Cámara y galería** (foto de perfil con recorte), **acelerómetro y vibración** (agitar para descubrir), **notificaciones locales** (recordatorios), **sistema de archivos** (caché del catálogo) y **estado de la red**. Permisos con explicación previa, estado bloqueado y "Abrir ajustes"; cada función controla sus errores y se degrada en web. | [`useAvatarPicker.js`](src/hooks/useAvatarPicker.js), [`usePermission.js`](src/hooks/usePermission.js), [`useShakeDetector.js`](src/hooks/useShakeDetector.js), [`notifications.js`](src/services/notifications.js), [`useGameReminder.js`](src/hooks/useGameReminder.js), [`catalogCache.js`](src/services/catalogCache.js), [`useNetworkStatus.js`](src/hooks/useNetworkStatus.js), [Permisos](#permisos), [Notificaciones](#notificaciones) |
+| UI/UX (25%) | Tema y tipografías coherentes, componentes reutilizables, diálogos propios, estados de carga/vacío/error, área segura, grillas de 2 a 6 columnas y anchos máximos para tablets y web, logo e icono propios. | [`src/theme/`](src/theme), [`src/components/`](src/components), [`ConfirmDialog.js`](src/components/ConfirmDialog.js), [`ErrorBoundary.js`](src/components/ErrorBoundary.js), [`useGridColumns.js`](src/hooks/useGridColumns.js), [Diseño y adaptabilidad](#diseño-y-adaptabilidad) |
+| Innovación y valor agregado (10%) | Frente al APF2: uso sin conexión con caché, agitar para descubrir un juego, sinopsis traducidas al español con DeepL (con caché en la BD), reseñas de la comunidad, recordatorios y foto de perfil. | [Sinopsis traducidas](#sinopsis-traducidas), [Caché](#caché-y-almacenamiento-local), [`useRandomGame.js`](src/hooks/useRandomGame.js), [`useGameReviews.js`](src/hooks/useGameReviews.js) |
+| Documentación (5%) | README con instalación, variables, permisos, caché, notificaciones, API, modelo de datos, migraciones y esta tabla; guía para agentes y plan del proyecto. | `README.md`, [`AGENTS.md`](AGENTS.md), [`docs/PLAN.md`](docs/PLAN.md) |
+
+---
+
 ## Cumplimiento de la rúbrica del Avance 2
 
 | Criterio | Dónde se evidencia |
@@ -567,16 +628,21 @@ Las ramas se integran a `develop` con `git merge --no-ff` para conservar el hist
 
 ---
 
-## Trabajo futuro
+## Trabajo futuro (Avance 4)
 
-- Mejoras menores: más datos en el detalle, filtros por género/plataforma, mejoras de UI y
-  accesibilidad, y pruebas automatizadas.
+- Catálogo de RAWG a través del backend (la clave sale de la app) y variables `EXPO_PUBLIC_*`.
+- Backend en la nube (Railway) con HTTPS y guía de despliegue.
+- Gestión de cuenta (datos, contraseña, eliminar cuenta) y estadísticas en Perfil.
+- Inicio de sesión con Google y Discord, e importación de la biblioteca de Steam.
+- Recordatorios con notificaciones push desde el servidor.
+- APK con EAS Build, accesibilidad y pulido final.
 
 ---
 
 ## Créditos
 
 - Datos de videojuegos proporcionados por **RAWG** (https://rawg.io).
+- Traducción de las sinopsis con **DeepL** (https://www.deepl.com).
 - **Autor(es):** Gerardo Carpio
 
 ---
@@ -590,4 +656,6 @@ Agregar las imágenes en docs/screenshots/ con estos nombres:
 - docs/screenshots/detalle.png     (detalle de un juego)
 - docs/screenshots/favoritos.png   (pantalla de favoritos)
 - docs/screenshots/perfil.png      (perfil del usuario)
+- docs/screenshots/recordatorios.png (recordatorios activos)
+- docs/screenshots/web-ancha.png   (catálogo en el navegador, pantalla ancha)
 -->

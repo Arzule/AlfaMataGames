@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import { getGameDetail } from '../services/rawgApi';
@@ -32,9 +33,14 @@ import { formatDateTime } from '../utils/dateFormat';
 
 // Margen sobre la reseña al desplazarla para que quede a la vista con el teclado abierto.
 const REVIEW_SCROLL_MARGIN = 16;
+// Igual que REVIEW_MAX_LENGTH del backend.
+const REVIEW_MAX_LENGTH = 1000;
+// Ancho máximo del contenido en tablets y web.
+const CONTENT_MAX_WIDTH = 720;
 
 export default function GameDetailScreen({ route, navigation }) {
   const { gameId } = route.params;
+  const insets = useSafeAreaInsets();
 
   const { getEntry, isFavorite, saveEntry, loading: libraryLoading } = useLibrary();
 
@@ -43,6 +49,8 @@ export default function GameDetailScreen({ route, navigation }) {
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(null);
   const [saveError, setSaveError] = useState(null);
+  // Al cambiar, vuelve a pedir el detalle ("Reintentar").
+  const [reloadKey, setReloadKey] = useState(0);
 
   const entry = getEntry(gameId);
   const favorite = isFavorite(gameId);
@@ -127,6 +135,7 @@ export default function GameDetailScreen({ route, navigation }) {
     (async () => {
       try {
         setLoading(true);
+        setError(null);
         const data = await getGameDetail(gameId);
         if (isMounted) setGame(data);
       } catch (err) {
@@ -139,20 +148,34 @@ export default function GameDetailScreen({ route, navigation }) {
     return () => {
       isMounted = false;
     };
-  }, [gameId]);
+  }, [gameId, reloadKey]);
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator color={colors.primary} size="large" />
-      </View>
-    );
-  }
+  const backButton = (
+    <TouchableOpacity
+      style={styles.iconBtn}
+      onPress={() => navigation.goBack()}
+      accessibilityLabel="Volver"
+    >
+      <Feather name="arrow-left" size={16} color={colors.textPrimary} />
+    </TouchableOpacity>
+  );
 
-  if (error || !game) {
+  // Mientras carga o si falla, el botón de volver sigue disponible (en web no hay botón
+  // atrás del sistema).
+  if (loading || error || !game) {
     return (
-      <View style={styles.centered}>
-        <ErrorState message={error ?? 'Juego no encontrado.'} />
+      <View style={styles.flex}>
+        <View style={[styles.heroActions, { paddingTop: insets.top + 12 }]}>{backButton}</View>
+        <View style={styles.centered}>
+          {loading ? (
+            <ActivityIndicator color={colors.primary} size="large" />
+          ) : (
+            <ErrorState
+              message={error ?? 'Juego no encontrado.'}
+              onRetry={() => setReloadKey((key) => key + 1)}
+            />
+          )}
+        </View>
       </View>
     );
   }
@@ -210,10 +233,8 @@ export default function GameDetailScreen({ route, navigation }) {
               transition={200}
             />
             <View style={styles.heroOverlay} />
-            <View style={styles.heroActions}>
-              <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
-                <Feather name="arrow-left" size={16} color={colors.textPrimary} />
-              </TouchableOpacity>
+            <View style={[styles.heroActions, { paddingTop: insets.top + 12 }]}>
+              {backButton}
             </View>
           </View>
 
@@ -286,9 +307,12 @@ export default function GameDetailScreen({ route, navigation }) {
                   onFocus={handleReviewFocus}
                   onBlur={handleReviewBlur}
                   multiline
-                  maxLength={500}
+                  maxLength={REVIEW_MAX_LENGTH}
                   editable={!libraryLoading}
                 />
+                <Text style={styles.counterText}>
+                  {reviewText.length}/{REVIEW_MAX_LENGTH}
+                </Text>
                 <TouchableOpacity
                   style={[styles.reviewBtn, (libraryLoading || busy) && styles.btnDisabled]}
                   onPress={handleSaveReview}
@@ -410,7 +434,7 @@ export default function GameDetailScreen({ route, navigation }) {
 
       {/* Footer (oculto con el teclado abierto para dejar espacio a la reseña) */}
       {keyboardVisible ? null : (
-        <View style={styles.footerBar}>
+        <View style={[styles.footerBar, { paddingBottom: insets.bottom + 12 }]}>
           <TouchableOpacity
             style={[styles.favoriteBtn, (libraryLoading || busy) && styles.btnDisabled]}
             onPress={handleToggleFavorite}
@@ -471,7 +495,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
     paddingHorizontal: 24,
   },
   heroBlock: {
@@ -488,7 +511,6 @@ const styles = StyleSheet.create({
   heroActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 44,
     paddingHorizontal: 24,
   },
   iconBtn: {
@@ -500,6 +522,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   metaSection: {
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
     paddingHorizontal: 24,
     paddingTop: 16,
     gap: 16,
@@ -609,6 +634,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     textAlignVertical: 'top',
   },
+  counterText: {
+    alignSelf: 'flex-end',
+    color: colors.textMuted,
+    fontSize: 11,
+    fontFamily: fonts.body,
+  },
   reviewBtn: {
     alignSelf: 'flex-start',
     paddingHorizontal: 16,
@@ -692,6 +723,7 @@ const styles = StyleSheet.create({
   footerBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 24,
     paddingVertical: 12,
     backgroundColor: colors.surface,
@@ -700,6 +732,7 @@ const styles = StyleSheet.create({
   },
   favoriteBtn: {
     flex: 1,
+    maxWidth: CONTENT_MAX_WIDTH - 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

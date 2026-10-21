@@ -2,15 +2,18 @@
 // Barra de encabezado reutilizable.
 // title: texto principal; subtitle: linea pequena que aparece encima (ej. un saludo).
 // left / right: elementos opcionales (avatar, botones, contadores, etc.).
+// Va arriba de la pantalla: suma el área segura superior (barra de estado, notch).
 import React from 'react';
 import PropTypes from 'prop-types';
 import { View, Text, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 
 export default function Header({ title, subtitle, left, right, style }) {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.bar, style]}>
+    <View style={[styles.bar, { paddingTop: insets.top + 12 }, style]}>
       <View style={styles.leftGroup}>
         {left ? <View style={styles.slot}>{left}</View> : null}
         <View style={styles.texts}>

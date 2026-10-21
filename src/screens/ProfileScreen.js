@@ -121,7 +121,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="Perfil" style={styles.header} />
+      <Header title="Perfil" />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
@@ -320,9 +320,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    paddingTop: 60,
-  },
   content: {
     width: '100%',
     maxWidth: 480,
@@ -383,7 +380,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   feedbackError: {
-    color: '#ef4444',
+    color: colors.danger,
   },
   feedbackSuccess: {
     color: colors.success,

@@ -8,8 +8,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 ## Estado
 
 - Entregados: Avance 1 y Avance 2.
-- Avance 3: A3-0 a A3-6 terminadas.
-- **Fase actual: A3-7** (Documentación del Avance 3).
+- Avance 3: A3-0 a A3-7 terminadas (pendiente: entrega por el usuario).
+- **Fase actual: A4-1** (Proxy de RAWG y variables EXPO_PUBLIC_*).
 
 ## Decisiones tomadas
 
@@ -168,16 +168,16 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Terminado cuando:** la segunda consulta de un juego sale de la caché y, sin clave de DeepL,
   la app muestra el texto original con la etiqueta.
 
-### [ ] A3-7 Documentación del Avance 3
+### [x] A3-7 Documentación del Avance 3
 
 - **Objetivo:** entregar el Avance 3.
 - **Tareas:**
-  - [ ] README actualizado (funcionalidades, endpoints, modelo de datos, migraciones, variables).
-  - [ ] Tabla de cumplimiento de la Unidad 3 (criterios del APF3 en `RUBRICAS.md`).
-  - [ ] Pulido de UI/UX: revisar las pantallas nuevas contra el diseño de Figma y el tema
+  - [x] README actualizado (funcionalidades, endpoints, modelo de datos, migraciones, variables).
+  - [x] Tabla de cumplimiento de la Unidad 3 (criterios del APF3 en `RUBRICAS.md`).
+  - [x] Pulido de UI/UX: revisar las pantallas nuevas contra el diseño de Figma y el tema
     (`src/theme/`).
-  - [ ] Estados de carga, vacío y error en todas las pantallas.
-  - [ ] Revisión en pantallas pequeñas y anchas (incluida la web).
+  - [x] Estados de carga, vacío y error en todas las pantallas.
+  - [x] Revisión en pantallas pequeñas y anchas (incluida la web).
 - **Terminado cuando:** el README refleja el código, la tabla enlaza a cada evidencia y ninguna
   pantalla queda sin estados de carga/vacío/error ni se rompe en tamaños extremos.
 

@@ -151,7 +151,6 @@ export default function RemindersScreen({ navigation }) {
     <View style={styles.container}>
       <Header
         title="Recordatorios"
-        style={styles.header}
         left={
           <TouchableOpacity
             style={styles.backBtn}
@@ -208,9 +207,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    paddingTop: 60,
-  },
   backBtn: {
     width: 36,
     height: 36,
@@ -239,6 +235,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   list: {
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
     paddingHorizontal: 24,
     paddingBottom: 24,
     gap: 8,
