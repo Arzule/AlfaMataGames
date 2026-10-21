@@ -53,7 +53,7 @@ export default function GameCatalogScreen({ navigation }) {
     search: searchTerm,
   });
 
-  // Columnas segun el ancho de pantalla (2 movil, 3 tablet, 4 escritorio).
+  // Columnas segun el ancho de pantalla (2 movil, 3 tablet, 4 a 6 escritorio).
   const columns = useGridColumns();
 
   const isTodos = selectedCategory === 'Todos';

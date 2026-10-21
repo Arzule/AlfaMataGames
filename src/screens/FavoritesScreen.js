@@ -21,7 +21,7 @@ import { useGridColumns, GRID_PERFORMANCE_PROPS } from '../hooks/useGridColumns'
 export default function FavoritesScreen({ navigation }) {
   const { items, loading, error, refresh } = useLibrary();
 
-  // Columnas segun el ancho de pantalla (2 movil, 3 tablet, 4 escritorio).
+  // Columnas segun el ancho de pantalla (2 movil, 3 tablet, 4 a 6 escritorio).
   const columns = useGridColumns();
 
   // Solo las entradas favoritas, en formato de GameCard.
@@ -62,7 +62,6 @@ export default function FavoritesScreen({ navigation }) {
       {/* Encabezado */}
       <Header
         title="Favoritos"
-        style={styles.header}
         right={
           <Text style={styles.count}>
             {favorites.length} {favorites.length === 1 ? 'juego' : 'juegos'}
@@ -70,11 +69,11 @@ export default function FavoritesScreen({ navigation }) {
         }
       />
 
-      {loading ? (
+      {loading && !items.length ? (
         <View style={styles.centered}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
-      ) : error ? (
+      ) : error && !items.length ? (
         <ErrorState message={error} onRetry={refresh} />
       ) : (
         <FlatList
@@ -94,6 +93,9 @@ export default function FavoritesScreen({ navigation }) {
               colors={[colors.primary]}
             />
           }
+          ListHeaderComponent={
+            error ? <Text style={styles.inlineError}>{error}</Text> : null
+          }
           ListEmptyComponent={
             <EmptyState
               icon="heart"
@@ -112,9 +114,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    paddingTop: 60,
-  },
   count: {
     color: colors.textSecondary,
     fontSize: 13,
@@ -131,6 +130,11 @@ const styles = StyleSheet.create({
   },
   cell: {
     flex: 1,
+  },
+  inlineError: {
+    color: colors.warning,
+    fontSize: 12,
+    fontFamily: fonts.body,
   },
   centered: {
     flex: 1,
