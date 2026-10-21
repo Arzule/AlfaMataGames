@@ -80,6 +80,8 @@ export default function ProfileScreen() {
       message: 'Se borrarán el catálogo guardado y las imágenes descargadas. Tu sesión no se cierra.',
       confirmText: 'Borrar',
       cancelText: 'Cancelar',
+      destructive: true,
+      icon: 'trash-2',
     });
     if (!confirmed) return;
 
@@ -109,6 +111,8 @@ export default function ProfileScreen() {
       message: '¿Seguro que deseas salir de tu cuenta?',
       confirmText: 'Cerrar sesión',
       cancelText: 'Cancelar',
+      destructive: true,
+      icon: 'log-out',
     });
     if (confirmed) {
       await logout();

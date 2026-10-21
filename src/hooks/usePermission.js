@@ -61,6 +61,7 @@ export function usePermission({ getPermission, requestPermission, title, rationa
         message: `${rationale}\n\nEl permiso está desactivado. Actívalo en los ajustes del sistema.`,
         confirmText: 'Abrir ajustes',
         cancelText: 'Ahora no',
+        icon: 'lock',
       });
       if (goToSettings) openSettings();
       return false;
@@ -72,6 +73,7 @@ export function usePermission({ getPermission, requestPermission, title, rationa
       message: rationale,
       confirmText: 'Continuar',
       cancelText: 'Ahora no',
+      icon: 'shield',
     });
     if (!accepted) return false;
 
