@@ -11,8 +11,8 @@ decisiones en [docs/PLAN.md](docs/PLAN.md); criterios de evaluación en
 
 AlfaMataGames: biblioteca de videojuegos (catálogo de RAWG + biblioteca personal por usuario:
 favorito, estado, puntuación 0-5 y reseña). Proyecto académico del curso Desarrollo de
-Aplicaciones Móviles (UTP). Avances 1 y 2 entregados; en curso: Avance 3 (Unidad 3) y
-entrega final (Avance 4, Unidad 4). Fase actual y decisiones: `docs/PLAN.md`.
+Aplicaciones Móviles (UTP). Avances 1 y 2 entregados; Avance 3 (Unidad 3) terminado; en
+curso: entrega final (Avance 4, Unidad 4). Fase actual y decisiones: `docs/PLAN.md`.
 
 ## Stack
 
@@ -148,6 +148,12 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
   `game_translations`; un acierto de caché no llama a RAWG ni a DeepL. Sin traducción (sin
   clave, cuota, error) devuelve el original con `notice` y no guarda nada. La app nunca
   muestra la sinopsis vacía por un error: usa `description_raw` de RAWG como respaldo.
+- **Diseño**: colores solo desde `src/theme/colors.js` (nada de hex sueltos; `danger` para
+  destructivo). `Header` suma el área segura superior (no poner `paddingTop` fijo); pantallas
+  sin `Header` usan `useSafeAreaInsets`. En tablets y web el contenido lleva ancho máximo
+  centrado (formularios 420, Perfil 480, detalle y listas 720) y las grillas van de 2 a 6
+  columnas (`useGridColumns`). Pantallas con datos remotos: carga, vacío (`EmptyState`) y error
+  con "Reintentar" (`ErrorState`); al refrescar no se reemplaza una lista ya visible.
 - **Rendimiento**: componentes de listas con `React.memo` y handlers estables (`onPress`
   recibe el elemento); valores de contexto con `useMemo`.
 - **Esquema**: todo cambio de BD va **siempre por migraciones** (`backend/migrations`, archivo
