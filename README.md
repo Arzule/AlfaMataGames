@@ -143,7 +143,7 @@ AlfaMataGames/
 ├── docker-compose.yml          # Servicios db, backend y adminer
 ├── .env.example                # Plantilla de variables de entorno (sin valores reales)
 ├── .gitignore                  # Ignora node_modules, .env, .expo, dist, etc.
-├── assets/                     # Iconos y splash de la app
+├── assets/                     # logo.png (login) e iconos de la app generados desde el logo
 ├── docs/
 │   └── screenshots/            # Carpeta para las capturas de pantalla (vacía)
 ├── database/
