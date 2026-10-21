@@ -11,6 +11,7 @@ import { LibraryProvider } from './src/context/LibraryContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import OfflineBanner from './src/components/OfflineBanner';
+import { ConfirmDialogHost } from './src/components/ConfirmDialog';
 import { colors } from './src/theme/colors';
 import { cleanExpiredCache } from './src/services/catalogCache';
 import { configureNotifications } from './src/services/notifications';
@@ -58,6 +59,8 @@ export default function App() {
           </LibraryProvider>
         </AuthProvider>
       </ErrorBoundary>
+      {/* Fuera del ErrorBoundary: las confirmaciones siguen disponibles tras un reintento. */}
+      <ConfirmDialogHost />
     </SafeAreaProvider>
   );
 }

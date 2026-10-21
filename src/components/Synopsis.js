@@ -46,7 +46,7 @@ export default function Synopsis({ text, original, translated, notice, loading }
       <View style={styles.labelRow}>
         <Feather name="globe" size={12} color={colors.info} />
         <Text style={[styles.labelText, styles.labelInfo]}>
-          {showOriginal ? 'Texto original' : 'Traducido automáticamente con DeepL'}
+          {showOriginal ? 'Texto original' : 'Traducido automáticamente'}
         </Text>
         <TouchableOpacity onPress={() => setShowOriginal((value) => !value)} hitSlop={8}>
           <Text style={styles.link}>{showOriginal ? 'Ver traducción' : 'Ver original'}</Text>

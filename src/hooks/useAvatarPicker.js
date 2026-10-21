@@ -97,6 +97,8 @@ export function useAvatarPicker() {
       message: '¿Quieres quitar tu foto de perfil?',
       confirmText: 'Eliminar',
       cancelText: 'Cancelar',
+      destructive: true,
+      icon: 'trash-2',
     });
     if (!confirmed) return;
 

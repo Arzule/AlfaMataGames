@@ -70,6 +70,8 @@ export default function RemindersScreen({ navigation }) {
           : `¿Cancelar el recordatorio de ${item.gameName}?`,
       confirmText: 'Cancelar recordatorio',
       cancelText: 'Volver',
+      destructive: true,
+      icon: 'bell-off',
     });
     if (!confirmed) return;
     setActionError(null);
@@ -88,6 +90,8 @@ export default function RemindersScreen({ navigation }) {
       message: 'Se cancelarán todos los recordatorios, incluido el diario.',
       confirmText: 'Cancelar todos',
       cancelText: 'Volver',
+      destructive: true,
+      icon: 'bell-off',
     });
     if (!confirmed) return;
     setActionError(null);

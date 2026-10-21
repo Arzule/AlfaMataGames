@@ -45,7 +45,8 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   Avatar (foto o iniciales), ReviewCard (reseña de otro usuario), ReminderSheet (opciones de
   recordatorio), DateTimePickerModal (fecha/hora: diálogos en Android, modal en iOS),
   ErrorBoundary (pantalla de reintento global), OfflineBanner (aviso de red), Synopsis
-  (sinopsis con etiqueta de traducción, "Ver original" y "Ver más").
+  (sinopsis con etiqueta de traducción, "Ver original" y "Ver más"), ConfirmDialog (diálogo de
+  confirmación propio y `ConfirmDialogHost`, montado en `App.js`).
 - `context/` — `AuthContext.js` (sesión, token, login/register/logout, restaura con `/auth/me`);
   `LibraryContext.js` (biblioteca del usuario con cambios optimistas).
 - `hooks/` — `useAuth`, `useLibrary` (consumen contextos), `useGames` (catálogo RAWG con
@@ -68,7 +69,7 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   en nativo, AsyncStorage en web), `preferences.js` (preferencias en AsyncStorage),
   `notifications.js` / `notifications.web.js` (expo-notifications; en web, misma API sin efecto).
 - `theme/` — `colors.js`, `typography.js` (`fonts`, `fontSizes`).
-- `utils/` — `storage.js` (token seguro nativo/web), `confirm.js` (confirmación multiplataforma),
+- `utils/` — `storage.js` (token seguro nativo/web), `confirm.js` (`confirmAction`: abre ConfirmDialog),
   `mapGame.js` (RAWG → formato de GameCard), `cacheEntry.js` (formato y vencimiento de 7 días), `avatarImage.js` (recorte cuadrado 256 px JPEG),
   `dateFormat.js` (fechas y horas sin Intl), `logger.js` (logger central).
 - `shims/` — `TopicSubscriptionModule.android.js` (lo usa `metro.config.js`).
@@ -99,8 +100,10 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 
 - **Token** en `expo-secure-store` (nativo) y `localStorage` (web) vía `src/utils/storage.js`:
   SecureStore no funciona en web; las funciones nunca lanzan.
-- **Confirmaciones** con `src/utils/confirm.js` (`confirmAction`): `Alert.alert` con botones no
-  funciona en react-native-web, ahí se usa `window.confirm`.
+- **Confirmaciones** siempre con `confirmAction` de `src/utils/confirm.js` (nunca `Alert.alert`):
+  muestra `ConfirmDialog` con el estilo de la app (`destructive` → botón rojo, `icon` de Feather).
+  Si `ConfirmDialogHost` no está montado usa el diálogo del sistema (`window.confirm` en web).
+  En iOS resuelve al terminar de cerrarse, para poder abrir la cámara o el selector después.
 - **Navegación según sesión**: `AppNavigator` renderiza un Stack u otro según `user`; no se usa
   `navigation.replace` (el cambio de sesión cambia el árbol solo).
 - **Biblioteca optimista** en `LibraryContext`: aplica el cambio, llama al backend y revierte si
