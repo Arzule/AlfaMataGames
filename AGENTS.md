@@ -92,6 +92,10 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 - `utils/validators.js` — validaciones manuales y constantes (`STATUSES`, `REVIEW_MAX_LENGTH`).
 - `utils/logger.js` — `createLogger(ambito)`; nivel con `LOG_LEVEL`; oculta campos sensibles.
 
+`assets/` — `logo.png` (login, 512 px) e iconos generados desde el logo de Figma (1000 px):
+`icon.png` (fondo `#0f0f14`), `android-icon-foreground/monochrome.png` (zona segura de 640 px
+en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en `app.json`.
+
 `database/init/` — `01-schema.sql` (users, user_games) y `02-seed.sql` (usuarios de prueba).
 `backend/migrations/` — migraciones SQL numeradas (`NNN-nombre.sql`), registradas en
 `schema_migrations`. El build del backend usa el contexto `./backend` (copia `src` y `migrations`).
