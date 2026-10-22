@@ -16,12 +16,12 @@ import Header from '../components/Header';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
 import { useLibrary } from '../hooks/useLibrary';
-import { useGridColumns } from '../hooks/useGridColumns';
+import { useGridColumns, GRID_PERFORMANCE_PROPS } from '../hooks/useGridColumns';
 
 export default function FavoritesScreen({ navigation }) {
   const { items, loading, error, refresh } = useLibrary();
 
-  // Columnas segun el ancho de pantalla (2 movil, 3 tablet, 4 escritorio).
+  // Columnas segun el ancho de pantalla (2 movil, 3 tablet, 4 a 6 escritorio).
   const columns = useGridColumns();
 
   // Solo las entradas favoritas, en formato de GameCard.
@@ -39,17 +39,20 @@ export default function FavoritesScreen({ navigation }) {
     [items]
   );
 
+  const handleOpenGame = useCallback(
+    (game) => navigation.navigate('GameDetail', { gameId: game.id }),
+    [navigation]
+  );
+
+  const cellStyle = useMemo(() => [styles.cell, { maxWidth: `${100 / columns}%` }], [columns]);
+
   const renderItem = useCallback(
     ({ item }) => (
-      <View style={[styles.cell, { maxWidth: `${100 / columns}%` }]}>
-        <GameCard
-          game={item}
-          status={item.status}
-          onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
-        />
+      <View style={cellStyle}>
+        <GameCard game={item} status={item.status} onPress={handleOpenGame} />
       </View>
     ),
-    [navigation, columns]
+    [cellStyle, handleOpenGame]
   );
 
   const keyExtractor = useCallback((item) => String(item.id), []);
@@ -59,7 +62,6 @@ export default function FavoritesScreen({ navigation }) {
       {/* Encabezado */}
       <Header
         title="Favoritos"
-        style={styles.header}
         right={
           <Text style={styles.count}>
             {favorites.length} {favorites.length === 1 ? 'juego' : 'juegos'}
@@ -67,11 +69,11 @@ export default function FavoritesScreen({ navigation }) {
         }
       />
 
-      {loading ? (
+      {loading && !items.length ? (
         <View style={styles.centered}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
-      ) : error ? (
+      ) : error && !items.length ? (
         <ErrorState message={error} onRetry={refresh} />
       ) : (
         <FlatList
@@ -82,6 +84,7 @@ export default function FavoritesScreen({ navigation }) {
           numColumns={columns}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.gridContent}
+          {...GRID_PERFORMANCE_PROPS}
           refreshControl={
             <RefreshControl
               refreshing={loading}
@@ -89,6 +92,9 @@ export default function FavoritesScreen({ navigation }) {
               tintColor={colors.primary}
               colors={[colors.primary]}
             />
+          }
+          ListHeaderComponent={
+            error ? <Text style={styles.inlineError}>{error}</Text> : null
           }
           ListEmptyComponent={
             <EmptyState
@@ -108,9 +114,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    paddingTop: 60,
-  },
   count: {
     color: colors.textSecondary,
     fontSize: 13,
@@ -127,6 +130,11 @@ const styles = StyleSheet.create({
   },
   cell: {
     flex: 1,
+  },
+  inlineError: {
+    color: colors.warning,
+    fontSize: 12,
+    fontFamily: fonts.body,
   },
   centered: {
     flex: 1,

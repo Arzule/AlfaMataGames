@@ -1,6 +1,8 @@
 // src/components/GameCard.js
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import PropTypes from 'prop-types';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
@@ -13,12 +15,24 @@ export const STATUS_STYLES = {
   Abandonado: { bg: colors.badgeNeutral, text: colors.textSecondary },
 };
 
-export default function GameCard({ game, onPress, status = null, platform }) {
+// Memorizada: en las grillas solo se vuelve a dibujar la tarjeta cuyas props cambian.
+// onPress recibe el juego, así la pantalla puede pasar un único handler estable.
+function GameCard({ game, onPress, status = null, platform }) {
   const statusStyle = status ? STATUS_STYLES[status] : null;
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
-      <Image source={{ uri: game.image }} style={styles.cover} resizeMode="cover" />
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress ? () => onPress(game) : undefined}
+      activeOpacity={0.85}
+    >
+      {/* expo-image guarda la portada en caché de disco (cachePolicy por defecto: disk). */}
+      <Image
+        source={game.image ? { uri: game.image } : null}
+        style={styles.cover}
+        contentFit="cover"
+        transition={200}
+      />
       <View style={styles.details}>
         <Text style={styles.title} numberOfLines={1}>
           {game.title}
@@ -57,6 +71,20 @@ export default function GameCard({ game, onPress, status = null, platform }) {
   );
 }
 
+export default React.memo(GameCard);
+
+GameCard.propTypes = {
+  game: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+    title: PropTypes.string,
+    image: PropTypes.string,
+    rating: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  }).isRequired,
+  onPress: PropTypes.func,
+  status: PropTypes.oneOf(Object.keys(STATUS_STYLES)),
+  platform: PropTypes.string,
+};
+
 const styles = StyleSheet.create({
   card: {
     width: '100%',
@@ -69,6 +97,7 @@ const styles = StyleSheet.create({
   cover: {
     width: '100%',
     aspectRatio: 3 / 4,
+    backgroundColor: colors.badgeNeutral,
   },
   details: {
     padding: 12,

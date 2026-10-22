@@ -6,8 +6,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-# Copia el código de la aplicación.
+# Copia el código de la aplicación y las migraciones SQL.
 COPY src ./src
+COPY migrations ./migrations
 
 ENV NODE_ENV=production
 EXPOSE 3000

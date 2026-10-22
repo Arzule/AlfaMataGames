@@ -41,6 +41,11 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Claves externas: solo el backend las usa (la app nunca recibe la de DeepL).
+      RAWG_API_KEY: ${RAWG_API_KEY}
+      DEEPL_API_KEY: ${DEEPL_API_KEY:-}
+      DEEPL_API_URL: ${DEEPL_API_URL:-}
     ports:
       - "${BACKEND_PORT:-3000}:3000"
     healthcheck:

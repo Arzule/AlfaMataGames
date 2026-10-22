@@ -1,16 +1,20 @@
 // src/screens/GameDetailScreen.js
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   ScrollView,
   TouchableOpacity,
   TextInput,
   StyleSheet,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Keyboard,
+  Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import { getGameDetail } from '../services/rawgApi';
@@ -18,9 +22,25 @@ import { useLibrary } from '../hooks/useLibrary';
 import Rating from '../components/Rating';
 import StatusChips from '../components/StatusChips';
 import ErrorState from '../components/ErrorState';
+import ReviewCard from '../components/ReviewCard';
+import Synopsis from '../components/Synopsis';
+import ReminderSheet from '../components/ReminderSheet';
+import DateTimePickerModal from '../components/DateTimePickerModal';
+import { useGameReviews } from '../hooks/useGameReviews';
+import { useGameDescription } from '../hooks/useGameDescription';
+import { useGameReminder, REMINDER_PRESETS } from '../hooks/useGameReminder';
+import { formatDateTime } from '../utils/dateFormat';
+
+// Margen sobre la reseña al desplazarla para que quede a la vista con el teclado abierto.
+const REVIEW_SCROLL_MARGIN = 16;
+// Igual que REVIEW_MAX_LENGTH del backend.
+const REVIEW_MAX_LENGTH = 1000;
+// Ancho máximo del contenido en tablets y web.
+const CONTENT_MAX_WIDTH = 720;
 
 export default function GameDetailScreen({ route, navigation }) {
   const { gameId } = route.params;
+  const insets = useSafeAreaInsets();
 
   const { getEntry, isFavorite, saveEntry, loading: libraryLoading } = useLibrary();
 
@@ -29,6 +49,8 @@ export default function GameDetailScreen({ route, navigation }) {
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(null);
   const [saveError, setSaveError] = useState(null);
+  // Al cambiar, vuelve a pedir el detalle ("Reintentar").
+  const [reloadKey, setReloadKey] = useState(0);
 
   const entry = getEntry(gameId);
   const favorite = isFavorite(gameId);
@@ -39,12 +61,81 @@ export default function GameDetailScreen({ route, navigation }) {
     setReviewText(savedReview);
   }, [savedReview]);
 
+  const community = useGameReviews(gameId);
+  // Sinopsis en español desde el backend; si falla, la original de RAWG.
+  const description = useGameDescription(gameId, game?.description_raw);
+
+  // Recordatorio para jugar: hoja de opciones y selector de fecha propio.
+  const gameReminder = useGameReminder({ gameId, gameName: game?.name ?? 'este juego' });
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [pickerVisible, setPickerVisible] = useState(false);
+
+  const handleSelectPreset = (key) => {
+    setSheetVisible(false);
+    const preset = REMINDER_PRESETS.find((item) => item.key === key);
+    if (preset) gameReminder.schedule(preset.getDate());
+  };
+  const handlePickCustom = () => {
+    setSheetVisible(false);
+    setPickerVisible(true);
+  };
+  const handleCustomDate = (date) => {
+    setPickerVisible(false);
+    gameReminder.schedule(date);
+  };
+
+  // Teclado: la reseña se desplaza a la vista y el pie se oculta para dar espacio.
+  const scrollRef = useRef(null);
+  const contentRef = useRef(null);
+  const reviewRowRef = useRef(null);
+  const reviewFocusedRef = useRef(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  const scrollToReview = useCallback(() => {
+    // Espera a que KeyboardAvoidingView aplique su espacio antes de medir.
+    setTimeout(() => {
+      if (!reviewRowRef.current || !contentRef.current) return;
+      reviewRowRef.current.measureLayout(
+        contentRef.current,
+        (x, y) => {
+          scrollRef.current?.scrollTo({
+            y: Math.max(0, y - REVIEW_SCROLL_MARGIN),
+            animated: true,
+          });
+        },
+        () => {}
+      );
+    }, 150);
+  }, []);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+      if (reviewFocusedRef.current) scrollToReview();
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [scrollToReview]);
+
+  const handleReviewFocus = () => {
+    reviewFocusedRef.current = true;
+    // Si el teclado ya estaba abierto no llega un nuevo keyboardDidShow.
+    if (keyboardVisible) scrollToReview();
+  };
+  const handleReviewBlur = () => {
+    reviewFocusedRef.current = false;
+  };
+
   useEffect(() => {
     let isMounted = true;
 
     (async () => {
       try {
         setLoading(true);
+        setError(null);
         const data = await getGameDetail(gameId);
         if (isMounted) setGame(data);
       } catch (err) {
@@ -57,20 +148,34 @@ export default function GameDetailScreen({ route, navigation }) {
     return () => {
       isMounted = false;
     };
-  }, [gameId]);
+  }, [gameId, reloadKey]);
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator color={colors.primary} size="large" />
-      </View>
-    );
-  }
+  const backButton = (
+    <TouchableOpacity
+      style={styles.iconBtn}
+      onPress={() => navigation.goBack()}
+      accessibilityLabel="Volver"
+    >
+      <Feather name="arrow-left" size={16} color={colors.textPrimary} />
+    </TouchableOpacity>
+  );
 
-  if (error || !game) {
+  // Mientras carga o si falla, el botón de volver sigue disponible (en web no hay botón
+  // atrás del sistema).
+  if (loading || error || !game) {
     return (
-      <View style={styles.centered}>
-        <ErrorState message={error ?? 'Juego no encontrado.'} />
+      <View style={styles.flex}>
+        <View style={[styles.heroActions, { paddingTop: insets.top + 12 }]}>{backButton}</View>
+        <View style={styles.centered}>
+          {loading ? (
+            <ActivityIndicator color={colors.primary} size="large" />
+          ) : (
+            <ErrorState
+              message={error ?? 'Juego no encontrado.'}
+              onRetry={() => setReloadKey((key) => key + 1)}
+            />
+          )}
+        </View>
       </View>
     );
   }
@@ -109,139 +214,272 @@ export default function GameDetailScreen({ route, navigation }) {
     runSave('review', { review: reviewText.trim() ? reviewText.trim() : null });
 
   return (
-    <View style={styles.flex}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Hero */}
-        <View style={styles.heroBlock}>
-          <Image
-            source={{ uri: game.background_image }}
-            style={styles.heroImage}
-            resizeMode="cover"
-          />
-          <View style={styles.heroOverlay} />
-          <View style={styles.heroActions}>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
-              <Feather name="arrow-left" size={16} color={colors.textPrimary} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Meta */}
-        <View style={styles.metaSection}>
-          <View style={styles.tagsRow}>
-            <View style={styles.yearBadge}>
-              <Text style={styles.yearText}>{year}</Text>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'web' ? undefined : 'padding'}
+    >
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View ref={contentRef} collapsable={false}>
+          {/* Hero */}
+          <View style={styles.heroBlock}>
+            <Image
+              source={game.background_image ? { uri: game.background_image } : null}
+              style={styles.heroImage}
+              contentFit="cover"
+              transition={200}
+            />
+            <View style={styles.heroOverlay} />
+            <View style={[styles.heroActions, { paddingTop: insets.top + 12 }]}>
+              {backButton}
             </View>
           </View>
 
-          <Text style={styles.title}>{game.name}</Text>
-          <Text style={styles.developer}>{developer}</Text>
-
-          <View style={styles.ratingSection}>
-            <Text style={styles.ratingLabel}>VALORACIÓN</Text>
-            <View style={styles.starsRow}>
-              <Feather name="star" size={16} color={colors.warning} />
-              <Text style={styles.ratingValue}>{game.rating?.toFixed(1) ?? '0.0'}</Text>
-            </View>
-          </View>
-
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Feather name="monitor" size={14} color={colors.textSecondary} />
-              <Text style={styles.statLabel}>PLATAFORMAS</Text>
-              <Text style={styles.statValue} numberOfLines={2}>
-                {platforms}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.synopsisBlock}>
-            <Text style={styles.sectionTitle}>SINOPSIS</Text>
-            <Text style={styles.synopsisText} numberOfLines={6}>
-              {game.description_raw ?? 'Sin descripción disponible.'}
-            </Text>
-          </View>
-
-          {/* Mi biblioteca */}
-          <View style={styles.libraryBlock}>
-            <Text style={styles.sectionTitle}>MI BIBLIOTECA</Text>
-
-            <View style={styles.libraryRow}>
-              <Text style={styles.fieldLabel}>Estado</Text>
-              <StatusChips
-                value={entry?.status ?? null}
-                onChange={canEdit ? handleStatusChange : undefined}
-              />
+          {/* Meta */}
+          <View style={styles.metaSection}>
+            <View style={styles.tagsRow}>
+              <View style={styles.yearBadge}>
+                <Text style={styles.yearText}>{year}</Text>
+              </View>
             </View>
 
-            <View style={styles.libraryRow}>
-              <Text style={styles.fieldLabel}>Tu puntuación</Text>
-              <Rating
-                value={entry?.userScore ?? null}
-                onChange={canEdit ? handleScoreChange : undefined}
-                readOnly={!canEdit}
-              />
+            <Text style={styles.title}>{game.name}</Text>
+            <Text style={styles.developer}>{developer}</Text>
+
+            <View style={styles.ratingSection}>
+              <Text style={styles.ratingLabel}>VALORACIÓN</Text>
+              <View style={styles.starsRow}>
+                <Feather name="star" size={16} color={colors.warning} />
+                <Text style={styles.ratingValue}>{game.rating?.toFixed(1) ?? '0.0'}</Text>
+              </View>
             </View>
 
-            <View style={styles.libraryRow}>
-              <Text style={styles.fieldLabel}>Tu reseña</Text>
-              <TextInput
-                style={styles.reviewInput}
-                placeholder="Escribe tu reseña..."
-                placeholderTextColor={colors.textMuted}
-                value={reviewText}
-                onChangeText={setReviewText}
-                multiline
-                maxLength={500}
-                editable={!libraryLoading}
-              />
-              <TouchableOpacity
-                style={[styles.reviewBtn, (libraryLoading || busy) && styles.btnDisabled]}
-                onPress={handleSaveReview}
-                disabled={libraryLoading || busy}
-              >
-                {saving === 'review' ? (
-                  <ActivityIndicator color={colors.textPrimary} size="small" />
+            <View style={styles.statsRow}>
+              <View style={styles.statBox}>
+                <Feather name="monitor" size={14} color={colors.textSecondary} />
+                <Text style={styles.statLabel}>PLATAFORMAS</Text>
+                <Text style={styles.statValue} numberOfLines={2}>
+                  {platforms}
+                </Text>
+              </View>
+            </View>
+
+            <Synopsis
+              text={description.text}
+              original={description.original}
+              translated={description.translated}
+              notice={description.notice}
+              loading={description.loading}
+            />
+
+            {/* Mi biblioteca */}
+            <View style={styles.libraryBlock}>
+              <Text style={styles.sectionTitle}>MI BIBLIOTECA</Text>
+
+              <View style={styles.libraryRow}>
+                <Text style={styles.fieldLabel}>Estado</Text>
+                <StatusChips
+                  value={entry?.status ?? null}
+                  onChange={canEdit ? handleStatusChange : undefined}
+                />
+              </View>
+
+              <View style={styles.libraryRow}>
+                <Text style={styles.fieldLabel}>Tu puntuación</Text>
+                <Rating
+                  value={entry?.userScore ?? null}
+                  onChange={canEdit ? handleScoreChange : undefined}
+                  readOnly={!canEdit}
+                />
+              </View>
+
+              <View ref={reviewRowRef} collapsable={false} style={styles.libraryRow}>
+                <Text style={styles.fieldLabel}>Tu reseña</Text>
+                <TextInput
+                  style={styles.reviewInput}
+                  placeholder="Escribe tu reseña..."
+                  placeholderTextColor={colors.textMuted}
+                  value={reviewText}
+                  onChangeText={setReviewText}
+                  onFocus={handleReviewFocus}
+                  onBlur={handleReviewBlur}
+                  multiline
+                  maxLength={REVIEW_MAX_LENGTH}
+                  editable={!libraryLoading}
+                />
+                <Text style={styles.counterText}>
+                  {reviewText.length}/{REVIEW_MAX_LENGTH}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.reviewBtn, (libraryLoading || busy) && styles.btnDisabled]}
+                  onPress={handleSaveReview}
+                  disabled={libraryLoading || busy}
+                >
+                  {saving === 'review' ? (
+                    <ActivityIndicator color={colors.textPrimary} size="small" />
+                  ) : (
+                    <Text style={styles.reviewBtnText}>Guardar reseña</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {/* Recordatorio para jugar (notificación local; no disponible en web) */}
+              <View style={styles.libraryRow}>
+                <Text style={styles.fieldLabel}>Recordatorio</Text>
+                {!gameReminder.supported ? (
+                  <Text style={styles.hintText}>
+                    Los recordatorios están disponibles en la app del celular.
+                  </Text>
+                ) : gameReminder.reminder ? (
+                  <View style={styles.reminderActive}>
+                    <Feather name="bell" size={16} color={colors.primary} />
+                    <Text style={styles.reminderText}>
+                      {formatDateTime(gameReminder.reminder.fireAt)}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={gameReminder.cancel}
+                      disabled={gameReminder.busy}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.linkText}>Cancelar</Text>
+                    </TouchableOpacity>
+                  </View>
                 ) : (
-                  <Text style={styles.reviewBtnText}>Guardar reseña</Text>
+                  <TouchableOpacity
+                    style={[styles.reminderBtn, gameReminder.busy && styles.btnDisabled]}
+                    onPress={() => setSheetVisible(true)}
+                    disabled={gameReminder.busy}
+                  >
+                    {gameReminder.busy ? (
+                      <ActivityIndicator color={colors.textPrimary} size="small" />
+                    ) : (
+                      <Feather name="bell" size={16} color={colors.textPrimary} />
+                    )}
+                    <Text style={styles.reminderBtnText}>Recordarme jugar esto</Text>
+                  </TouchableOpacity>
                 )}
-              </TouchableOpacity>
+                {gameReminder.feedback ? (
+                  <Text
+                    style={[
+                      styles.hintText,
+                      gameReminder.feedback.type === 'error' && styles.saveErrorText,
+                      gameReminder.feedback.type === 'success' && styles.successText,
+                    ]}
+                  >
+                    {gameReminder.feedback.text}
+                  </Text>
+                ) : null}
+                {gameReminder.permissionStatus === 'blocked' ? (
+                  <TouchableOpacity onPress={gameReminder.openSettings}>
+                    <Text style={styles.linkText}>
+                      Notificaciones bloqueadas · Abrir ajustes
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+
+              {libraryLoading ? (
+                <Text style={styles.hintText}>Cargando tu biblioteca...</Text>
+              ) : null}
+              {saveError ? <Text style={styles.saveErrorText}>{saveError}</Text> : null}
             </View>
 
-            {libraryLoading ? (
-              <Text style={styles.hintText}>Cargando tu biblioteca...</Text>
-            ) : null}
-            {saveError ? <Text style={styles.saveErrorText}>{saveError}</Text> : null}
+            {/* Reseñas de otros usuarios, la más reciente primero */}
+            <View style={styles.communityBlock}>
+              <Text style={styles.sectionTitle}>RESEÑAS DE LA COMUNIDAD</Text>
+
+              {community.loading ? (
+                <ActivityIndicator color={colors.primary} style={styles.communitySpinner} />
+              ) : community.error && !community.reviews.length ? (
+                <View style={styles.communityMessage}>
+                  <Text style={styles.hintText}>{community.error}</Text>
+                  <TouchableOpacity onPress={community.reload}>
+                    <Text style={styles.linkText}>Reintentar</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : !community.reviews.length ? (
+                <Text style={styles.hintText}>
+                  Nadie más ha reseñado este juego todavía.
+                </Text>
+              ) : (
+                <>
+                  {community.reviews.map((review) => (
+                    <ReviewCard key={review.id} review={review} />
+                  ))}
+                  {community.error ? (
+                    <Text style={styles.saveErrorText}>{community.error}</Text>
+                  ) : null}
+                  {community.hasMore ? (
+                    <TouchableOpacity
+                      style={styles.moreBtn}
+                      onPress={community.loadMore}
+                      disabled={community.loadingMore}
+                    >
+                      {community.loadingMore ? (
+                        <ActivityIndicator color={colors.primary} size="small" />
+                      ) : (
+                        <Text style={styles.linkText}>Ver más reseñas</Text>
+                      )}
+                    </TouchableOpacity>
+                  ) : null}
+                </>
+              )}
+            </View>
           </View>
         </View>
       </ScrollView>
 
-      {/* Footer */}
-      <View style={styles.footerBar}>
-        <TouchableOpacity
-          style={[styles.favoriteBtn, (libraryLoading || busy) && styles.btnDisabled]}
-          onPress={handleToggleFavorite}
-          disabled={libraryLoading || busy}
-        >
-          {saving === 'favorite' ? (
-            <ActivityIndicator
-              color={colors.primary}
-              size="small"
-            />
-          ) : (
-            <Feather
-              name="heart"
-              size={20}
-              color={favorite ? colors.primary : colors.textSecondary}
-              fill={favorite ? colors.primary : 'none'}
-            />
-          )}
-          <Text style={styles.favoriteBtnText}>
-            {favorite ? 'En favoritos' : 'Agregar a favoritos'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      {/* Footer (oculto con el teclado abierto para dejar espacio a la reseña) */}
+      {keyboardVisible ? null : (
+        <View style={[styles.footerBar, { paddingBottom: insets.bottom + 12 }]}>
+          <TouchableOpacity
+            style={[styles.favoriteBtn, (libraryLoading || busy) && styles.btnDisabled]}
+            onPress={handleToggleFavorite}
+            disabled={libraryLoading || busy}
+          >
+            {saving === 'favorite' ? (
+              <ActivityIndicator
+                color={colors.primary}
+                size="small"
+              />
+            ) : (
+              <Feather
+                name="heart"
+                size={20}
+                color={favorite ? colors.primary : colors.textSecondary}
+                fill={favorite ? colors.primary : 'none'}
+              />
+            )}
+            <Text style={styles.favoriteBtnText}>
+              {favorite ? 'En favoritos' : 'Agregar a favoritos'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <ReminderSheet
+        visible={sheetVisible}
+        title="Recordarme jugar esto"
+        options={REMINDER_PRESETS}
+        onSelect={handleSelectPreset}
+        onPickCustom={handlePickCustom}
+        onClose={() => setSheetVisible(false)}
+      />
+      {gameReminder.supported ? (
+        <DateTimePickerModal
+          visible={pickerVisible}
+          mode="datetime"
+          value={new Date(Date.now() + 60 * 60 * 1000)}
+          minimumDate={new Date()}
+          title="Fecha y hora del recordatorio"
+          onConfirm={handleCustomDate}
+          onCancel={() => setPickerVisible(false)}
+        />
+      ) : null}
+    </KeyboardAvoidingView>
   );
 }
 
@@ -257,7 +495,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
     paddingHorizontal: 24,
   },
   heroBlock: {
@@ -274,7 +511,6 @@ const styles = StyleSheet.create({
   heroActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 44,
     paddingHorizontal: 24,
   },
   iconBtn: {
@@ -286,6 +522,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   metaSection: {
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
     paddingHorizontal: 24,
     paddingTop: 16,
     gap: 16,
@@ -365,19 +604,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: fonts.bodyBold,
   },
-  synopsisBlock: {
-    gap: 8,
-  },
   sectionTitle: {
     color: colors.textPrimary,
     fontSize: 13,
     fontFamily: fonts.heading,
-  },
-  synopsisText: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontFamily: fonts.body,
-    lineHeight: 18,
   },
   libraryBlock: {
     gap: 12,
@@ -404,6 +634,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     textAlignVertical: 'top',
   },
+  counterText: {
+    alignSelf: 'flex-end',
+    color: colors.textMuted,
+    fontSize: 11,
+    fontFamily: fonts.body,
+  },
   reviewBtn: {
     alignSelf: 'flex-start',
     paddingHorizontal: 16,
@@ -412,6 +648,37 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  reminderBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: colors.badgeNeutral,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  reminderBtnText: {
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontFamily: fonts.bodySemiBold,
+  },
+  reminderActive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  reminderText: {
+    flex: 1,
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontFamily: fonts.bodySemiBold,
+  },
+  successText: {
+    color: colors.success,
   },
   reviewBtnText: {
     color: colors.textPrimary,
@@ -431,9 +698,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: fonts.body,
   },
+  communityBlock: {
+    gap: 12,
+    paddingBottom: 32,
+  },
+  communitySpinner: {
+    paddingVertical: 16,
+  },
+  communityMessage: {
+    gap: 4,
+  },
+  linkText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontFamily: fonts.bodyBold,
+  },
+  moreBtn: {
+    alignSelf: 'center',
+    minHeight: 44,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   footerBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 24,
     paddingVertical: 12,
     backgroundColor: colors.surface,
@@ -442,6 +732,7 @@ const styles = StyleSheet.create({
   },
   favoriteBtn: {
     flex: 1,
+    maxWidth: CONTENT_MAX_WIDTH - 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

@@ -167,11 +167,17 @@ async function upsert(req, res, next) {
       pick('review') ?? null,
     ];
 
+    // La fecha de la reseña solo cambia cuando cambia su texto (no con el favorito, etc.).
+    const newReview = pick('review') ?? null;
+    const reviewChanged = newReview !== (existing ? existing.review : null);
+    values.push(reviewChanged ? 1 : 0, newReview, reviewChanged ? 1 : 0);
+
     // Upsert en una sola sentencia; los campos no enviados conservan su valor.
     await pool.query(
       `INSERT INTO user_games
-         (user_id, game_id, game_name, game_image, game_rating, is_favorite, status, user_score, review)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         (user_id, game_id, game_name, game_image, game_rating, is_favorite, status, user_score,
+          review, review_updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, IF(? AND ? IS NOT NULL, CURRENT_TIMESTAMP, NULL))
        ON DUPLICATE KEY UPDATE
          game_name = VALUES(game_name),
          game_image = VALUES(game_image),
@@ -179,7 +185,9 @@ async function upsert(req, res, next) {
          is_favorite = VALUES(is_favorite),
          status = VALUES(status),
          user_score = VALUES(user_score),
-         review = VALUES(review)`,
+         review = VALUES(review),
+         review_updated_at = IF(?, IF(VALUES(review) IS NULL, NULL, CURRENT_TIMESTAMP),
+                                review_updated_at)`,
       values
     );
 

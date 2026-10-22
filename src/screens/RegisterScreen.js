@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     maxWidth: 420,
   },
   errorText: {
-    color: '#ef4444',
+    color: colors.danger,
     fontSize: 12,
     fontFamily: fonts.body,
     marginTop: 6,

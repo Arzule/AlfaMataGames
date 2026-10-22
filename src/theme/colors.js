@@ -13,6 +13,9 @@ export const colors = {
   warningBg: 'rgba(245, 166, 35, 0.13)',
   info: '#3b82f6',
   infoBg: 'rgba(59, 130, 246, 0.13)',
+  danger: '#ef4444',
+  dangerBg: 'rgba(239, 68, 68, 0.13)',
+  primaryBg: 'rgba(139, 92, 246, 0.15)',
   badgeNeutral: '#262630',
   overlay: 'rgba(16, 16, 24, 0.6)',
 };

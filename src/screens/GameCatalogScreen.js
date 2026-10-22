@@ -1,17 +1,24 @@
 // src/screens/GameCatalogScreen.js
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
+  Text,
   FlatList,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/typography';
 import GameCard from '../components/GameCard';
 import Header from '../components/Header';
+import Avatar from '../components/Avatar';
 import SearchBar from '../components/SearchBar';
+import RecentSearches from '../components/RecentSearches';
 import CategoryButton from '../components/CategoryButton';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
@@ -19,7 +26,11 @@ import { useAuth } from '../hooks/useAuth';
 import { useLibrary } from '../hooks/useLibrary';
 import { useDebounce } from '../hooks/useDebounce';
 import { useGames } from '../hooks/useGames';
-import { useGridColumns } from '../hooks/useGridColumns';
+import { useGridColumns, GRID_PERFORMANCE_PROPS } from '../hooks/useGridColumns';
+import { useRecentSearches } from '../hooks/useRecentSearches';
+import { useShakeDetector } from '../hooks/useShakeDetector';
+import { useRandomGame } from '../hooks/useRandomGame';
+import { getShakeEnabled } from '../services/preferences';
 
 const CATEGORIES = ['Todos', 'Jugando', 'Completado', 'Pendiente', 'Abandonado'];
 
@@ -38,11 +49,11 @@ export default function GameCatalogScreen({ navigation }) {
     setSearchTerm(debouncedSearch);
   }, [debouncedSearch]);
 
-  const { games, loading, loadingMore, error, hasMore, loadMore, reload } = useGames({
+  const { games, loading, loadingMore, error, offline, loadMore, reload } = useGames({
     search: searchTerm,
   });
 
-  // Columnas segun el ancho de pantalla (2 movil, 3 tablet, 4 escritorio).
+  // Columnas segun el ancho de pantalla (2 movil, 3 tablet, 4 a 6 escritorio).
   const columns = useGridColumns();
 
   const isTodos = selectedCategory === 'Todos';
@@ -75,23 +86,95 @@ export default function GameCatalogScreen({ navigation }) {
     ? 'No se encontraron juegos.'
     : `Aún no tienes juegos en «${selectedCategory}».`;
 
-  const handleSearchSubmit = () => setSearchTerm(searchText);
+  // Búsquedas recientes: visibles al enfocar la barra con el campo vacío.
+  const { recent, addSearch, removeSearch, clearSearches } = useRecentSearches(user?.id);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const blurTimerRef = useRef(null);
+  useEffect(() => () => clearTimeout(blurTimerRef.current), []);
+
+  const handleSearchFocus = useCallback(() => {
+    clearTimeout(blurTimerRef.current);
+    setSearchFocused(true);
+  }, []);
+
+  // Retraso breve: en web el blur ocurre antes del clic sobre una reciente.
+  const handleSearchBlur = useCallback(() => {
+    blurTimerRef.current = setTimeout(() => setSearchFocused(false), 150);
+  }, []);
+
+  const handleSearchSubmit = () => {
+    setSearchTerm(searchText);
+    addSearch(searchText);
+  };
+
+  const handleSelectRecent = useCallback(
+    (term) => {
+      setSearchText(term);
+      setSearchTerm(term);
+      addSearch(term);
+      setSearchFocused(false);
+      Keyboard.dismiss();
+    },
+    [addSearch]
+  );
+
+  // Descubrir un juego al azar: agitando el celular o con el botón del encabezado.
+  const { discovering, error: discoverError, discover, clearError } = useRandomGame();
+  const openRandomGame = useCallback(async () => {
+    const gameId = await discover();
+    if (gameId) navigation.navigate('GameDetail', { gameId });
+  }, [discover, navigation]);
+
+  // La preferencia se relee al volver al Catálogo (se cambia en Perfil).
+  const [shakeEnabled, setShakeEnabledState] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      getShakeEnabled().then((value) => {
+        if (active) setShakeEnabledState(value);
+      });
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
+
+  const handleShake = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+    openRandomGame();
+  }, [openRandomGame]);
+
+  useShakeDetector({ enabled: shakeEnabled, onShake: handleShake });
+
+  const showRecent = searchFocused && !searchText.trim() && recent.length > 0;
+
+  // Handler único para todas las tarjetas (GameCard está memorizada).
+  const handleOpenGame = useCallback(
+    (game) => {
+      // Abrir un juego desde una búsqueda la guarda como reciente.
+      if (searchTerm.trim()) addSearch(searchTerm);
+      navigation.navigate('GameDetail', { gameId: game.id });
+    },
+    [navigation, searchTerm, addSearch]
+  );
+
+  const cellStyle = useMemo(() => [styles.cell, { maxWidth: `${100 / columns}%` }], [columns]);
 
   const renderItem = useCallback(
     ({ item }) => {
       const status = isTodos ? getEntry(item.id)?.status ?? null : item.status;
       return (
-        <View style={[styles.cell, { maxWidth: `${100 / columns}%` }]}>
+        <View style={cellStyle}>
           <GameCard
             game={item}
             status={status}
             platform={item.platform}
-            onPress={() => navigation.navigate('GameDetail', { gameId: item.id })}
+            onPress={handleOpenGame}
           />
         </View>
       );
     },
-    [isTodos, getEntry, navigation, columns]
+    [isTodos, getEntry, cellStyle, handleOpenGame]
   );
 
   const keyExtractor = useCallback((item) => String(item.id), []);
@@ -108,14 +191,31 @@ export default function GameCatalogScreen({ navigation }) {
         subtitle="Hola,"
         title={username}
         left={
-          <View style={styles.avatarPlaceholder}>
-            <Feather name="user" size={18} color={colors.textSecondary} />
-          </View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Perfil')}
+            accessibilityLabel="Ir a mi perfil"
+          >
+            <Avatar uri={user?.avatar} name={user?.name} size={40} />
+          </TouchableOpacity>
         }
         right={
-          <TouchableOpacity style={styles.notifBtn}>
-            <Feather name="bell" size={18} color={colors.textPrimary} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.notifBtn}
+              onPress={openRandomGame}
+              disabled={discovering}
+              accessibilityLabel="Abrir un juego al azar"
+            >
+              <Feather name="shuffle" size={18} color={colors.textPrimary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.notifBtn}
+              onPress={() => navigation.navigate('Reminders')}
+              accessibilityLabel="Ver recordatorios"
+            >
+              <Feather name="bell" size={18} color={colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
         }
       />
 
@@ -125,8 +225,18 @@ export default function GameCatalogScreen({ navigation }) {
           value={searchText}
           onChangeText={setSearchText}
           onSubmit={handleSearchSubmit}
+          onFocus={handleSearchFocus}
+          onBlur={handleSearchBlur}
           placeholder="Buscar juegos..."
         />
+        {showRecent ? (
+          <RecentSearches
+            items={recent}
+            onSelect={handleSelectRecent}
+            onRemove={removeSearch}
+            onClear={clearSearches}
+          />
+        ) : null}
       </View>
 
       {/* Categorías */}
@@ -140,6 +250,39 @@ export default function GameCatalogScreen({ navigation }) {
           />
         ))}
       </View>
+
+      {/* Juego al azar: buscando o error */}
+      {discovering ? (
+        <View style={[styles.offlineBanner, styles.infoBanner]}>
+          <ActivityIndicator color={colors.info} size="small" />
+          <Text style={[styles.offlineText, styles.infoText]}>Buscando un juego al azar...</Text>
+        </View>
+      ) : discoverError ? (
+        <TouchableOpacity
+          style={styles.offlineBanner}
+          onPress={() => {
+            clearError();
+            openRandomGame();
+          }}
+          activeOpacity={0.8}
+        >
+          <Feather name="alert-triangle" size={14} color={colors.warning} />
+          <Text style={styles.offlineText}>{discoverError} Toca para reintentar.</Text>
+          <TouchableOpacity onPress={clearError} accessibilityLabel="Cerrar aviso" hitSlop={8}>
+            <Feather name="x" size={14} color={colors.warning} />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      ) : null}
+
+      {/* Aviso: sin conexión, se muestra el catálogo guardado */}
+      {isTodos && offline && !isLoading ? (
+        <TouchableOpacity style={styles.offlineBanner} onPress={reload} activeOpacity={0.8}>
+          <Feather name="wifi-off" size={14} color={colors.warning} />
+          <Text style={styles.offlineText}>
+            Sin conexión: mostrando el catálogo guardado. Toca para reintentar.
+          </Text>
+        </TouchableOpacity>
+      ) : null}
 
       {/* Contenido */}
       {isLoading ? (
@@ -159,6 +302,7 @@ export default function GameCatalogScreen({ navigation }) {
           renderItem={renderItem}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.4}
+          {...GRID_PERFORMANCE_PROPS}
           ListFooterComponent={
             isTodos && loadingMore ? (
               <ActivityIndicator
@@ -185,15 +329,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
   },
   notifBtn: {
     width: 36,
@@ -227,6 +365,29 @@ const styles = StyleSheet.create({
   },
   cell: {
     flex: 1,
+  },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 24,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.warningBg,
+  },
+  offlineText: {
+    flex: 1,
+    color: colors.warning,
+    fontSize: 12,
+    fontFamily: fonts.bodySemiBold,
+  },
+  infoBanner: {
+    backgroundColor: colors.infoBg,
+  },
+  infoText: {
+    color: colors.info,
   },
   footerSpinner: {
     paddingVertical: 16,

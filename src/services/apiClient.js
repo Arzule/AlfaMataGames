@@ -1,6 +1,9 @@
 // src/services/apiClient.js
 // Cliente HTTP simple sobre fetch para hablar con el backend.
 import { API_URL } from '@env';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('api');
 
 const TIMEOUT_MS = 10000;
 
@@ -25,9 +28,7 @@ function buildUrl(path) {
 }
 
 // En desarrollo, mostrar la URL base configurada (no es un secreto).
-if (__DEV__) {
-  console.log('[api] API_URL =', API_URL);
-}
+log.debug(`API_URL = ${API_URL}`);
 
 /**
  * Realiza una petición al backend.
@@ -60,9 +61,8 @@ export async function request(path, { method = 'GET', body, auth = false } = {})
       signal: controller.signal,
     });
   } catch (err) {
-    if (__DEV__) {
-      console.log(`[api] ${method} ${url} -> sin conexión`);
-    }
+    const timedOut = err?.name === 'AbortError';
+    log.info(`${method} ${path} -> ${timedOut ? 'tiempo de espera agotado' : 'sin conexión'}`);
     // Sin conexión o tiempo de espera agotado.
     const error = new Error('No se pudo conectar con el servidor');
     error.status = 0;
@@ -72,10 +72,8 @@ export async function request(path, { method = 'GET', body, auth = false } = {})
     clearTimeout(timeoutId);
   }
 
-  // En desarrollo, registrar método, URL y status (sin cuerpos ni cabeceras).
-  if (__DEV__) {
-    console.log(`[api] ${method} ${url} -> ${response.status}`);
-  }
+  // Método, ruta y status (nunca cuerpos ni cabeceras).
+  log.debug(`${method} ${path} -> ${response.status}`);
 
   // 204 No Content: respuesta válida sin cuerpo.
   if (response.status === 204) {
@@ -98,6 +96,9 @@ export async function request(path, { method = 'GET', body, auth = false } = {})
     const error = new Error((data && data.message) || `Error ${response.status}`);
     error.status = response.status;
     error.code = data && data.code;
+    if (response.status >= 500) {
+      log.warn(`${method} ${path} -> ${response.status}`, error);
+    }
 
     // Token vencido o inválido en una petición autenticada: avisar a la app.
     if (
@@ -116,6 +117,7 @@ export async function request(path, { method = 'GET', body, auth = false } = {})
   if (parseFailed || data === null) {
     const error = new Error('Respuesta inesperada del servidor');
     error.status = response.status;
+    log.warn(`${method} ${path} -> respuesta no JSON (¿API_URL correcto?)`);
     throw error;
   }
 

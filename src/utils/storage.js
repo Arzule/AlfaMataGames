@@ -5,6 +5,9 @@
 // Todas las funciones son asíncronas y nunca lanzan errores hacia afuera.
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { createLogger } from './logger';
+
+const log = createLogger('storage');
 
 const isWeb = Platform.OS === 'web';
 
@@ -25,6 +28,7 @@ export async function getItem(key) {
     }
     return await SecureStore.getItemAsync(key);
   } catch (err) {
+    log.warn('No se pudo leer del almacenamiento seguro', err);
     return null;
   }
 }
@@ -39,7 +43,7 @@ export async function setItem(key, value) {
     }
     await SecureStore.setItemAsync(key, value);
   } catch (err) {
-    // Nunca lanza.
+    log.warn('No se pudo guardar en el almacenamiento seguro', err);
   }
 }
 
@@ -53,6 +57,6 @@ export async function removeItem(key) {
     }
     await SecureStore.deleteItemAsync(key);
   } catch (err) {
-    // Nunca lanza.
+    log.warn('No se pudo borrar del almacenamiento seguro', err);
   }
 }

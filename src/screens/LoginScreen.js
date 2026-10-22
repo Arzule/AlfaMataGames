@@ -10,11 +10,13 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import FormInput from '../components/FormInput';
 import { useAuth } from '../hooks/useAuth';
+
+const LOGO = require('../../assets/logo.png');
 
 export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
@@ -64,9 +66,12 @@ export default function LoginScreen({ navigation }) {
     >
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.brandHeader}>
-          <View style={styles.logoPlaceholder}>
-            <Feather name="cpu" size={28} color={colors.primary} />
-          </View>
+          <Image
+            source={LOGO}
+            style={styles.logo}
+            contentFit="contain"
+            accessibilityLabel="Logo de AlfaMataGames"
+          />
           <Text style={styles.brandName}>AlfaMataGames</Text>
           <Text style={styles.brandSub}>Tus juegos. Tu biblioteca. Tu legado.</Text>
         </View>
@@ -75,7 +80,7 @@ export default function LoginScreen({ navigation }) {
           <FormInput
             label="CORREO ELECTRÓNICO"
             icon="mail"
-            placeholder="drago@gmail.com"
+            placeholder="tucorreo@ejemplo.com"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -87,7 +92,7 @@ export default function LoginScreen({ navigation }) {
           <FormInput
             label="CONTRASEÑA"
             icon="lock"
-            placeholder="••••••••••••"
+            placeholder="Ingresa tu contraseña"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -118,10 +123,6 @@ export default function LoginScreen({ navigation }) {
           >
             <Text style={styles.linkText}>¿No tienes cuenta? Regístrate</Text>
           </TouchableOpacity>
-
-          <Text style={styles.hint}>
-            Prueba con: drago@gmail.com / 12345678
-          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -146,15 +147,9 @@ const styles = StyleSheet.create({
     maxWidth: 420,
     marginBottom: 32,
   },
-  logoPlaceholder: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logo: {
+    width: 112,
+    height: 112,
     marginBottom: 12,
   },
   brandName: {
@@ -173,7 +168,7 @@ const styles = StyleSheet.create({
     maxWidth: 420,
   },
   errorText: {
-    color: '#ef4444',
+    color: colors.danger,
     fontSize: 12,
     fontFamily: fonts.body,
     marginTop: 6,
@@ -206,12 +201,5 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 13,
     fontFamily: fonts.bodySemiBold,
-  },
-  hint: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontFamily: fonts.body,
-    textAlign: 'center',
-    marginTop: 16,
   },
 });
