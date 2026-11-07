@@ -1,7 +1,9 @@
 // src/services/apiClient.js
 // Cliente HTTP simple sobre fetch para hablar con el backend.
-import { API_URL } from '@env';
 import { createLogger } from '../utils/logger';
+
+// EXPO_PUBLIC_API_URL se inyecta al compilar (Expo lee .env; EAS usa sus variables).
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const log = createLogger('api');
 
