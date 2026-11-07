@@ -76,7 +76,6 @@ Versiones tomadas de `package.json` (app), `backend/package.json` y `docker-comp
 | React | 19.2.3 | Librería de UI |
 | React Navigation (`native`, `native-stack`, `bottom-tabs`) | ^7.3.18 / ^7.18.10 / ^7.18.18 | Navegación |
 | react-native-web | ^0.21.2 | Soporte web |
-| react-native-dotenv | ^4.1.1 | Variables de entorno (`@env`) |
 | expo-secure-store | ~57.0.4 | Guardar el token (nativo) |
 | @react-native-async-storage/async-storage | 2.2.0 | Búsquedas recientes y caché en web |
 | expo-file-system | ~57.0.7 | Caché del catálogo (nativo) |
@@ -117,18 +116,16 @@ Docker. (En el Avance 4 el catálogo de RAWG pasa a consultarse a través del ba
        |            App AlfaMataGames            |
        |              (Expo / RN)                |
        +--------------------+--------------------+
-                |                        |
-        HTTPS   |                        |  HTTP (API_URL, ej. :3000)
-                v                        v
-   +---------------------+   +-------------------------------------------+
-   |    API de RAWG      |   |               Docker (PC)                 |
-   | (catálogo, detalle) |   |                                           |
-   +---------------------+   |  +----------------+   +----------------+  |
-             ^               |  | backend (api)  |   | MySQL 8 (db)   |  |
-             |  sinopsis     |  | Node + Express |-->| users          |  |
-             +---------------+--| puerto 3000    |   | user_games     |  |
-   +---------------------+   |  |                |   | game_transl... |  |
-   |   DeepL API Free    |<--+--|                |   | puerto 3306    |  |
+                            |  HTTP (EXPO_PUBLIC_API_URL, ej. :3000) + JWT
+                            v
+                             +-------------------------------------------+
+   +---------------------+   |               Docker (PC)                 |
+   |    API de RAWG      |   |                                           |
+   | (catálogo, detalle, |   |  +----------------+   +----------------+  |
+   |  sinopsis)          |<--+--| backend (api)  |-->| MySQL 8 (db)   |  |
+   +---------------------+   |  | Node + Express |   | users          |  |
+   +---------------------+   |  | puerto 3000    |   | user_games     |  |
+   |   DeepL API Free    |<--+--|                |   | game_transl... |  |
    |    (traducción)     |   |  +----------------+   +--------+-------+  |
    +---------------------+   |                                |          |
                              |  +----------------+   volumen db_data     |
@@ -137,7 +134,8 @@ Docker. (En el Avance 4 el catálogo de RAWG pasa a consultarse a través del ba
                              +-------------------------------------------+
 ```
 
-- **App (Expo):** pantallas, componentes, contextos y servicios. Habla con RAWG y con el backend.
+- **App (Expo):** pantallas, componentes, contextos y servicios. Solo habla con el backend (el
+  catálogo de RAWG llega a través de él; la clave de RAWG nunca está en la app).
 - **backend (`alfamatagames-api`):** API REST en Express; valida, cifra contraseñas, firma
   tokens, aplica las migraciones y traduce las sinopsis (RAWG + DeepL, con caché).
 - **db (`alfamatagames-db`):** MySQL 8 con las tablas `users`, `user_games`,
@@ -153,7 +151,7 @@ AlfaMataGames/
 ├── App.js                      # Raíz de la app: carga fuentes y monta los providers
 ├── index.js                    # Punto de entrada de Expo (registerRootComponent)
 ├── app.json                    # Configuración de Expo (name, slug, icon, plugins)
-├── babel.config.js             # Preset de Expo + plugin react-native-dotenv (@env)
+├── babel.config.js             # Preset de Expo (las variables EXPO_PUBLIC_* las inyecta Expo)
 ├── metro.config.js             # Config. de Metro: shim de expo-notifications para Expo Go Android
 ├── package.json                # Dependencias y scripts de la app
 ├── docker-compose.yml          # Servicios db, backend y adminer
@@ -194,7 +192,7 @@ AlfaMataGames/
     ├── navigation/             # AppNavigator.js (Stack + Tab)
     ├── screens/                # Login, Register, GameCatalog, GameDetail, Favorites, Profile,
     │                           #   Reminders
-    ├── services/               # apiClient, authApi, libraryApi, reviewsApi, gamesApi, rawgApi,
+    ├── services/               # apiClient, authApi, libraryApi, reviewsApi, gamesApi,
     │                           #   catalogCache (.web), preferences, notifications (.web)
     ├── shims/                  # TopicSubscriptionModule.android.js (ver metro.config.js)
     ├── theme/                  # colors.js, typography.js
@@ -242,10 +240,10 @@ cp .env.example .env
 
 | Variable | Descripción |
 | --- | --- |
-| `RAWG_API_KEY` | Tu API key de RAWG (https://rawg.io/apidocs). La usan la app (catálogo) y el backend (sinopsis). |
+| `RAWG_API_KEY` | Tu API key de RAWG (https://rawg.io/apidocs). Solo la usa el backend (catálogo, detalle, juego al azar y sinopsis); la app nunca la conoce. |
 | `DEEPL_API_KEY` | Opcional. Clave de DeepL API Free para traducir las sinopsis (solo el backend). Si falta, se muestra el texto original con una etiqueta. Ver [Sinopsis traducidas](#sinopsis-traducidas). |
 | `DEEPL_API_URL` | Opcional. Fuerza el endpoint de DeepL; por defecto, `api-free.deepl.com` si la clave termina en `:fx` y `api.deepl.com` si no. |
-| `API_URL` | URL base del backend, con la **IP local de tu PC**, ej. `http://192.168.1.10:3000`. No uses `localhost`: el celular no puede resolverlo. |
+| `EXPO_PUBLIC_API_URL` | URL base del backend para la app, con la **IP local de tu PC**, ej. `http://192.168.1.10:3000`. No uses `localhost`: el celular no puede resolverlo. |
 | `MYSQL_ROOT_PASSWORD` | Contraseña del usuario `root` de MySQL (la usa el contenedor). |
 | `MYSQL_DATABASE` | Nombre de la base de datos que se crea al inicializar MySQL. |
 | `MYSQL_USER` | Usuario de la aplicación. **No puede ser `root`.** |
@@ -262,7 +260,7 @@ Notas importantes:
 
 - `MYSQL_USER` **no puede ser `root`** (es un requerimiento de la imagen oficial de MySQL).
 - Evita los caracteres `$`, `#` y las comillas en las contraseñas: complican el parseo del archivo `.env`.
-- **`API_URL`** debe apuntar a la **IP local de la PC** (no `localhost`) y el celular debe
+- **`EXPO_PUBLIC_API_URL`** debe apuntar a la **IP local de la PC** (no `localhost`) y el celular debe
   estar en la **misma red Wi-Fi** que la PC.
 - Genera un `JWT_SECRET` aleatorio con Node:
 
@@ -492,14 +490,14 @@ En Expo Go esto aplica a la app Expo Go completa, no solo a AlfaMataGames.
 
 - **El puerto 3306 está ocupado por un MySQL local.** Por eso la base de datos de Docker se
   publica en **3307** (`DB_HOST_PORT=3307`). Si cambias ese puerto, actualízalo en el `.env`.
-- **La IP de la PC cambió.** Actualiza `API_URL` en el `.env` con la nueva IP local y reinicia
+- **La IP de la PC cambió.** Actualiza `EXPO_PUBLIC_API_URL` en el `.env` con la nueva IP local y reinicia
   Expo con `npx expo start -c`. Puedes ver la IP con `ipconfig` (Windows) o `ifconfig` / `ip addr` (macOS/Linux).
 - **La red de Windows está en "Public" o falta una regla de firewall.** El celular no podrá
   alcanzar el backend en el puerto **3000**. Cambia la red a "Private" o permite el puerto
   3000 en el Firewall de Windows.
-- **Mensaje "Respuesta inesperada del servidor".** Suele ocurrir cuando `API_URL` apunta a
+- **Mensaje "Respuesta inesperada del servidor".** Suele ocurrir cuando `EXPO_PUBLIC_API_URL` apunta a
   otro servicio (por ejemplo, a RAWG o a un host incorrecto) y la respuesta no es el JSON
-  esperado del backend. Verifica que `API_URL` termine en `:3000` y sea la IP correcta.
+  esperado del backend. Verifica que `EXPO_PUBLIC_API_URL` termine en `:3000` y sea la IP correcta.
 - **Reiniciar la base de datos desde cero** (borra el volumen y vuelve a ejecutar los scripts):
 
 ```bash
@@ -525,6 +523,9 @@ Tabla generada a partir de `backend/src/routes/`.
 | GET | `/library/:gameId` | Bearer JWT | Devuelve `{ entry }` de un juego (o `null`). |
 | PUT | `/library/:gameId` | Bearer JWT | Crea o actualiza (upsert parcial) la entrada. |
 | DELETE | `/library/:gameId` | Bearer JWT | Elimina la entrada de un juego (204). |
+| GET | `/games` | Bearer JWT | Catálogo de RAWG a través del backend. `?search=&page=1&pageSize=20` (máx. 40; búsqueda de hasta 100 caracteres). Devuelve `{ results, hasMore }`. 502/503 si RAWG no responde o no está configurado. |
+| GET | `/games/random` | Bearer JWT | Un juego al azar entre los más populares de RAWG. |
+| GET | `/games/:gameId` | Bearer JWT | Detalle completo del juego tal como lo entrega RAWG. 404 si no existe. |
 | GET | `/games/:gameId/description` | Bearer JWT | Sinopsis en español. Devuelve `{ gameId, lang, text, original, translated, source, notice }`: `source` es `cache`, `deepl` o `null`; `notice` es `null`, `empty`, `same-language`, `not-configured`, `quota` o `unavailable` (en esos casos `text` es el original). 404 si el juego no existe en RAWG; 502/503 si RAWG no responde o no está configurado. |
 | GET | `/games/:gameId/reviews` | Bearer JWT | Reseñas de los demás usuarios, la más reciente primero. `?page=1&pageSize=10` (máx. 30). Devuelve `{ items, page, hasMore }`; cada item trae `review`, `userScore`, `status`, `date` y `user { id, name, avatar }`. |
 

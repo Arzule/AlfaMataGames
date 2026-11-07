@@ -9,7 +9,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 - Entregados: Avance 1 y Avance 2.
 - Avance 3: A3-0 a A3-7 terminadas (pendiente: entrega por el usuario).
-- **Fase actual: A4-1** (Proxy de RAWG y variables EXPO_PUBLIC_*).
+- Avance 4: A4-1 terminada.
+- **Fase actual: A4-2** (Backend de producción y despliegue en Azure).
 
 ## Decisiones tomadas
 
@@ -190,14 +191,14 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 ## AVANCE 4 / FINAL — Unidad 4: builds con Expo, APK, publicación (más extras)
 
-### [ ] A4-1 Proxy de RAWG y variables EXPO_PUBLIC_*
+### [x] A4-1 Proxy de RAWG y variables EXPO_PUBLIC_*
 
 - **Objetivo:** sacar la clave de RAWG de la app y preparar las variables para EAS.
 - **Tema del sílabo:** builds con Expo (variables de entorno).
 - **Tareas:**
-  - [ ] Endpoints del backend para catálogo, búsqueda y detalle (proxy de RAWG).
-  - [ ] Quitar `RAWG_API_KEY` de la app.
-  - [ ] Migrar de `react-native-dotenv` (`@env`) a `EXPO_PUBLIC_*` y quitar el plugin de babel.
+  - [x] Endpoints del backend para catálogo, búsqueda, detalle y juego al azar (proxy de RAWG).
+  - [x] Quitar `RAWG_API_KEY` de la app.
+  - [x] Migrar de `react-native-dotenv` (`@env`) a `EXPO_PUBLIC_*` y quitar el plugin de babel.
 - **Terminado cuando:** el bundle exportado no contiene la clave de RAWG y la app funciona igual
   en Android y web.
 

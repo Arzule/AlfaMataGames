@@ -19,12 +19,12 @@ curso: entrega final (Avance 4, Unidad 4). Fase actual y decisiones: `docs/PLAN.
 - App: Expo SDK 57 (`expo ~57.0.21`), React Native 0.86.3, React 19.2.3. **JavaScript puro**
   (plantilla blank, sin TypeScript, sin Expo Router). Entrada: `index.js` → `App.js`.
 - Navegación: React Navigation 7 (`native-stack` + `bottom-tabs`). Estado: Context API.
-- Variables de la app: `react-native-dotenv` (`import { API_URL, RAWG_API_KEY } from '@env'`,
-  configurado en `babel.config.js`). Se migrará a `EXPO_PUBLIC_*` en A4-1.
+- Variables de la app: solo `EXPO_PUBLIC_API_URL` (`process.env.EXPO_PUBLIC_API_URL`, la inyecta
+  Expo desde `.env` y EAS desde sus variables). Nunca poner secretos en `EXPO_PUBLIC_*`.
 - Backend (`backend/`): Node 20 (`node:20-alpine`), Express 4, mysql2, jsonwebtoken, bcryptjs, cors.
 - BD: MySQL 8.0. Orquestación local: Docker Compose (`db`, `backend`, `adminer`).
-- Datos de juegos: API de RAWG, hoy consumida **directamente desde la app**
-  (`src/services/rawgApi.js`); pasa al backend en A3-6/A4-1.
+- Datos de juegos: API de RAWG **a través del backend** (`/games`, `/games/random`,
+  `/games/:gameId`); la clave `RAWG_API_KEY` solo está en el backend.
 - Despliegue previsto: **Azure** (Container Apps + MySQL Flexible Server B1ms), en el grupo
   `rg-alfamatagames`; lo hace el agente con Azure CLI (ver `docs/PLAN.md`, A4-2).
 
@@ -35,7 +35,7 @@ docker compose up -d --build   # db -> host 3307, api -> 3000, adminer -> 8080
 npx expo start -c              # Expo Go (QR) o 'w' para web
 ```
 
-- `API_URL` debe ser la **IP LAN de la PC** (ej. `http://192.168.x.x:3000`), no `localhost`.
+- `EXPO_PUBLIC_API_URL` debe ser la **IP LAN de la PC** (ej. `http://192.168.x.x:3000`), no `localhost`.
 - Variables: ver `.env.example` y la tabla del README. Salud del backend: `GET /health`.
 
 ## Mapa del código
@@ -65,8 +65,7 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   `GameDetail` + `Reminders`; `navigationRef` para navegar desde notificaciones.
 - `screens/` — Login, Register, GameCatalog, GameDetail, Favorites, Profile, Reminders.
 - `services/` — `apiClient.js` (fetch al backend, timeout 10 s, Bearer, aviso de 401),
-  `authApi.js`, `libraryApi.js`, `reviewsApi.js`, `gamesApi.js` (sinopsis traducida), `rawgApi.js` (RAWG con `RAWG_API_KEY`; incluye
-  `getRandomGame`), `catalogCache.js` / `catalogCache.web.js` (caché del catálogo: expo-file-system
+  `authApi.js`, `libraryApi.js`, `reviewsApi.js`, `gamesApi.js` (catálogo, detalle, juego al azar y sinopsis, todo vía backend), `catalogCache.js` / `catalogCache.web.js` (caché del catálogo: expo-file-system
   en nativo, AsyncStorage en web), `preferences.js` (preferencias en AsyncStorage),
   `notifications.js` / `notifications.web.js` (expo-notifications; en web, misma API sin efecto).
 - `theme/` — `colors.js`, `typography.js` (`fonts`, `fontSizes`).
@@ -81,13 +80,14 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 - `config/db.js` — pool mysql2/promise: `DATABASE_URL`/`MYSQL_URL` o variables sueltas
   (`DB_HOST`, `DB_PORT`, `MYSQL_*`), `DB_SSL` opcional; exporta `getConnectionOptions`.
 - `controllers/` — `auth.controller.js`, `library.controller.js`, `reviews.controller.js`,
+  `catalog.controller.js` (catálogo, juego al azar y detalle de RAWG),
   `descriptions.controller.js` (sinopsis: caché → RAWG → DeepL).
 - `services/` — `rawg.service.js` y `deepl.service.js` (APIs externas con timeout; sus errores
   llevan `status`/`code` o `reason`).
 - `middleware/` — `auth.middleware.js` (`authRequired`), `error.middleware.js` (404 y errores JSON),
   `requestLogger.middleware.js` (una línea por petición, `req.id` y `X-Request-Id`).
 - `routes/` — `/auth` (register, login, me, PUT/DELETE `me/avatar`), `/library` (GET lista,
-  GET/PUT/DELETE `:gameId`) y `/games` (GET `:gameId/reviews`: reseñas de los demás usuarios;
+  GET/PUT/DELETE `:gameId`) y `/games` (GET `/`, `/random` y `:gameId`: catálogo de RAWG; GET `:gameId/reviews`: reseñas de los demás usuarios;
   GET `:gameId/description`: sinopsis en español).
   El usuario público incluye `avatar` (data URI o null).
 - `utils/validators.js` — validaciones manuales y constantes (`STATUSES`, `REVIEW_MAX_LENGTH`).
@@ -166,10 +166,10 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
 
 ## Problemas conocidos
 
-- **Cambia la IP de la PC** → actualizar `API_URL` en `.env` y reiniciar con `npx expo start -c`.
+- **Cambia la IP de la PC** → actualizar `EXPO_PUBLIC_API_URL` en `.env` y reiniciar con `npx expo start -c`.
 - **Firewall / red "Public" de Windows** bloquea el 3000 desde el celular → el usuario cambia la
   red a Privada o abre el puerto (el agente solo da el comando).
-- **Cambios en `.env`** no se aplican sin `npx expo start -c` (babel cachea `@env`).
+- **Cambios en `.env`** no se aplican sin `npx expo start -c` (Metro cachea las `EXPO_PUBLIC_*`).
 - **`database/init` solo corre con el volumen vacío**; `docker compose down -v` borra los datos.
 - **Expo Go en Android no soporta push remotas**: se prueban con el APK; en Expo Go solo
   funcionan las notificaciones locales.
@@ -177,7 +177,7 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
   `metro.config.js` (sustituye ese módulo por `src/shims/TopicSubscriptionModule.android.js`).
   No borrar el shim ni el `resolveRequest`; al actualizar expo-notifications, revisar si sigue
   haciendo falta.
-- "Respuesta inesperada del servidor" suele indicar un `API_URL` incorrecto.
+- "Respuesta inesperada del servidor" suele indicar un `EXPO_PUBLIC_API_URL` incorrecto.
 
 ## Reglas de trabajo para el agente
 
