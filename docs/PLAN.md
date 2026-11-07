@@ -13,10 +13,15 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 ## Decisiones tomadas
 
-- **Despliegue**: backend y MySQL en Railway, con HTTPS; lo hace el usuario siguiendo
-  `docs/DEPLOY.md`. A4-4 a A4-6 requieren la URL pública.
+- **Despliegue**: Azure (suscripción Azure for Students del usuario), con HTTPS. Backend en
+  Azure Container Apps (imagen en GHCR, como el otro proyecto del usuario) y MySQL en Azure
+  Database for MySQL Flexible Server con el plan más básico (Burstable B1ms, SSL obligatorio).
+  Proyecto académico que quedará poco usado: costo mínimo (escala a 0 réplicas fuera de la
+  demo). El agente crea y configura los recursos con Azure CLI en su propio grupo de recursos
+  (`rg-alfamatagames`), sin tocar otros grupos; `docs/DEPLOY.md` documenta los pasos.
+  A4-4 a A4-6 requieren la URL pública.
 - **Esquema**: siempre por migraciones (`backend/migrations` + tabla `schema_migrations`),
-  compatibles con la BD local existente y con una BD nueva en Railway.
+  compatibles con la BD local existente y con una BD nueva en Azure.
 - **Conexión a BD**: variables sueltas (como hoy) o URL única (`DATABASE_URL` / `MYSQL_URL`),
   con SSL opcional (`DB_SSL`).
 - **Claves externas solo en el backend**: RAWG (desde A3-6/A4-1), DeepL, Steam, OAuth.
@@ -56,15 +61,15 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 ### [x] A3-0 Migraciones de BD
 
-- **Objetivo:** cambiar el esquema sin borrar datos, en local y en Railway.
+- **Objetivo:** cambiar el esquema sin borrar datos, en local y en la nube.
 - **Tema del sílabo:** base de persistencia para las fases de la Unidad 3.
 - **Tareas:**
   - [x] `backend/migrations/` con archivos SQL numerados (`001-...sql`). Dentro de `backend/`
-    para que la imagen funcione igual en Docker local y en Railway (root directory `backend`).
+    para que la imagen funcione igual en Docker local y en la nube (contexto de build `backend`).
   - [x] Runner en el backend: `npm run migrate` y ejecución automática al arrancar; registra lo
     aplicado en `schema_migrations`; idempotente.
   - [x] Migración base compatible con lo creado por `database/init/` (BD existente) y válida
-    sobre una BD vacía (Railway).
+    sobre una BD vacía (nube).
   - [x] Incluir las migraciones en la imagen del backend.
   - [x] `config/db.js`: variables sueltas o `DATABASE_URL` / `MYSQL_URL`, y `DB_SSL` opcional.
   - [x] Documentar en README y `.env.example`.
@@ -198,17 +203,20 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 ### [ ] A4-2 Backend de producción y guía de despliegue
 
-- **Objetivo:** backend listo para Railway.
+- **Objetivo:** backend listo para producción y desplegado en Azure.
 - **Tema del sílabo:** preparación para producción.
 - **Tareas:**
   - [ ] `helmet`, límite de peticiones en `/auth`, CORS por entorno, `trust proxy`.
   - [ ] Validación de variables al arrancar; `/health` que pruebe la BD.
   - [ ] Imagen Docker de producción.
-  - [ ] `docs/DEPLOY.md`: desplegar backend y MySQL en Railway con HTTPS, configurar variables
-    y aplicar migraciones.
+  - [ ] `docs/DEPLOY.md`: desplegar en Azure con HTTPS (Container Apps con imagen en GHCR y
+    MySQL Flexible Server B1ms con SSL), configurar variables y secretos, y aplicar migraciones.
+  - [ ] Crear los recursos y desplegar con Azure CLI (lo hace el agente) y probar `/health`
+    y el login contra la URL pública.
 - **Terminado cuando:** sin variables obligatorias el backend no arranca (mensaje claro),
   `/health` falla si la BD no responde y la guía se sigue sin pasos implícitos.
-- **>>> HITO DEL USUARIO:** despliegue en Railway. A4-4 a A4-6 requieren la URL pública HTTPS.
+- **>>> HITO:** backend desplegado en Azure con URL pública HTTPS (A4-4 a A4-6 la requieren).
+  El usuario solo interviene si hace falta un inicio de sesión o una aprobación de costos.
 
 ### [ ] A4-3 Gestión de cuenta y estadísticas
 
@@ -277,7 +285,7 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
     Incluir requisitos (virtualización activada) e instalación con `adb`.
   - [ ] Distribución del APK (GitHub Releases).
 - **Terminado cuando:** el usuario genera e instala el APK de `preview` y la app funciona contra
-  el backend en Railway.
+  el backend en Azure.
 
 ### [ ] A4-7b Accesibilidad y pulido final de UI
 

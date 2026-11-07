@@ -25,7 +25,8 @@ curso: entrega final (Avance 4, Unidad 4). Fase actual y decisiones: `docs/PLAN.
 - BD: MySQL 8.0. Orquestación local: Docker Compose (`db`, `backend`, `adminer`).
 - Datos de juegos: API de RAWG, hoy consumida **directamente desde la app**
   (`src/services/rawgApi.js`); pasa al backend en A3-6/A4-1.
-- Despliegue previsto del backend y la BD: **Railway** (lo hace el usuario).
+- Despliegue previsto: **Azure** (Container Apps + MySQL Flexible Server B1ms), en el grupo
+  `rg-alfamatagames`; lo hace el agente con Azure CLI (ver `docs/PLAN.md`, A4-2).
 
 ## Cómo correrlo en local (Windows, PowerShell)
 
@@ -194,9 +195,12 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
   ocultar la opción).
 - **Sistema**: no detener ni modificar servicios locales de Windows ni el firewall; si hace
   falta, dar el comando al usuario sin ejecutarlo.
-- **Externo**: despliegue en Railway, creación de cuentas (Google Cloud, Discord, Steam, DeepL,
-  Expo/EAS), claves, builds en EAS y publicación los hace el usuario; el agente da los pasos
-  exactos y ayuda con errores.
+- **Azure**: el agente puede crear, configurar y desplegar recursos con Azure CLI, solo en
+  `rg-alfamatagames` y con el plan más barato; nunca tocar otros grupos de recursos (por ejemplo
+  `rg-mantenio-pradosj`, de otro proyecto). Avisar al usuario si algo requiere su intervención.
+- **Externo**: creación de cuentas (Google Cloud, Discord, Steam, DeepL, Expo/EAS), claves,
+  builds en EAS y publicación los hace el usuario; el agente da los pasos exactos y ayuda con
+  errores.
 - **Proveedores**: si el usuario cambia de plataforma o de proveedor de MySQL, adaptar la
   configuración sin romper el entorno local.
 - **Verificación mínima por fase**:
