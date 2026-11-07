@@ -631,7 +631,7 @@ Las ramas se integran a `develop` con `git merge --no-ff` para conservar el hist
 ## Trabajo futuro (Avance 4)
 
 - Catálogo de RAWG a través del backend (la clave sale de la app) y variables `EXPO_PUBLIC_*`.
-- Backend en la nube (Railway) con HTTPS y guía de despliegue.
+- Backend en la nube (Azure) con HTTPS y guía de despliegue.
 - Gestión de cuenta (datos, contraseña, eliminar cuenta) y estadísticas en Perfil.
 - Inicio de sesión con Google y Discord, e importación de la biblioteca de Steam.
 - Recordatorios con notificaciones push desde el servidor.
