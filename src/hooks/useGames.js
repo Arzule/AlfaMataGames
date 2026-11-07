@@ -2,7 +2,7 @@
 // Catálogo de RAWG con búsqueda, paginación y protección ante respuestas obsoletas.
 // La primera página sin búsqueda se guarda en caché: se muestra mientras carga y sin red.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getGames } from '../services/rawgApi';
+import { getGames } from '../services/gamesApi';
 import { mapRawgGame } from '../utils/mapGame';
 import { readCatalogCache, writeCatalogCache } from '../services/catalogCache';
 

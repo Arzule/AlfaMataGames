@@ -17,7 +17,7 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
-import { getGameDetail } from '../services/rawgApi';
+import { getGameDetail } from '../services/gamesApi';
 import { useLibrary } from '../hooks/useLibrary';
 import Rating from '../components/Rating';
 import StatusChips from '../components/StatusChips';
