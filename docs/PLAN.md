@@ -9,7 +9,7 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 - Entregados: Avance 1 y Avance 2.
 - Avance 3: A3-0 a A3-7 terminadas (pendiente: entrega por el usuario).
-- Avance 4: A4-1 terminada.
+- Avance 4: A4-1 y A4-1b terminadas.
 - **Fase actual: A4-2** (Backend de producción y despliegue en Azure).
 
 ## Decisiones tomadas
@@ -25,7 +25,12 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   compatibles con la BD local existente y con una BD nueva en Azure.
 - **Conexión a BD**: variables sueltas (como hoy) o URL única (`DATABASE_URL` / `MYSQL_URL`),
   con SSL opcional (`DB_SSL`).
-- **Claves externas solo en el backend**: RAWG (desde A3-6/A4-1), DeepL, Steam, OAuth.
+- **Catálogo con IGDB** (desde A4-1b): RAWG dejó de responder (522) y se cambió a IGDB
+  (Twitch, gratuito, ~4 peticiones/s). El backend normaliza los juegos; la biblioteca local
+  empezó de cero (migración `005`) porque los ids de RAWG no coinciden con los de IGDB.
+- **BD de Azure limpia**: se crea vacía; las migraciones crean el esquema al arrancar el backend
+  y solo se agrega el usuario de prueba (sin datos de biblioteca).
+- **Claves externas solo en el backend**: IGDB (desde A4-1b), DeepL, Steam, OAuth.
   La app usa `EXPO_PUBLIC_*` (desde A4-1) para que EAS inyecte las variables.
 - **Caché**: primera página del catálogo en `Paths.cache` (expo-file-system) con
   vencimiento de **7 días** y limpieza al iniciar; imágenes con caché de disco (expo-image);
@@ -202,6 +207,21 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Terminado cuando:** el bundle exportado no contiene la clave de RAWG y la app funciona igual
   en Android y web.
 
+### [x] A4-1b Catálogo con IGDB
+
+- **Objetivo:** reemplazar RAWG (caído) por IGDB sin cambiar el comportamiento de la app.
+- **Tareas:**
+  - [x] `igdb.service.js`: token de Twitch en memoria (renovación antes de vencer y reintento
+    ante 401), catálogo de los más votados, búsqueda, juego al azar, detalle y sinopsis.
+  - [x] El backend devuelve juegos normalizados (`image`, `heroImage`, `rating` 0-5,
+    `developer`, `platforms`, `description`); la app los usa sin conocer IGDB.
+  - [x] `IGDB_CLIENT_ID`/`IGDB_CLIENT_SECRET` en `docker-compose.yml` y `.env.example`;
+    se quita `RAWG_API_KEY`.
+  - [x] Migración `005`: biblioteca y caché de sinopsis desde cero (ids de RAWG).
+  - [x] Caché del catálogo de la app con nombre nuevo (ignora la de ids de RAWG).
+- **Terminado cuando:** catálogo, búsqueda, azar, detalle y sinopsis responden con IGDB y el
+  bundle no contiene credenciales.
+
 ### [ ] A4-2 Backend de producción y guía de despliegue
 
 - **Objetivo:** backend listo para producción y desplegado en Azure.
@@ -212,6 +232,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   - [ ] Imagen Docker de producción.
   - [ ] `docs/DEPLOY.md`: desplegar en Azure con HTTPS (Container Apps con imagen en GHCR y
     MySQL Flexible Server B1ms con SSL), configurar variables y secretos, y aplicar migraciones.
+  - [ ] BD de Azure limpia: esquema por migraciones y solo el usuario de prueba (sin semilla de
+    biblioteca).
   - [ ] Crear los recursos y desplegar con Azure CLI (lo hace el agente) y probar `/health`
     y el login contra la URL pública.
 - **Terminado cuando:** sin variables obligatorias el backend no arranca (mensaje claro),
@@ -250,7 +272,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   - [ ] Verificación con Steam OpenID por el backend (mismo patrón de navegador y deep link).
   - [ ] Importar con `GetOwnedGames` (clave de Steam solo en el backend); avisar si los detalles
     de juego del perfil no son públicos.
-  - [ ] Correspondencia Steam → RAWG por búsqueda de nombre con tabla de caché (migración).
+  - [ ] Correspondencia Steam → IGDB con `external_games` (appid de Steam) y, si falta, por
+    nombre, con tabla de caché (migración).
   - [ ] Reglas por tiempo jugado (ver "Decisiones tomadas") y fuente de estado/favorito
     (steam o usuario, migración).
   - [ ] Re-sincronizar: agrega juegos nuevos y actualiza solo lo que sigue con fuente steam.
