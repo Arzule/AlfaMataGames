@@ -1,6 +1,6 @@
 // src/services/gamesApi.js
-// Información de juegos que sirve el backend (requiere token). El backend consulta RAWG
-// con su propia clave: la app nunca la conoce.
+// Información de juegos que sirve el backend (requiere token). El backend consulta IGDB
+// con sus credenciales: la app nunca las conoce.
 import { request } from './apiClient';
 
 /**
