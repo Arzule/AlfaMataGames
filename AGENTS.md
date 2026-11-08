@@ -9,7 +9,7 @@ decisiones en [docs/PLAN.md](docs/PLAN.md); criterios de evaluación en
 
 ## Proyecto
 
-AlfaMataGames: biblioteca de videojuegos (catálogo de RAWG + biblioteca personal por usuario:
+AlfaMataGames: biblioteca de videojuegos (catálogo de IGDB + biblioteca personal por usuario:
 favorito, estado, puntuación 0-5 y reseña). Proyecto académico del curso Desarrollo de
 Aplicaciones Móviles (UTP). Avances 1 y 2 entregados; Avance 3 (Unidad 3) terminado; en
 curso: entrega final (Avance 4, Unidad 4). Fase actual y decisiones: `docs/PLAN.md`.
@@ -23,8 +23,9 @@ curso: entrega final (Avance 4, Unidad 4). Fase actual y decisiones: `docs/PLAN.
   Expo desde `.env` y EAS desde sus variables). Nunca poner secretos en `EXPO_PUBLIC_*`.
 - Backend (`backend/`): Node 20 (`node:20-alpine`), Express 4, mysql2, jsonwebtoken, bcryptjs, cors.
 - BD: MySQL 8.0. Orquestación local: Docker Compose (`db`, `backend`, `adminer`).
-- Datos de juegos: API de RAWG **a través del backend** (`/games`, `/games/random`,
-  `/games/:gameId`); la clave `RAWG_API_KEY` solo está en el backend.
+- Datos de juegos: API de IGDB (Twitch) **a través del backend** (`/games`, `/games/random`,
+  `/games/:gameId`), ya normalizados; `IGDB_CLIENT_ID`/`IGDB_CLIENT_SECRET` solo están en el
+  backend (token de aplicación en memoria, renovado solo). RAWG se abandonó en A4-1b.
 - Despliegue previsto: **Azure** (Container Apps + MySQL Flexible Server B1ms), en el grupo
   `rg-alfamatagames`; lo hace el agente con Azure CLI (ver `docs/PLAN.md`, A4-2).
 
@@ -50,15 +51,15 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   confirmación propio y `ConfirmDialogHost`, montado en `App.js`).
 - `context/` — `AuthContext.js` (sesión, token, login/register/logout, restaura con `/auth/me`);
   `LibraryContext.js` (biblioteca del usuario con cambios optimistas).
-- `hooks/` — `useAuth`, `useLibrary` (consumen contextos), `useGames` (catálogo RAWG con
+- `hooks/` — `useAuth`, `useLibrary` (consumen contextos), `useGames` (catálogo con
   búsqueda, paginación, caché y `offline`), `useRecentSearches` (AsyncStorage, por usuario),
   `usePermission` (permisos: explicación previa, bloqueado, abrir ajustes), `useAvatarPicker`
   (cámara/galería → recorte → subida), `useShakeDetector` (acelerómetro con umbral y
-  antirrebote, solo con la pantalla enfocada y la app activa), `useRandomGame` (juego al azar de
-  RAWG), `useGameReviews` (reseñas de la comunidad paginadas), `useNotificationPermission`,
+  antirrebote, solo con la pantalla enfocada y la app activa), `useRandomGame` (juego al azar del
+  catálogo), `useGameReviews` (reseñas de la comunidad paginadas), `useNotificationPermission`,
   `useGameReminder` (recordatorio de un juego), `useDailyReminder` (diario, por usuario),
   `useNotificationBridge` (tocar notificación → navegar; restaura el diario al iniciar sesión),
-  `useNetworkStatus` (NetInfo), `useGameDescription` (sinopsis traducida con respaldo a RAWG),
+  `useNetworkStatus` (NetInfo), `useGameDescription` (sinopsis traducida con respaldo al texto original),
   `useDebounce`, `useGridColumns` (2/3/4 columnas y
   `GRID_PERFORMANCE_PROPS` para las FlatList).
 - `navigation/` — `AppNavigator.js`: Stack según sesión; Tabs Catálogo/Favoritos/Perfil +
@@ -70,7 +71,7 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   `notifications.js` / `notifications.web.js` (expo-notifications; en web, misma API sin efecto).
 - `theme/` — `colors.js`, `typography.js` (`fonts`, `fontSizes`).
 - `utils/` — `storage.js` (token seguro nativo/web), `confirm.js` (`confirmAction`: abre ConfirmDialog),
-  `mapGame.js` (RAWG → formato de GameCard), `cacheEntry.js` (formato y vencimiento de 7 días), `avatarImage.js` (recorte cuadrado 256 px JPEG),
+  `mapGame.js` (`mapCatalogGame`: juego del backend → formato de GameCard), `cacheEntry.js` (formato y vencimiento de 7 días), `avatarImage.js` (recorte cuadrado 256 px JPEG),
   `dateFormat.js` (fechas y horas sin Intl), `logger.js` (logger central).
 - `shims/` — `TopicSubscriptionModule.android.js` (lo usa `metro.config.js`).
 
@@ -80,14 +81,14 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 - `config/db.js` — pool mysql2/promise: `DATABASE_URL`/`MYSQL_URL` o variables sueltas
   (`DB_HOST`, `DB_PORT`, `MYSQL_*`), `DB_SSL` opcional; exporta `getConnectionOptions`.
 - `controllers/` — `auth.controller.js`, `library.controller.js`, `reviews.controller.js`,
-  `catalog.controller.js` (catálogo, juego al azar y detalle de RAWG),
-  `descriptions.controller.js` (sinopsis: caché → RAWG → DeepL).
-- `services/` — `rawg.service.js` y `deepl.service.js` (APIs externas con timeout; sus errores
+  `catalog.controller.js` (catálogo, juego al azar y detalle de IGDB),
+  `descriptions.controller.js` (sinopsis: caché → IGDB → DeepL).
+- `services/` — `igdb.service.js` (token de Twitch y normalización) y `deepl.service.js` (APIs externas con timeout; sus errores
   llevan `status`/`code` o `reason`).
 - `middleware/` — `auth.middleware.js` (`authRequired`), `error.middleware.js` (404 y errores JSON),
   `requestLogger.middleware.js` (una línea por petición, `req.id` y `X-Request-Id`).
 - `routes/` — `/auth` (register, login, me, PUT/DELETE `me/avatar`), `/library` (GET lista,
-  GET/PUT/DELETE `:gameId`) y `/games` (GET `/`, `/random` y `:gameId`: catálogo de RAWG; GET `:gameId/reviews`: reseñas de los demás usuarios;
+  GET/PUT/DELETE `:gameId`) y `/games` (GET `/`, `/random` y `:gameId`: catálogo de IGDB; GET `:gameId/reviews`: reseñas de los demás usuarios;
   GET `:gameId/description`: sinopsis en español).
   El usuario público incluye `avatar` (data URI o null).
 - `utils/validators.js` — validaciones manuales y constantes (`STATUSES`, `REVIEW_MAX_LENGTH`).
@@ -146,9 +147,9 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
 - **Errores de render**: `ErrorBoundary` global en `App.js` (envuelve también los contextos);
   "Reintentar" vuelve a montar el árbol.
 - **Sinopsis traducidas**: el backend traduce con DeepL (`target_lang` `ES`) y guarda en
-  `game_translations`; un acierto de caché no llama a RAWG ni a DeepL. Sin traducción (sin
+  `game_translations`; un acierto de caché no llama a IGDB ni a DeepL. Sin traducción (sin
   clave, cuota, error) devuelve el original con `notice` y no guarda nada. La app nunca
-  muestra la sinopsis vacía por un error: usa `description_raw` de RAWG como respaldo.
+  muestra la sinopsis vacía por un error: usa `description` del detalle como respaldo.
 - **Diseño**: colores solo desde `src/theme/colors.js` (nada de hex sueltos; `danger` para
   destructivo). `Header` suma el área segura superior (no poner `paddingTop` fijo); pantallas
   sin `Header` usan `useSafeAreaInsets`. En tablets y web el contenido lleva ancho máximo

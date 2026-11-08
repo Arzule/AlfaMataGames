@@ -1,10 +1,10 @@
-// Sinopsis de un juego en español: descripción de RAWG traducida con DeepL y guardada en
-// game_translations. La segunda consulta de un juego sale de la caché (sin RAWG ni DeepL).
+// Sinopsis de un juego en español: descripción de IGDB traducida con DeepL y guardada en
+// game_translations. La segunda consulta de un juego sale de la caché (sin IGDB ni DeepL).
 // Si no se puede traducir se devuelve el texto original con un aviso (notice) y no se
 // guarda nada, para traducir en cuanto DeepL esté disponible.
 const crypto = require('crypto');
 const pool = require('../config/db');
-const { getGameDescription } = require('../services/rawg.service');
+const { getGameDescription } = require('../services/igdb.service');
 const { translate } = require('../services/deepl.service');
 const { createLogger } = require('../utils/logger');
 
@@ -135,11 +135,11 @@ async function getDescription(req, res, next) {
     }
     return res.json(await inFlight.get(gameId));
   } catch (err) {
-    // Errores de RAWG con status propio (404, 502, 503): mensaje claro para la app.
+    // Errores del catálogo con status propio (404, 502, 503): mensaje claro para la app.
     if (err.status && err.status < 500) {
       return res.status(err.status).json({ message: err.message, code: err.code });
     }
-    if (err.code === 'RAWG_UNAVAILABLE' || err.code === 'RAWG_NOT_CONFIGURED') {
+    if (err.code === 'CATALOG_UNAVAILABLE' || err.code === 'CATALOG_NOT_CONFIGURED') {
       return res.status(err.status).json({ message: err.message, code: err.code });
     }
     return next(err);

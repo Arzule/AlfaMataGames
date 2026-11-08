@@ -9,12 +9,12 @@ const router = express.Router();
 
 router.use(authRequired);
 
-// Catálogo de RAWG a través del backend (la clave queda en el servidor).
+// Catálogo de IGDB a través del backend (las credenciales quedan en el servidor).
 router.get('/', list);
 router.get('/random', random);
 router.get('/:gameId', detail);
 router.get('/:gameId/reviews', listForGame);
-// Sinopsis en español (RAWG + DeepL, con caché en game_translations).
+// Sinopsis en español (IGDB + DeepL, con caché en game_translations).
 router.get('/:gameId/description', getDescription);
 
 module.exports = router;

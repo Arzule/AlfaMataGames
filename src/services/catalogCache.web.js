@@ -8,7 +8,8 @@ import { createLogger } from '../utils/logger';
 const log = createLogger('cache');
 
 const PREFIX = 'alfamatagames.cache.';
-const CATALOG_KEY = `${PREFIX}catalog-page1`;
+// v2: ids de IGDB (la caché con ids de RAWG se ignora).
+const CATALOG_KEY = `${PREFIX}catalog-igdb-page1`;
 
 export async function readCatalogCache() {
   try {

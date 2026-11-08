@@ -1,6 +1,6 @@
 // src/hooks/useGameDescription.js
-// Sinopsis traducida de un juego (backend: RAWG + DeepL con caché).
-// Si el backend no responde, se usa la descripción original que la app ya tiene de RAWG
+// Sinopsis traducida de un juego (backend: IGDB + DeepL con caché).
+// Si el backend no responde, se usa la descripción original que la app ya tiene del detalle
 // (fallbackText) con el aviso 'unavailable'; la sinopsis nunca queda vacía por un error.
 import { useEffect, useRef, useState } from 'react';
 import { getGameDescription } from '../services/gamesApi';
@@ -25,7 +25,7 @@ export function useGameDescription(gameId, fallbackText) {
       })
       .catch((err) => {
         if (requestId !== requestIdRef.current) return;
-        log.info('Sin sinopsis del backend; se usa la de RAWG', err);
+        log.info('Sin sinopsis del backend; se usa la original', err);
         setFailed(true);
       })
       .finally(() => {
