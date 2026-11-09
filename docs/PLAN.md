@@ -9,8 +9,9 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 - Entregados: Avance 1 y Avance 2.
 - Avance 3: A3-0 a A3-7 terminadas (pendiente: entrega por el usuario).
-- Avance 4: A4-1 y A4-1b terminadas.
-- **Fase actual: A4-2** (Backend de producción y despliegue en Azure).
+- Avance 4: A4-1, A4-1b y A4-2 terminadas. Backend en producción:
+  https://alfamatagames-api.chilecentral.cloudapp.azure.com (ver `docs/DEPLOY.md`).
+- **Fase actual: A4-3** (Gestión de cuenta y estadísticas).
 
 ## Decisiones tomadas
 
@@ -222,19 +223,19 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Terminado cuando:** catálogo, búsqueda, azar, detalle y sinopsis responden con IGDB y el
   bundle no contiene credenciales.
 
-### [ ] A4-2 Backend de producción y guía de despliegue
+### [x] A4-2 Backend de producción y guía de despliegue
 
 - **Objetivo:** backend listo para producción y desplegado en Azure.
 - **Tema del sílabo:** preparación para producción.
 - **Tareas:**
-  - [ ] `helmet`, límite de peticiones en `/auth`, CORS por entorno, `trust proxy`.
-  - [ ] Validación de variables al arrancar; `/health` que pruebe la BD.
-  - [ ] Imagen Docker de producción.
-  - [ ] `docs/DEPLOY.md`: desplegar en Azure con HTTPS (Container Apps con imagen en GHCR y
-    MySQL Flexible Server B1ms con SSL), configurar variables y secretos, y aplicar migraciones.
-  - [ ] BD de Azure limpia: esquema por migraciones y solo el usuario de prueba (sin semilla de
-    biblioteca).
-  - [ ] Crear los recursos y desplegar con Azure CLI (lo hace el agente) y probar `/health`
+  - [x] `helmet`, límite de peticiones en `/auth`, CORS por entorno, `trust proxy`.
+  - [x] Validación de variables al arrancar; `/health` que pruebe la BD.
+  - [x] Imagen Docker de producción.
+  - [x] `docs/DEPLOY.md`: Azure for Students no permitió MySQL Flexible ni un segundo entorno de
+    Container Apps; se usó una VM B2ats_v2 (gratuita 750 h/mes) con Docker Compose: MySQL,
+    backend y Caddy (HTTPS con Let's Encrypt). Apagado programado el 1 de enero de 2027.
+  - [x] BD de Azure limpia: esquema por migraciones y solo el usuario de prueba Demo.
+  - [x] Crear los recursos y desplegar con Azure CLI (lo hace el agente) y probar `/health`
     y el login contra la URL pública.
 - **Terminado cuando:** sin variables obligatorias el backend no arranca (mensaje claro),
   `/health` falla si la BD no responde y la guía se sigue sin pasos implícitos.
