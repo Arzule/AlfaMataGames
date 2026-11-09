@@ -514,7 +514,7 @@ Tabla generada a partir de `backend/src/routes/`.
 
 | Método | Ruta | Autenticación | Descripción |
 | --- | --- | --- | --- |
-| GET | `/health` | No | Estado del servicio (`{ "status": "ok" }`). |
+| GET | `/health` | No | Estado del servicio y de la BD (`{ "status": "ok", "db": "ok" }`; 503 si la BD no responde). |
 | POST | `/auth/register` | No | Registra un usuario y devuelve `{ token, user }`. |
 | POST | `/auth/login` | No | Inicia sesión y devuelve `{ token, user }`. |
 | GET | `/auth/me` | Bearer JWT | Devuelve `{ user }` del token actual (incluye `avatar`). |
@@ -633,7 +633,7 @@ Las ramas se integran a `develop` con `git merge --no-ff` para conservar el hist
 ## Trabajo futuro (Avance 4)
 
 - Catálogo a través del backend con IGDB (las credenciales salen de la app) y variables `EXPO_PUBLIC_*`.
-- Backend en la nube (Azure) con HTTPS y guía de despliegue.
+- Backend en producción: https://alfamatagames-api.chilecentral.cloudapp.azure.com (VM de Azure con HTTPS; ver [docs/DEPLOY.md](docs/DEPLOY.md)).
 - Gestión de cuenta (datos, contraseña, eliminar cuenta) y estadísticas en Perfil.
 - Inicio de sesión con Google y Discord, e importación de la biblioteca de Steam.
 - Recordatorios con notificaciones push desde el servidor.

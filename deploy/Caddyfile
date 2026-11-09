@@ -1,0 +1,5 @@
+# HTTPS automático (Let's Encrypt) para el dominio de la VM y proxy al backend.
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy backend:3000
+}

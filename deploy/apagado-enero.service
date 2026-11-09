@@ -1,0 +1,6 @@
+[Unit]
+Description=Apagar la VM de AlfaMataGames (fin del proyecto)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/apagado-enero.sh

@@ -1,0 +1,9 @@
+[Unit]
+Description=Apagado programado de la VM: 1 de enero de 2027, 00:00 hora de Peru
+
+[Timer]
+OnCalendar=2027-01-01 05:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

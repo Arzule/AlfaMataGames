@@ -26,8 +26,10 @@ curso: entrega final (Avance 4, Unidad 4). Fase actual y decisiones: `docs/PLAN.
 - Datos de juegos: API de IGDB (Twitch) **a través del backend** (`/games`, `/games/random`,
   `/games/:gameId`), ya normalizados; `IGDB_CLIENT_ID`/`IGDB_CLIENT_SECRET` solo están en el
   backend (token de aplicación en memoria, renovado solo). RAWG se abandonó en A4-1b.
-- Despliegue previsto: **Azure** (Container Apps + MySQL Flexible Server B1ms), en el grupo
-  `rg-alfamatagames`; lo hace el agente con Azure CLI (ver `docs/PLAN.md`, A4-2).
+- Producción: **VM de Azure** (`vm-alfamatagames`, Chile Central, grupo `rg-alfamatagames`) con
+  Docker Compose (`deploy/`: MySQL + backend + Caddy HTTPS) en
+  https://alfamatagames-api.chilecentral.cloudapp.azure.com. Se apaga sola el 1/1/2027. Ver
+  `docs/DEPLOY.md` (por qué no Container Apps/MySQL Flexible y cómo redesplegar).
 
 ## Cómo correrlo en local (Windows, PowerShell)
 
