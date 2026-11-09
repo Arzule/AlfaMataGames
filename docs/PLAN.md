@@ -322,6 +322,9 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   - [ ] Contraste suficiente entre texto y fondo.
   - [ ] Soporte del tamaño de letra del sistema sin romper el diseño.
   - [ ] Revisión final de coherencia visual.
+  - [ ] **Fix (solo web):** el banner (`heroImage`) del detalle del juego se ve muy angosto en
+    pantallas anchas. Propuesta: en web con ancho grande, mostrarlo como banner lateral (imagen a
+    un lado y la información al otro) para aprovechar el monitor; en móvil queda igual.
 - **Terminado cuando:** todos los botones con icono se anuncian con lector de pantalla, ninguna
   zona táctil es menor de 44x44, y con letra grande del sistema no se corta ni solapa texto.
 
