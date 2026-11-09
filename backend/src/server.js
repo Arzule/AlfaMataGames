@@ -1,6 +1,5 @@
 // Punto de arranque del servidor: aplica migraciones pendientes y luego escucha.
-const app = require('./app');
-const { runMigrations } = require('./migrate');
+const { validateEnv } = require('./config/env');
 const { createLogger } = require('./utils/logger');
 
 const log = createLogger('server');
@@ -8,6 +7,16 @@ const log = createLogger('server');
 const PORT = Number(process.env.PORT) || 3000;
 
 async function start() {
+  // Antes de tocar la BD: sin variables obligatorias no se arranca.
+  const missing = validateEnv();
+  if (missing.length) {
+    log.error(`Faltan variables de entorno obligatorias: ${missing.join(', ')}`);
+    process.exit(1);
+  }
+
+  const app = require('./app');
+  const { runMigrations } = require('./migrate');
+
   try {
     await runMigrations();
   } catch (err) {
