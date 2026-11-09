@@ -1,6 +1,6 @@
 # Despliegue en Azure
 
-Backend de producción de AlfaMataGames: **https://alfamatagames-api.chilecentral.cloudapp.azure.com**
+App web y backend de producción de AlfaMataGames: **https://alfamatagames-api.chilecentral.cloudapp.azure.com**
 (`GET /health` → `{ "status": "ok", "db": "ok" }`).
 
 ## Arquitectura
@@ -91,3 +91,18 @@ y reiniciar con `npx expo start -c`. En EAS (A4-7) se define la misma variable e
 - CORS restringible con `CORS_ORIGINS`; la app nativa no envía `Origin`.
 - El backend no arranca si faltan variables obligatorias (mensaje con los nombres, sin valores).
 - `/health` devuelve 503 si la base de datos no responde.
+
+## Versión web de la app
+
+La misma URL sirve la app web (export de Expo) en `/`; Caddy envía `/auth`, `/games`, `/library`
+y `/health` al backend y el resto a los archivos estáticos (`deploy/web`, con `index.html` de
+respaldo). Al ser el mismo dominio no hace falta CORS. Para actualizarla (con
+`EXPO_PUBLIC_API_URL` apuntando a esta URL en el `.env`):
+
+```bash
+npx expo export --platform web --output-dir /tmp/amg-web
+tar --force-local -czf /tmp/amg-web.tgz -C /tmp/amg-web .
+scp /tmp/amg-web.tgz $H:/tmp/ && ssh $H 'cd ~/alfamatagames/deploy && rm -rf web && mkdir web && tar -xzf /tmp/amg-web.tgz -C web'
+```
+
+No requiere reiniciar Caddy (sirve los archivos del volumen directamente).
