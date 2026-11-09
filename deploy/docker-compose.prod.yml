@@ -64,6 +64,8 @@ services:
       DOMAIN: ${DOMAIN}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Versión web de la app (npx expo export --platform web).
+      - ./web:/srv:ro
       - caddy_data:/data
       - caddy_config:/config
 
