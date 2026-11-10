@@ -32,3 +32,22 @@ export function uploadAvatar(image) {
 export function deleteAvatar() {
   return request('/auth/me/avatar', { method: 'DELETE', auth: true });
 }
+
+// Cambia el nombre del usuario. Devuelve { user }.
+export function updateProfile(name) {
+  return request('/auth/me', { method: 'PUT', body: { name }, auth: true });
+}
+
+// Cambia la contraseña (pide la actual). Devuelve { user }.
+export function changePassword(currentPassword, newPassword) {
+  return request('/auth/me/password', {
+    method: 'PUT',
+    body: { currentPassword, newPassword },
+    auth: true,
+  });
+}
+
+// Elimina la cuenta y su biblioteca (password solo si la cuenta tiene contraseña).
+export function deleteAccount(password) {
+  return request('/auth/me', { method: 'DELETE', body: { password }, auth: true });
+}

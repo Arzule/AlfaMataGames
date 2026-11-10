@@ -11,6 +11,7 @@ import { setAuthToken, setUnauthorizedHandler } from '../services/apiClient';
 import * as authApi from '../services/authApi';
 import * as storage from '../utils/storage';
 import { cancelAllReminders } from '../services/notifications';
+import { clearUserData } from '../services/preferences';
 
 // Clave con la que se guarda el token en el almacenamiento seguro.
 const TOKEN_KEY = 'alfamatagames.token';
@@ -121,10 +122,58 @@ export function AuthProvider({ children }) {
     setUser(data.user);
   }, []);
 
+  // Datos de la cuenta: el backend devuelve el usuario actualizado.
+  const updateName = useCallback(async (name) => {
+    const data = await authApi.updateProfile(name);
+    if (!data || !data.user) throw new Error('Respuesta inesperada del servidor');
+    setUser(data.user);
+  }, []);
+
+  const changePassword = useCallback(async (currentPassword, newPassword) => {
+    const data = await authApi.changePassword(currentPassword, newPassword);
+    if (!data || !data.user) throw new Error('Respuesta inesperada del servidor');
+    setUser(data.user);
+  }, []);
+
+  // Elimina la cuenta, borra sus datos locales y cierra la sesión.
+  const deleteAccount = useCallback(
+    async (password) => {
+      const userId = user?.id;
+      await authApi.deleteAccount(password);
+      await clearUserData(userId);
+      await clearSession();
+    },
+    [user?.id, clearSession]
+  );
+
   // Valor memorizado: evita volver a dibujar todos los consumidores en cada render.
   const value = useMemo(
-    () => ({ user, token, loading, login, register, logout, updateAvatar, removeAvatar }),
-    [user, token, loading, login, register, logout, updateAvatar, removeAvatar]
+    () => ({
+      user,
+      token,
+      loading,
+      login,
+      register,
+      logout,
+      updateAvatar,
+      removeAvatar,
+      updateName,
+      changePassword,
+      deleteAccount,
+    }),
+    [
+      user,
+      token,
+      loading,
+      login,
+      register,
+      logout,
+      updateAvatar,
+      removeAvatar,
+      updateName,
+      changePassword,
+      deleteAccount,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

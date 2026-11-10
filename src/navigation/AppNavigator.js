@@ -13,6 +13,7 @@ import GameDetailScreen from '../screens/GameDetailScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import RemindersScreen from '../screens/RemindersScreen';
+import AccountScreen from '../screens/AccountScreen';
 import { useAuth } from '../hooks/useAuth';
 import { useNotificationBridge } from '../hooks/useNotificationBridge';
 import { colors } from '../theme/colors';
@@ -97,6 +98,7 @@ export default function AppNavigator() {
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen name="GameDetail" component={GameDetailScreen} />
           <Stack.Screen name="Reminders" component={RemindersScreen} />
+          <Stack.Screen name="Account" component={AccountScreen} />
         </Stack.Navigator>
       ) : (
         // Sin sesión: login y registro.
