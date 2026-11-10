@@ -21,6 +21,30 @@ function isValidEmail(email) {
   return typeof email === 'string' && EMAIL_REGEX.test(email.trim());
 }
 
+// Límites compartidos por registro, edición de nombre y cambio de contraseña.
+const NAME_MIN = 2;
+const NAME_MAX = 80;
+const PASSWORD_MIN = 6;
+const PASSWORD_MAX = 72; // bcrypt solo usa los primeros 72 bytes.
+
+// Valida un nombre ya recortado; devuelve el mensaje de error o null.
+function nameError(name) {
+  if (name.length < NAME_MIN || name.length > NAME_MAX) {
+    return `El nombre debe tener entre ${NAME_MIN} y ${NAME_MAX} caracteres.`;
+  }
+  return null;
+}
+
+function passwordError(password) {
+  if (password.length < PASSWORD_MIN) {
+    return `La contraseña debe tener al menos ${PASSWORD_MIN} caracteres.`;
+  }
+  if (Buffer.byteLength(password, 'utf8') > PASSWORD_MAX) {
+    return `La contraseña no puede superar los ${PASSWORD_MAX} caracteres.`;
+  }
+  return null;
+}
+
 // Valida los datos de registro y los normaliza.
 function validateRegister(body = {}) {
   const errors = [];
@@ -29,15 +53,13 @@ function validateRegister(body = {}) {
     typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   const password = typeof body.password === 'string' ? body.password : '';
 
-  if (name.length < 2 || name.length > 80) {
-    errors.push('El nombre debe tener entre 2 y 80 caracteres.');
-  }
+  const badName = nameError(name);
+  if (badName) errors.push(badName);
   if (!isValidEmail(email)) {
     errors.push('El correo no es válido.');
   }
-  if (password.length < 6) {
-    errors.push('La contraseña debe tener al menos 6 caracteres.');
-  }
+  const badPassword = passwordError(password);
+  if (badPassword) errors.push(badPassword);
 
   return { errors, data: { name, email, password } };
 }
@@ -57,6 +79,27 @@ function validateLogin(body = {}) {
   }
 
   return { errors, data: { email, password } };
+}
+
+// Valida el nombre al editar el perfil.
+function validateProfile(body = {}) {
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  const error = nameError(name);
+  return { errors: error ? [error] : [], data: { name } };
+}
+
+// Valida el cambio de contraseña: la actual es obligatoria y la nueva debe ser distinta.
+function validatePasswordChange(body = {}) {
+  const errors = [];
+  const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : '';
+  const newPassword = typeof body.newPassword === 'string' ? body.newPassword : '';
+  if (!currentPassword) errors.push('La contraseña actual es obligatoria.');
+  const badPassword = passwordError(newPassword);
+  if (badPassword) errors.push(badPassword.replace('La contraseña', 'La nueva contraseña'));
+  if (!errors.length && currentPassword === newPassword) {
+    errors.push('La nueva contraseña debe ser distinta de la actual.');
+  }
+  return { errors, data: { currentPassword, newPassword } };
 }
 
 // Valida la foto de perfil: data URI base64 de JPEG, PNG o WebP de hasta AVATAR_MAX_BYTES.
@@ -86,6 +129,8 @@ module.exports = {
   isValidEmail,
   validateRegister,
   validateLogin,
+  validateProfile,
+  validatePasswordChange,
   validateAvatar,
   STATUSES,
   REVIEW_MAX_LENGTH,
