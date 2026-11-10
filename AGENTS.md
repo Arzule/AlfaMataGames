@@ -190,7 +190,8 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
 
 - **Ramas**: una fase del plan por rama, creada desde `develop`: `feature/<id-fase>-<nombre>` o
   `fix/<nombre>`. Integrar con `git merge --no-ff` a `develop` sin borrar la rama.
-  **Nunca** `git push` ni tocar `main`: el usuario hace los push, los merges a `main` y los tags.
+  Al terminar y verificar una fase, el agente hace `git push` de `develop` y de la rama de la
+  fase. **Nunca** tocar `main`: los merges a `main`, su push y los tags los hace el usuario.
 - **Commits**: Conventional Commits en español **sin tildes** (evita problemas de codificación en
   PowerShell), uno por cambio lógico.
 - **Secretos**: no leer ni imprimir `.env` salvo permiso explícito; nunca commitearlo; nunca
