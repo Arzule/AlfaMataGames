@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- Biblioteca de juegos por usuario: progreso, favoritos y reseña de cada juego
--- (game_id corresponde al id del juego en la API de RAWG).
+-- (game_id corresponde al id del juego en IGDB).
 CREATE TABLE IF NOT EXISTS user_games (
     id          INT AUTO_INCREMENT PRIMARY KEY,
     user_id     INT          NOT NULL,

@@ -42,7 +42,7 @@ usuario fuera del repositorio.
 | Criterio | Fases que lo cubren |
 | --- | --- |
 | Arquitectura | A4-1 (variables `EXPO_PUBLIC_*`), A4-7 (`app.json` de producción, `eas.json`), A4-8 (CHANGELOG); flujo de ramas de `AGENTS.md` |
-| Backend en la nube | A4-1 (proxy de RAWG), A4-2 (seguridad, HTTPS en Railway), A4-3 (gestión de cuenta), A4-4 (OAuth), A4-6 (push desde el servidor) |
+| Backend en la nube | A4-1 y A4-1b (catálogo de IGDB a través del backend), A4-2 (seguridad, HTTPS en Azure), A4-3 (gestión de cuenta), A4-4 (OAuth), A4-6 (push desde el servidor) |
 | Funcionalidades nativas | A3-2, A3-3, A3-4 y A4-6 (push remotas en el APK) |
 | UI/UX | A4-3 (estadísticas en Perfil), A4-7b (accesibilidad y pulido final), A3-7 |
 | Innovación y valor agregado | A4-4 (Google y Discord), A4-5 (Steam), A4-6 (push), A4-2 (seguridad), A4-7b (accesibilidad) |

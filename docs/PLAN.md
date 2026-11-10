@@ -9,17 +9,29 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 - Entregados: Avance 1 y Avance 2.
 - Avance 3: A3-0 a A3-7 terminadas (pendiente: entrega por el usuario).
-- **Fase actual: A4-1** (Proxy de RAWG y variables EXPO_PUBLIC_*).
+- Avance 4: A4-1, A4-1b y A4-2 terminadas. Backend en producción:
+  https://alfamatagames-api.chilecentral.cloudapp.azure.com (ver `docs/DEPLOY.md`).
+- **Fase actual: A4-3** (Gestión de cuenta y estadísticas).
 
 ## Decisiones tomadas
 
-- **Despliegue**: backend y MySQL en Railway, con HTTPS; lo hace el usuario siguiendo
-  `docs/DEPLOY.md`. A4-4 a A4-6 requieren la URL pública.
+- **Despliegue**: Azure (suscripción Azure for Students del usuario), con HTTPS. Backend en
+  Azure Container Apps (imagen en GHCR, como el otro proyecto del usuario) y MySQL en Azure
+  Database for MySQL Flexible Server con el plan más básico (Burstable B1ms, SSL obligatorio).
+  Proyecto académico que quedará poco usado: costo mínimo (escala a 0 réplicas fuera de la
+  demo). El agente crea y configura los recursos con Azure CLI en su propio grupo de recursos
+  (`rg-alfamatagames`), sin tocar otros grupos; `docs/DEPLOY.md` documenta los pasos.
+  A4-4 a A4-6 requieren la URL pública.
 - **Esquema**: siempre por migraciones (`backend/migrations` + tabla `schema_migrations`),
-  compatibles con la BD local existente y con una BD nueva en Railway.
+  compatibles con la BD local existente y con una BD nueva en Azure.
 - **Conexión a BD**: variables sueltas (como hoy) o URL única (`DATABASE_URL` / `MYSQL_URL`),
   con SSL opcional (`DB_SSL`).
-- **Claves externas solo en el backend**: RAWG (desde A3-6/A4-1), DeepL, Steam, OAuth.
+- **Catálogo con IGDB** (desde A4-1b): RAWG dejó de responder (522) y se cambió a IGDB
+  (Twitch, gratuito, ~4 peticiones/s). El backend normaliza los juegos; la biblioteca local
+  empezó de cero (migración `005`) porque los ids de RAWG no coinciden con los de IGDB.
+- **BD de Azure limpia**: se crea vacía; las migraciones crean el esquema al arrancar el backend
+  y solo se agrega el usuario de prueba (sin datos de biblioteca).
+- **Claves externas solo en el backend**: IGDB (desde A4-1b), DeepL, Steam, OAuth.
   La app usa `EXPO_PUBLIC_*` (desde A4-1) para que EAS inyecte las variables.
 - **Caché**: primera página del catálogo en `Paths.cache` (expo-file-system) con
   vencimiento de **7 días** y limpieza al iniciar; imágenes con caché de disco (expo-image);
@@ -56,15 +68,15 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 ### [x] A3-0 Migraciones de BD
 
-- **Objetivo:** cambiar el esquema sin borrar datos, en local y en Railway.
+- **Objetivo:** cambiar el esquema sin borrar datos, en local y en la nube.
 - **Tema del sílabo:** base de persistencia para las fases de la Unidad 3.
 - **Tareas:**
   - [x] `backend/migrations/` con archivos SQL numerados (`001-...sql`). Dentro de `backend/`
-    para que la imagen funcione igual en Docker local y en Railway (root directory `backend`).
+    para que la imagen funcione igual en Docker local y en la nube (contexto de build `backend`).
   - [x] Runner en el backend: `npm run migrate` y ejecución automática al arrancar; registra lo
     aplicado en `schema_migrations`; idempotente.
   - [x] Migración base compatible con lo creado por `database/init/` (BD existente) y válida
-    sobre una BD vacía (Railway).
+    sobre una BD vacía (nube).
   - [x] Incluir las migraciones en la imagen del backend.
   - [x] `config/db.js`: variables sueltas o `DATABASE_URL` / `MYSQL_URL`, y `DB_SSL` opcional.
   - [x] Documentar en README y `.env.example`.
@@ -185,30 +197,50 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 ## AVANCE 4 / FINAL — Unidad 4: builds con Expo, APK, publicación (más extras)
 
-### [ ] A4-1 Proxy de RAWG y variables EXPO_PUBLIC_*
+### [x] A4-1 Proxy de RAWG y variables EXPO_PUBLIC_*
 
 - **Objetivo:** sacar la clave de RAWG de la app y preparar las variables para EAS.
 - **Tema del sílabo:** builds con Expo (variables de entorno).
 - **Tareas:**
-  - [ ] Endpoints del backend para catálogo, búsqueda y detalle (proxy de RAWG).
-  - [ ] Quitar `RAWG_API_KEY` de la app.
-  - [ ] Migrar de `react-native-dotenv` (`@env`) a `EXPO_PUBLIC_*` y quitar el plugin de babel.
+  - [x] Endpoints del backend para catálogo, búsqueda, detalle y juego al azar (proxy de RAWG).
+  - [x] Quitar `RAWG_API_KEY` de la app.
+  - [x] Migrar de `react-native-dotenv` (`@env`) a `EXPO_PUBLIC_*` y quitar el plugin de babel.
 - **Terminado cuando:** el bundle exportado no contiene la clave de RAWG y la app funciona igual
   en Android y web.
 
-### [ ] A4-2 Backend de producción y guía de despliegue
+### [x] A4-1b Catálogo con IGDB
 
-- **Objetivo:** backend listo para Railway.
+- **Objetivo:** reemplazar RAWG (caído) por IGDB sin cambiar el comportamiento de la app.
+- **Tareas:**
+  - [x] `igdb.service.js`: token de Twitch en memoria (renovación antes de vencer y reintento
+    ante 401), catálogo de los más votados, búsqueda, juego al azar, detalle y sinopsis.
+  - [x] El backend devuelve juegos normalizados (`image`, `heroImage`, `rating` 0-5,
+    `developer`, `platforms`, `description`); la app los usa sin conocer IGDB.
+  - [x] `IGDB_CLIENT_ID`/`IGDB_CLIENT_SECRET` en `docker-compose.yml` y `.env.example`;
+    se quita `RAWG_API_KEY`.
+  - [x] Migración `005`: biblioteca y caché de sinopsis desde cero (ids de RAWG).
+  - [x] Caché del catálogo de la app con nombre nuevo (ignora la de ids de RAWG).
+- **Terminado cuando:** catálogo, búsqueda, azar, detalle y sinopsis responden con IGDB y el
+  bundle no contiene credenciales.
+
+### [x] A4-2 Backend de producción y guía de despliegue
+
+- **Objetivo:** backend listo para producción y desplegado en Azure.
 - **Tema del sílabo:** preparación para producción.
 - **Tareas:**
-  - [ ] `helmet`, límite de peticiones en `/auth`, CORS por entorno, `trust proxy`.
-  - [ ] Validación de variables al arrancar; `/health` que pruebe la BD.
-  - [ ] Imagen Docker de producción.
-  - [ ] `docs/DEPLOY.md`: desplegar backend y MySQL en Railway con HTTPS, configurar variables
-    y aplicar migraciones.
+  - [x] `helmet`, límite de peticiones en `/auth`, CORS por entorno, `trust proxy`.
+  - [x] Validación de variables al arrancar; `/health` que pruebe la BD.
+  - [x] Imagen Docker de producción.
+  - [x] `docs/DEPLOY.md`: Azure for Students no permitió MySQL Flexible ni un segundo entorno de
+    Container Apps; se usó una VM B2ats_v2 (gratuita 750 h/mes) con Docker Compose: MySQL,
+    backend y Caddy (HTTPS con Let's Encrypt). Apagado programado el 1 de enero de 2027.
+  - [x] BD de Azure limpia: esquema por migraciones y solo el usuario de prueba Demo.
+  - [x] Crear los recursos y desplegar con Azure CLI (lo hace el agente) y probar `/health`
+    y el login contra la URL pública.
 - **Terminado cuando:** sin variables obligatorias el backend no arranca (mensaje claro),
   `/health` falla si la BD no responde y la guía se sigue sin pasos implícitos.
-- **>>> HITO DEL USUARIO:** despliegue en Railway. A4-4 a A4-6 requieren la URL pública HTTPS.
+- **>>> HITO:** backend desplegado en Azure con URL pública HTTPS (A4-4 a A4-6 la requieren).
+  El usuario solo interviene si hace falta un inicio de sesión o una aprobación de costos.
 
 ### [ ] A4-3 Gestión de cuenta y estadísticas
 
@@ -241,7 +273,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   - [ ] Verificación con Steam OpenID por el backend (mismo patrón de navegador y deep link).
   - [ ] Importar con `GetOwnedGames` (clave de Steam solo en el backend); avisar si los detalles
     de juego del perfil no son públicos.
-  - [ ] Correspondencia Steam → RAWG por búsqueda de nombre con tabla de caché (migración).
+  - [ ] Correspondencia Steam → IGDB con `external_games` (appid de Steam) y, si falta, por
+    nombre, con tabla de caché (migración).
   - [ ] Reglas por tiempo jugado (ver "Decisiones tomadas") y fuente de estado/favorito
     (steam o usuario, migración).
   - [ ] Re-sincronizar: agrega juegos nuevos y actualiza solo lo que sigue con fuente steam.
@@ -277,7 +310,7 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
     Incluir requisitos (virtualización activada) e instalación con `adb`.
   - [ ] Distribución del APK (GitHub Releases).
 - **Terminado cuando:** el usuario genera e instala el APK de `preview` y la app funciona contra
-  el backend en Railway.
+  el backend en Azure.
 
 ### [ ] A4-7b Accesibilidad y pulido final de UI
 

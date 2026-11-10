@@ -1,6 +1,6 @@
 // Pool de conexiones a MySQL usando mysql2/promise.
-// La conexión se configura con una URL única (DATABASE_URL o MYSQL_URL, como la
-// entrega Railway) o, si no existe, con variables sueltas (DB_HOST, DB_PORT, MYSQL_*).
+// La conexión se configura con una URL única (DATABASE_URL o MYSQL_URL, la forma
+// habitual en la nube) o, si no existe, con variables sueltas (DB_HOST, DB_PORT, MYSQL_*).
 const mysql = require('mysql2/promise');
 
 // SSL opcional: DB_SSL=true lo activa; DB_SSL_REJECT_UNAUTHORIZED=false acepta

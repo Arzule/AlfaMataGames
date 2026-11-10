@@ -8,7 +8,8 @@ import { createLogger } from '../utils/logger';
 
 const log = createLogger('cache');
 
-const CATALOG_FILE = 'catalog-page1.json';
+// v2: ids de IGDB (la caché con ids de RAWG se ignora).
+const CATALOG_FILE = 'catalog-igdb-page1.json';
 
 function cacheDir() {
   return new Directory(Paths.cache, 'alfamatagames');

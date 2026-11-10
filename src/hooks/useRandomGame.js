@@ -1,7 +1,7 @@
 // src/hooks/useRandomGame.js
-// Busca un juego al azar en RAWG; evita búsquedas simultáneas y expone el error.
+// Busca un juego al azar en el catálogo (IGDB); evita búsquedas simultáneas y expone el error.
 import { useCallback, useRef, useState } from 'react';
-import { getRandomGame } from '../services/rawgApi';
+import { getRandomGame } from '../services/gamesApi';
 
 export function useRandomGame() {
   const [discovering, setDiscovering] = useState(false);

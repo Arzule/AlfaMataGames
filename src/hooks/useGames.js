@@ -1,9 +1,9 @@
 // src/hooks/useGames.js
-// Catálogo de RAWG con búsqueda, paginación y protección ante respuestas obsoletas.
+// Catálogo de IGDB con búsqueda, paginación y protección ante respuestas obsoletas.
 // La primera página sin búsqueda se guarda en caché: se muestra mientras carga y sin red.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getGames } from '../services/rawgApi';
-import { mapRawgGame } from '../utils/mapGame';
+import { getGames } from '../services/gamesApi';
+import { mapCatalogGame } from '../utils/mapGame';
 import { readCatalogCache, writeCatalogCache } from '../services/catalogCache';
 
 const PAGE_SIZE = 20;
@@ -44,7 +44,7 @@ export function useGames({ search = '' } = {}) {
     try {
       const data = await getGames({ search, page: 1, pageSize: PAGE_SIZE });
       if (requestId !== requestIdRef.current) return;
-      const mapped = data.results.map(mapRawgGame);
+      const mapped = data.results.map(mapCatalogGame);
       setGames(mapped);
       setHasMore(data.hasMore);
       if (!search) writeCatalogCache({ games: mapped });
@@ -85,7 +85,7 @@ export function useGames({ search = '' } = {}) {
       setGames((current) => {
         const seen = new Set(current.map((game) => game.id));
         const merged = [...current];
-        data.results.map(mapRawgGame).forEach((game) => {
+        data.results.map(mapCatalogGame).forEach((game) => {
           if (!seen.has(game.id)) merged.push(game);
         });
         return merged;

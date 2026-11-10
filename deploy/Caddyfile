@@ -1,0 +1,17 @@
+# HTTPS automático (Let's Encrypt) para el dominio de la VM.
+# - Rutas de la API -> backend:3000
+# - Todo lo demás -> versión web de la app (export de Expo en ./web), con index.html de respaldo.
+{$DOMAIN} {
+	encode gzip
+
+	@api path /auth /auth/* /games /games/* /library /library/* /health
+	handle @api {
+		reverse_proxy backend:3000
+	}
+
+	handle {
+		root * /srv
+		try_files {path} {path}.html /index.html
+		file_server
+	}
+}

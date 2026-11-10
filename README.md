@@ -47,7 +47,7 @@ enlaza cada criterio con su evidencia.
   mañana, en una semana o fecha y hora a elección), recordatorio diario configurable en Perfil,
   pantalla de recordatorios activos (campana del Catálogo) con opción de cancelar. Tocar la
   notificación abre el juego. Al cerrar sesión se cancelan todos.
-- **Sinopsis en español**: el backend traduce la descripción de RAWG con DeepL API Free y la
+- **Sinopsis en español**: el backend traduce la descripción de IGDB con DeepL API Free y la
   guarda en caché; la app indica si el texto es traducido (con "Ver original") o el original sin
   traducir, y permite expandirlo con "Ver más".
 - **Robustez**: pantalla "Algo salió mal" con "Reintentar" ante cualquier error de render
@@ -76,7 +76,6 @@ Versiones tomadas de `package.json` (app), `backend/package.json` y `docker-comp
 | React | 19.2.3 | Librería de UI |
 | React Navigation (`native`, `native-stack`, `bottom-tabs`) | ^7.3.18 / ^7.18.10 / ^7.18.18 | Navegación |
 | react-native-web | ^0.21.2 | Soporte web |
-| react-native-dotenv | ^4.1.1 | Variables de entorno (`@env`) |
 | expo-secure-store | ~57.0.4 | Guardar el token (nativo) |
 | @react-native-async-storage/async-storage | 2.2.0 | Búsquedas recientes y caché en web |
 | expo-file-system | ~57.0.7 | Caché del catálogo (nativo) |
@@ -98,18 +97,17 @@ Versiones tomadas de `package.json` (app), `backend/package.json` y `docker-comp
 | bcrypt (`bcryptjs`) | ^2.4.3 | Cifrado de contraseñas |
 | mysql2 | ^3.11.5 | Conexión a MySQL |
 | cors | ^2.8.5 | CORS en el backend |
-| API de RAWG | `https://api.rawg.io/api` | Datos de videojuegos |
+| API de IGDB (Twitch) | `https://api.igdb.com/v4` | Datos de videojuegos (solo desde el backend) |
 | DeepL API Free | `https://api-free.deepl.com/v2` | Traducción de las sinopsis (solo desde el backend) |
 
 ---
 
 ## Arquitectura
 
-La app Expo corre en el celular (Expo Go) o en el navegador. La app consume la API de RAWG
-directamente para el catálogo y el detalle, y el backend propio (Node/Express) para la
-autenticación, la biblioteca, las reseñas de la comunidad, la foto de perfil y las sinopsis
-traducidas. El backend consulta RAWG y DeepL para las sinopsis. El backend y MySQL corren en
-Docker. (En el Avance 4 el catálogo de RAWG pasa a consultarse a través del backend.)
+La app Expo corre en el celular (Expo Go) o en el navegador. La app solo habla con el
+backend propio (Node/Express): autenticación, biblioteca, reseñas de la comunidad, foto de
+perfil, catálogo y sinopsis traducidas. El backend consulta IGDB (catálogo, detalle, juego al
+azar y sinopsis) y DeepL (traducción). El backend y MySQL corren en Docker.
 
 ```
           Celular (Expo Go) / Navegador (web)
@@ -117,18 +115,16 @@ Docker. (En el Avance 4 el catálogo de RAWG pasa a consultarse a través del ba
        |            App AlfaMataGames            |
        |              (Expo / RN)                |
        +--------------------+--------------------+
-                |                        |
-        HTTPS   |                        |  HTTP (API_URL, ej. :3000)
-                v                        v
-   +---------------------+   +-------------------------------------------+
-   |    API de RAWG      |   |               Docker (PC)                 |
-   | (catálogo, detalle) |   |                                           |
-   +---------------------+   |  +----------------+   +----------------+  |
-             ^               |  | backend (api)  |   | MySQL 8 (db)   |  |
-             |  sinopsis     |  | Node + Express |-->| users          |  |
-             +---------------+--| puerto 3000    |   | user_games     |  |
-   +---------------------+   |  |                |   | game_transl... |  |
-   |   DeepL API Free    |<--+--|                |   | puerto 3306    |  |
+                            |  HTTP (EXPO_PUBLIC_API_URL, ej. :3000) + JWT
+                            v
+                             +-------------------------------------------+
+   +---------------------+   |               Docker (PC)                 |
+   |    API de IGDB      |   |                                           |
+   | (catálogo, detalle, |   |  +----------------+   +----------------+  |
+   |  sinopsis)          |<--+--| backend (api)  |-->| MySQL 8 (db)   |  |
+   +---------------------+   |  | Node + Express |   | users          |  |
+   +---------------------+   |  | puerto 3000    |   | user_games     |  |
+   |   DeepL API Free    |<--+--|                |   | game_transl... |  |
    |    (traducción)     |   |  +----------------+   +--------+-------+  |
    +---------------------+   |                                |          |
                              |  +----------------+   volumen db_data     |
@@ -137,9 +133,10 @@ Docker. (En el Avance 4 el catálogo de RAWG pasa a consultarse a través del ba
                              +-------------------------------------------+
 ```
 
-- **App (Expo):** pantallas, componentes, contextos y servicios. Habla con RAWG y con el backend.
+- **App (Expo):** pantallas, componentes, contextos y servicios. Solo habla con el backend (el
+  catálogo de IGDB llega a través de él; sus credenciales nunca están en la app).
 - **backend (`alfamatagames-api`):** API REST en Express; valida, cifra contraseñas, firma
-  tokens, aplica las migraciones y traduce las sinopsis (RAWG + DeepL, con caché).
+  tokens, aplica las migraciones y traduce las sinopsis (IGDB + DeepL, con caché).
 - **db (`alfamatagames-db`):** MySQL 8 con las tablas `users`, `user_games`,
   `game_translations` y `schema_migrations`.
 - **adminer (`alfamatagames-adminer`):** interfaz web para inspeccionar la base de datos.
@@ -153,7 +150,7 @@ AlfaMataGames/
 ├── App.js                      # Raíz de la app: carga fuentes y monta los providers
 ├── index.js                    # Punto de entrada de Expo (registerRootComponent)
 ├── app.json                    # Configuración de Expo (name, slug, icon, plugins)
-├── babel.config.js             # Preset de Expo + plugin react-native-dotenv (@env)
+├── babel.config.js             # Preset de Expo (las variables EXPO_PUBLIC_* las inyecta Expo)
 ├── metro.config.js             # Config. de Metro: shim de expo-notifications para Expo Go Android
 ├── package.json                # Dependencias y scripts de la app
 ├── docker-compose.yml          # Servicios db, backend y adminer
@@ -176,7 +173,7 @@ AlfaMataGames/
 │       ├── app.js              # Express: middlewares, /health y rutas
 │       ├── config/db.js        # Pool MySQL (mysql2): URL única o variables sueltas, SSL opcional
 │       ├── controllers/        # auth, library, reviews y descriptions (sinopsis traducida)
-│       ├── services/           # rawg.service.js y deepl.service.js (clientes de APIs externas)
+│       ├── services/           # igdb.service.js y deepl.service.js (clientes de APIs externas)
 │       ├── middleware/         # auth, error y requestLogger (registro de cada petición)
 │       ├── routes/             # auth.routes.js, library.routes.js, games.routes.js
 │       └── utils/              # validators.js (validaciones y constantes), logger.js
@@ -194,7 +191,7 @@ AlfaMataGames/
     ├── navigation/             # AppNavigator.js (Stack + Tab)
     ├── screens/                # Login, Register, GameCatalog, GameDetail, Favorites, Profile,
     │                           #   Reminders
-    ├── services/               # apiClient, authApi, libraryApi, reviewsApi, gamesApi, rawgApi,
+    ├── services/               # apiClient, authApi, libraryApi, reviewsApi, gamesApi,
     │                           #   catalogCache (.web), preferences, notifications (.web)
     ├── shims/                  # TopicSubscriptionModule.android.js (ver metro.config.js)
     ├── theme/                  # colors.js, typography.js
@@ -209,7 +206,8 @@ AlfaMataGames/
 - **Node.js LTS** (se recomienda **20 o superior**; el backend declara `node >= 20`).
 - **Docker Desktop** en ejecución (incluye Docker Compose).
 - **Expo Go** instalado en el celular (Android o iOS) — o un navegador para el modo web.
-- Una **API key gratuita de RAWG**: https://rawg.io/apidocs
+- Credenciales gratuitas de **IGDB**: una aplicación en https://dev.twitch.tv/console/apps
+  (Client Type: Confidential) da el Client ID y el Client Secret. Ver https://api-docs.igdb.com.
 
 ---
 
@@ -242,10 +240,11 @@ cp .env.example .env
 
 | Variable | Descripción |
 | --- | --- |
-| `RAWG_API_KEY` | Tu API key de RAWG (https://rawg.io/apidocs). La usan la app (catálogo) y el backend (sinopsis). |
+| `IGDB_CLIENT_ID` | Client ID de tu aplicación de Twitch para IGDB. Solo la usa el backend (catálogo, detalle, juego al azar y sinopsis); la app nunca la conoce. |
+| `IGDB_CLIENT_SECRET` | Client Secret de esa aplicación. El backend pide con él un token de aplicación (OAuth client credentials), lo guarda en memoria y lo renueva antes de que venza. |
 | `DEEPL_API_KEY` | Opcional. Clave de DeepL API Free para traducir las sinopsis (solo el backend). Si falta, se muestra el texto original con una etiqueta. Ver [Sinopsis traducidas](#sinopsis-traducidas). |
 | `DEEPL_API_URL` | Opcional. Fuerza el endpoint de DeepL; por defecto, `api-free.deepl.com` si la clave termina en `:fx` y `api.deepl.com` si no. |
-| `API_URL` | URL base del backend, con la **IP local de tu PC**, ej. `http://192.168.1.10:3000`. No uses `localhost`: el celular no puede resolverlo. |
+| `EXPO_PUBLIC_API_URL` | URL base del backend para la app, con la **IP local de tu PC**, ej. `http://192.168.1.10:3000`. No uses `localhost`: el celular no puede resolverlo. |
 | `MYSQL_ROOT_PASSWORD` | Contraseña del usuario `root` de MySQL (la usa el contenedor). |
 | `MYSQL_DATABASE` | Nombre de la base de datos que se crea al inicializar MySQL. |
 | `MYSQL_USER` | Usuario de la aplicación. **No puede ser `root`.** |
@@ -262,7 +261,7 @@ Notas importantes:
 
 - `MYSQL_USER` **no puede ser `root`** (es un requerimiento de la imagen oficial de MySQL).
 - Evita los caracteres `$`, `#` y las comillas en las contraseñas: complican el parseo del archivo `.env`.
-- **`API_URL`** debe apuntar a la **IP local de la PC** (no `localhost`) y el celular debe
+- **`EXPO_PUBLIC_API_URL`** debe apuntar a la **IP local de la PC** (no `localhost`) y el celular debe
   estar en la **misma red Wi-Fi** que la PC.
 - Genera un `JWT_SECRET` aleatorio con Node:
 
@@ -339,6 +338,7 @@ local o en la nube, sin borrarla.
 | `002-avatar-usuario.sql` | Columna `users.avatar` para la foto de perfil. |
 | `003-fecha-resena.sql` | Columna `user_games.review_updated_at` e índice para las reseñas de la comunidad. |
 | `004-traducciones.sql` | Tabla `game_translations` (caché de sinopsis traducidas). |
+| `005-catalogo-igdb.sql` | Vacía `user_games` y `game_translations` al pasar de RAWG a IGDB (los ids no coinciden). |
 
 - **Automático:** al arrancar, el backend aplica en orden las migraciones que faltan y las
   registra en la tabla `schema_migrations`. Si una falla, el backend no arranca y muestra el error.
@@ -421,13 +421,13 @@ En Expo Go esto aplica a la app Expo Go completa, no solo a AlfaMataGames.
 
 ## Sinopsis traducidas
 
-- `GET /games/:gameId/description` obtiene la descripción de RAWG y la traduce al español con
+- `GET /games/:gameId/description` obtiene el resumen (`summary`) de IGDB y lo traduce al español con
   **DeepL API Free**. La traducción se guarda en la tabla `game_translations` (migración
-  `004`): la segunda consulta de un juego sale de la caché, sin llamar a RAWG ni a DeepL.
-- Las claves de RAWG y DeepL quedan en el servidor; la app nunca recibe la de DeepL.
+  `004`): la segunda consulta de un juego sale de la caché, sin llamar a IGDB ni a DeepL.
+- Las credenciales de IGDB y la clave de DeepL quedan en el servidor; la app nunca las recibe.
 - Si no se puede traducir (sin clave, cuota agotada o DeepL caído) se devuelve el texto
   original con un aviso (`notice`) y **no** se guarda nada, para traducir en cuanto el servicio
-  esté disponible. Si el backend no responde, la app usa la descripción que ya tiene de RAWG.
+  esté disponible. Si el backend no responde, la app usa la descripción que ya trae el detalle del juego.
 - Para proteger la cuota mensual del plan Free (se ve en *Account* de DeepL) se traducen
   como máximo 6000 caracteres por juego, y dos consultas simultáneas del mismo juego comparten una sola traducción.
 - **Obtener la clave**: crea una cuenta en https://www.deepl.com/pro-api (plan *DeepL API Free*;
@@ -449,8 +449,7 @@ En Expo Go esto aplica a la app Expo Go completa, no solo a AlfaMataGames.
   se usa el estado del navegador.
 - **Logger de la app** (`src/utils/logger.js`): `createLogger('ambito')` con `debug`, `info`,
   `warn` y `error`. En desarrollo registra todo con detalles; en producción solo `warn` y
-  `error`, sin el contexto. Siempre oculta contraseñas, tokens, claves (`?key=` de RAWG,
-  `Bearer ...`) y fotos en base64. Nunca usar `console.*` directamente.
+  `error`, sin el contexto. Siempre oculta contraseñas, tokens, claves, `Bearer ...` y fotos en base64. Nunca usar `console.*` directamente.
 - **Logs del backend**: una línea por petición con método, ruta (sin query string), status,
   duración, id y usuario; nunca cuerpos ni cabeceras. Las respuestas llevan `X-Request-Id`
   con el mismo id. Los errores 500 registran la traza y responden un mensaje genérico (no
@@ -492,14 +491,14 @@ En Expo Go esto aplica a la app Expo Go completa, no solo a AlfaMataGames.
 
 - **El puerto 3306 está ocupado por un MySQL local.** Por eso la base de datos de Docker se
   publica en **3307** (`DB_HOST_PORT=3307`). Si cambias ese puerto, actualízalo en el `.env`.
-- **La IP de la PC cambió.** Actualiza `API_URL` en el `.env` con la nueva IP local y reinicia
+- **La IP de la PC cambió.** Actualiza `EXPO_PUBLIC_API_URL` en el `.env` con la nueva IP local y reinicia
   Expo con `npx expo start -c`. Puedes ver la IP con `ipconfig` (Windows) o `ifconfig` / `ip addr` (macOS/Linux).
 - **La red de Windows está en "Public" o falta una regla de firewall.** El celular no podrá
   alcanzar el backend en el puerto **3000**. Cambia la red a "Private" o permite el puerto
   3000 en el Firewall de Windows.
-- **Mensaje "Respuesta inesperada del servidor".** Suele ocurrir cuando `API_URL` apunta a
-  otro servicio (por ejemplo, a RAWG o a un host incorrecto) y la respuesta no es el JSON
-  esperado del backend. Verifica que `API_URL` termine en `:3000` y sea la IP correcta.
+- **Mensaje "Respuesta inesperada del servidor".** Suele ocurrir cuando `EXPO_PUBLIC_API_URL` apunta a
+  otro servicio (por ejemplo, a un host incorrecto) y la respuesta no es el JSON
+  esperado del backend. Verifica que `EXPO_PUBLIC_API_URL` termine en `:3000` y sea la IP correcta.
 - **Reiniciar la base de datos desde cero** (borra el volumen y vuelve a ejecutar los scripts):
 
 ```bash
@@ -515,7 +514,7 @@ Tabla generada a partir de `backend/src/routes/`.
 
 | Método | Ruta | Autenticación | Descripción |
 | --- | --- | --- | --- |
-| GET | `/health` | No | Estado del servicio (`{ "status": "ok" }`). |
+| GET | `/health` | No | Estado del servicio y de la BD (`{ "status": "ok", "db": "ok" }`; 503 si la BD no responde). |
 | POST | `/auth/register` | No | Registra un usuario y devuelve `{ token, user }`. |
 | POST | `/auth/login` | No | Inicia sesión y devuelve `{ token, user }`. |
 | GET | `/auth/me` | Bearer JWT | Devuelve `{ user }` del token actual (incluye `avatar`). |
@@ -525,7 +524,10 @@ Tabla generada a partir de `backend/src/routes/`.
 | GET | `/library/:gameId` | Bearer JWT | Devuelve `{ entry }` de un juego (o `null`). |
 | PUT | `/library/:gameId` | Bearer JWT | Crea o actualiza (upsert parcial) la entrada. |
 | DELETE | `/library/:gameId` | Bearer JWT | Elimina la entrada de un juego (204). |
-| GET | `/games/:gameId/description` | Bearer JWT | Sinopsis en español. Devuelve `{ gameId, lang, text, original, translated, source, notice }`: `source` es `cache`, `deepl` o `null`; `notice` es `null`, `empty`, `same-language`, `not-configured`, `quota` o `unavailable` (en esos casos `text` es el original). 404 si el juego no existe en RAWG; 502/503 si RAWG no responde o no está configurado. |
+| GET | `/games` | Bearer JWT | Catálogo de IGDB a través del backend: sin búsqueda, los juegos más votados. `?search=&page=1&pageSize=20` (máx. 40 por página y 250 páginas; búsqueda de hasta 100 caracteres). Devuelve `{ results, hasMore }`; cada juego trae `{ id, name, image, platform, rating }` (rating de 0 a 5). 502/503 si IGDB no responde o no está configurado (`CATALOG_UNAVAILABLE`, `CATALOG_NOT_CONFIGURED`). |
+| GET | `/games/random` | Bearer JWT | Un juego al azar entre los 1000 más votados de IGDB (mismo formato que el catálogo). |
+| GET | `/games/:gameId` | Bearer JWT | Detalle normalizado: `{ id, name, image, heroImage, released (AAAA-MM-DD), rating, developer, platforms[], description }`. 404 si no existe. |
+| GET | `/games/:gameId/description` | Bearer JWT | Sinopsis en español. Devuelve `{ gameId, lang, text, original, translated, source, notice }`: `source` es `cache`, `deepl` o `null`; `notice` es `null`, `empty`, `same-language`, `not-configured`, `quota` o `unavailable` (en esos casos `text` es el original). 404 si el juego no existe en IGDB; 502/503 si IGDB no responde o no está configurado. |
 | GET | `/games/:gameId/reviews` | Bearer JWT | Reseñas de los demás usuarios, la más reciente primero. `?page=1&pageSize=10` (máx. 30). Devuelve `{ items, page, hasMore }`; cada item trae `review`, `userScore`, `status`, `date` y `user { id, name, avatar }`. |
 
 Las rutas marcadas con *Bearer JWT* requieren la cabecera `Authorization: Bearer <token>`. Si
@@ -556,10 +558,10 @@ Definido en `database/init/01-schema.sql` y las migraciones de `backend/migratio
 | --- | --- | --- |
 | `id` | INT AUTO_INCREMENT | Clave primaria. |
 | `user_id` | INT | FK a `users.id` (ON DELETE CASCADE). |
-| `game_id` | INT | Id del juego en la API de RAWG. |
+| `game_id` | INT | Id del juego en IGDB. |
 | `game_name` | VARCHAR(255) | Nombre del juego (desnormalizado). |
 | `game_image` | VARCHAR(500) NULL | URL de la portada. |
-| `game_rating` | DECIMAL(3,2) NULL | Rating de RAWG (0-10). |
+| `game_rating` | DECIMAL(3,2) NULL | Valoración del catálogo (0-5). |
 | `is_favorite` | TINYINT(1) | Por defecto `0`. |
 | `status` | ENUM(...) NULL | `Jugando`, `Completado`, `Pendiente`, `Abandonado`. |
 | `user_score` | TINYINT NULL | 0-5 (con `CHECK`). |
@@ -576,11 +578,11 @@ Caché de sinopsis traducidas. Clave primaria `(game_id, lang)`.
 
 | Columna | Tipo | Notas |
 | --- | --- | --- |
-| `game_id` | INT | Id del juego en RAWG. |
+| `game_id` | INT | Id del juego en IGDB. |
 | `lang` | VARCHAR(8) | Idioma destino (`es`). |
-| `source_hash` | CHAR(64) | SHA-256 del texto original (detecta si RAWG lo cambió). |
+| `source_hash` | CHAR(64) | SHA-256 del texto original (detecta si IGDB lo cambió). |
 | `source_lang` | VARCHAR(8) NULL | Idioma detectado por DeepL (ej. `EN`). |
-| `original_text` | MEDIUMTEXT | Descripción de RAWG que se tradujo. |
+| `original_text` | MEDIUMTEXT | Resumen de IGDB que se tradujo. |
 | `translated_text` | MEDIUMTEXT | Traducción. |
 | `provider` | VARCHAR(20) | `deepl`. |
 | `created_at` / `updated_at` | TIMESTAMP | Fechas de creación y actualización. |
@@ -630,8 +632,8 @@ Las ramas se integran a `develop` con `git merge --no-ff` para conservar el hist
 
 ## Trabajo futuro (Avance 4)
 
-- Catálogo de RAWG a través del backend (la clave sale de la app) y variables `EXPO_PUBLIC_*`.
-- Backend en la nube (Railway) con HTTPS y guía de despliegue.
+- Catálogo a través del backend con IGDB (las credenciales salen de la app) y variables `EXPO_PUBLIC_*`.
+- Backend en producción: https://alfamatagames-api.chilecentral.cloudapp.azure.com (VM de Azure con HTTPS; ver [docs/DEPLOY.md](docs/DEPLOY.md)).
 - Gestión de cuenta (datos, contraseña, eliminar cuenta) y estadísticas en Perfil.
 - Inicio de sesión con Google y Discord, e importación de la biblioteca de Steam.
 - Recordatorios con notificaciones push desde el servidor.
@@ -641,7 +643,7 @@ Las ramas se integran a `develop` con `git merge --no-ff` para conservar el hist
 
 ## Créditos
 
-- Datos de videojuegos proporcionados por **RAWG** (https://rawg.io).
+- Datos de videojuegos proporcionados por **IGDB** (https://www.igdb.com), servicio de Twitch.
 - Traducción de las sinopsis con **DeepL** (https://www.deepl.com).
 - **Autor(es):** Gerardo Carpio
 

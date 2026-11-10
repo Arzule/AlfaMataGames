@@ -17,7 +17,7 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
-import { getGameDetail } from '../services/rawgApi';
+import { getGameDetail } from '../services/gamesApi';
 import { useLibrary } from '../hooks/useLibrary';
 import Rating from '../components/Rating';
 import StatusChips from '../components/StatusChips';
@@ -62,8 +62,8 @@ export default function GameDetailScreen({ route, navigation }) {
   }, [savedReview]);
 
   const community = useGameReviews(gameId);
-  // Sinopsis en español desde el backend; si falla, la original de RAWG.
-  const description = useGameDescription(gameId, game?.description_raw);
+  // Sinopsis en español desde el backend; si falla, la original del detalle (IGDB).
+  const description = useGameDescription(gameId, game?.description);
 
   // Recordatorio para jugar: hoja de opciones y selector de fecha propio.
   const gameReminder = useGameReminder({ gameId, gameName: game?.name ?? 'este juego' });
@@ -180,15 +180,16 @@ export default function GameDetailScreen({ route, navigation }) {
     );
   }
 
-  const developer = game.developers?.[0]?.name ?? 'Desarrollador desconocido';
-  const platforms = game.platforms?.map((p) => p.platform.name).join(', ') ?? 'N/D';
-  const year = game.released ? new Date(game.released).getFullYear() : '—';
+  const developer = game.developer ?? 'Desarrollador desconocido';
+  const platforms = game.platforms?.length ? game.platforms.join(', ') : 'N/D';
+  // released llega como 'AAAA-MM-DD'.
+  const year = game.released ? game.released.slice(0, 4) : '—';
 
   // Resumen que se guarda la primera vez que el juego entra a la biblioteca.
   const summary = {
     id: game.id,
     name: game.name,
-    image: game.background_image ?? null,
+    image: game.image ?? null,
     rating: typeof game.rating === 'number' ? game.rating : null,
   };
 
@@ -227,7 +228,7 @@ export default function GameDetailScreen({ route, navigation }) {
           {/* Hero */}
           <View style={styles.heroBlock}>
             <Image
-              source={game.background_image ? { uri: game.background_image } : null}
+              source={game.heroImage ? { uri: game.heroImage } : null}
               style={styles.heroImage}
               contentFit="cover"
               transition={200}
