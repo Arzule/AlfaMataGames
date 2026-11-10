@@ -1,5 +1,5 @@
 // src/screens/ProfileScreen.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,10 @@ import { fonts } from '../theme/typography';
 import Header from '../components/Header';
 import Avatar from '../components/Avatar';
 import DateTimePickerModal from '../components/DateTimePickerModal';
+import LibraryStats from '../components/LibraryStats';
 import { useAuth } from '../hooks/useAuth';
+import { useLibrary } from '../hooks/useLibrary';
+import { computeLibraryStats } from '../utils/libraryStats';
 import { useAvatarPicker, CAMERA_SUPPORTED } from '../hooks/useAvatarPicker';
 import { confirmAction } from '../utils/confirm';
 import { clearCatalogCache } from '../services/catalogCache';
@@ -31,8 +34,10 @@ function RenderCrashTest() {
   throw new Error('Error de prueba simulado desde Perfil.');
 }
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
   const { user, logout } = useAuth();
+  const library = useLibrary();
+  const stats = useMemo(() => computeLibraryStats(library.items), [library.items]);
   const [clearing, setClearing] = useState(false);
   const [cacheMessage, setCacheMessage] = useState(null);
   const [crashTest, setCrashTest] = useState(false);
@@ -187,7 +192,18 @@ export default function ProfileScreen() {
               </Text>
             </TouchableOpacity>
           ) : null}
+
+          <TouchableOpacity
+            style={styles.accountBtn}
+            onPress={() => navigation.navigate('Account')}
+            accessibilityRole="button"
+          >
+            <Feather name="settings" size={16} color={colors.textPrimary} />
+            <Text style={styles.photoBtnText}>Gestionar cuenta</Text>
+          </TouchableOpacity>
         </View>
+
+        <LibraryStats stats={stats} loading={library.loading && !library.items.length} />
 
         {/* En web no hay sensor: la opción se oculta (queda el botón "Juego al azar"). */}
         {SHAKE_SUPPORTED ? (
@@ -371,6 +387,15 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: 13,
     fontFamily: fonts.bodySemiBold,
+  },
+  accountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 44,
+    marginTop: 8,
+    paddingHorizontal: 16,
   },
   feedback: {
     color: colors.textSecondary,
