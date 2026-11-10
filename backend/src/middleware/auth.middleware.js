@@ -43,4 +43,10 @@ async function authRequired(req, res, next) {
   return next();
 }
 
-module.exports = { authRequired };
+// Si llega un token lo exige válido (y fija req.userId); sin cabecera deja pasar.
+function optionalAuth(req, res, next) {
+  if (!req.headers.authorization) return next();
+  return authRequired(req, res, next);
+}
+
+module.exports = { authRequired, optionalAuth };
