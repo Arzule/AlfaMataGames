@@ -50,8 +50,10 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   recordatorio), DateTimePickerModal (fecha/hora: diálogos en Android, modal en iOS),
   ErrorBoundary (pantalla de reintento global), OfflineBanner (aviso de red), Synopsis
   (sinopsis con etiqueta de traducción, "Ver original" y "Ver más"), ConfirmDialog (diálogo de
-  confirmación propio y `ConfirmDialogHost`, montado en `App.js`).
-- `context/` — `AuthContext.js` (sesión, token, login/register/logout, restaura con `/auth/me`);
+  confirmación propio y `ConfirmDialogHost`, montado en `App.js`), LibraryStats (estadísticas
+  de la biblioteca en Perfil).
+- `context/` — `AuthContext.js` (sesión, token, login/register/logout, restaura con `/auth/me`;
+  updateName, changePassword y deleteAccount, que también borra los datos locales del usuario);
   `LibraryContext.js` (biblioteca del usuario con cambios optimistas).
 - `hooks/` — `useAuth`, `useLibrary` (consumen contextos), `useGames` (catálogo con
   búsqueda, paginación, caché y `offline`), `useRecentSearches` (AsyncStorage, por usuario),
@@ -65,8 +67,9 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   `useDebounce`, `useGridColumns` (2/3/4 columnas y
   `GRID_PERFORMANCE_PROPS` para las FlatList).
 - `navigation/` — `AppNavigator.js`: Stack según sesión; Tabs Catálogo/Favoritos/Perfil +
-  `GameDetail` + `Reminders`; `navigationRef` para navegar desde notificaciones.
-- `screens/` — Login, Register, GameCatalog, GameDetail, Favorites, Profile, Reminders.
+  `GameDetail` + `Reminders` + `Account`; `navigationRef` para navegar desde notificaciones.
+- `screens/` — Login, Register, GameCatalog, GameDetail, Favorites, Profile (con estadísticas),
+  Reminders, Account (nombre, contraseña y eliminar cuenta).
 - `services/` — `apiClient.js` (fetch al backend, timeout 10 s, Bearer, aviso de 401),
   `authApi.js`, `libraryApi.js`, `reviewsApi.js`, `gamesApi.js` (catálogo, detalle, juego al azar y sinopsis, todo vía backend), `catalogCache.js` / `catalogCache.web.js` (caché del catálogo: expo-file-system
   en nativo, AsyncStorage en web), `preferences.js` (preferencias en AsyncStorage),
@@ -74,7 +77,8 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 - `theme/` — `colors.js`, `typography.js` (`fonts`, `fontSizes`).
 - `utils/` — `storage.js` (token seguro nativo/web), `confirm.js` (`confirmAction`: abre ConfirmDialog),
   `mapGame.js` (`mapCatalogGame`: juego del backend → formato de GameCard), `cacheEntry.js` (formato y vencimiento de 7 días), `avatarImage.js` (recorte cuadrado 256 px JPEG),
-  `dateFormat.js` (fechas y horas sin Intl), `logger.js` (logger central).
+  `dateFormat.js` (fechas y horas sin Intl), `logger.js` (logger central), `libraryStats.js`
+  (estadísticas calculadas en la app desde LibraryContext, sin endpoint).
 - `shims/` — `TopicSubscriptionModule.android.js` (lo usa `metro.config.js`).
 
 `backend/src/`
@@ -89,10 +93,10 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   llevan `status`/`code` o `reason`).
 - `middleware/` — `auth.middleware.js` (`authRequired`), `error.middleware.js` (404 y errores JSON),
   `requestLogger.middleware.js` (una línea por petición, `req.id` y `X-Request-Id`).
-- `routes/` — `/auth` (register, login, me, PUT/DELETE `me/avatar`), `/library` (GET lista,
+- `routes/` — `/auth` (register, login, GET/PUT/DELETE `me`, PUT `me/password`, PUT/DELETE `me/avatar`), `/library` (GET lista,
   GET/PUT/DELETE `:gameId`) y `/games` (GET `/`, `/random` y `:gameId`: catálogo de IGDB; GET `:gameId/reviews`: reseñas de los demás usuarios;
   GET `:gameId/description`: sinopsis en español).
-  El usuario público incluye `avatar` (data URI o null).
+  El usuario público incluye `avatar` (data URI o null) y `hasPassword`.
 - `utils/validators.js` — validaciones manuales y constantes (`STATUSES`, `REVIEW_MAX_LENGTH`).
 - `utils/logger.js` — `createLogger(ambito)`; nivel con `LOG_LEVEL`; oculta campos sensibles.
 
