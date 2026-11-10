@@ -102,7 +102,9 @@ respaldo). Al ser el mismo dominio no hace falta CORS. Para actualizarla (con
 ```bash
 npx expo export --platform web --output-dir /tmp/amg-web
 tar --force-local -czf /tmp/amg-web.tgz -C /tmp/amg-web .
-scp /tmp/amg-web.tgz $H:/tmp/ && ssh $H 'cd ~/alfamatagames/deploy && rm -rf web && mkdir web && tar -xzf /tmp/amg-web.tgz -C web'
+scp /tmp/amg-web.tgz $H:/tmp/ && ssh $H 'cd ~/alfamatagames/deploy && mkdir -p web && find web -mindepth 1 -delete && tar -xzf /tmp/amg-web.tgz -C web'
 ```
 
-No requiere reiniciar Caddy (sirve los archivos del volumen directamente).
+No requiere reiniciar Caddy si se vacía el contenido de `web` (como arriba). **No** borrar y recrear la
+carpeta: Caddy seguiría montando la carpeta borrada y respondería 404 (se arregla con
+`sudo docker compose -f docker-compose.prod.yml restart caddy`).
