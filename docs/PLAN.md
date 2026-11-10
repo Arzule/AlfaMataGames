@@ -9,9 +9,9 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 - Entregados: Avance 1 y Avance 2.
 - Avance 3: A3-0 a A3-7 terminadas (pendiente: entrega por el usuario).
-- Avance 4: A4-1, A4-1b y A4-2 terminadas. Backend en producción:
+- Avance 4: A4-1, A4-1b, A4-2 y A4-3 terminadas. Backend en producción:
   https://alfamatagames-api.chilecentral.cloudapp.azure.com (ver `docs/DEPLOY.md`).
-- **Fase actual: A4-3** (Gestión de cuenta y estadísticas).
+- **Fase actual: A4-4** (Login con Google y Discord).
 
 ## Decisiones tomadas
 
@@ -242,14 +242,19 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **>>> HITO:** backend desplegado en Azure con URL pública HTTPS (A4-4 a A4-6 la requieren).
   El usuario solo interviene si hace falta un inicio de sesión o una aprobación de costos.
 
-### [ ] A4-3 Gestión de cuenta y estadísticas
+### [x] A4-3 Gestión de cuenta y estadísticas
 
 - **Objetivo:** control de la cuenta por el usuario.
 - **Tareas:**
-  - [ ] Editar nombre.
-  - [ ] Cambiar contraseña (solo cuentas con contraseña; pide la actual).
-  - [ ] Eliminar cuenta con confirmación y borrado en cascada.
-  - [ ] Estadísticas en Perfil: juegos por estado, favoritos y puntuación media.
+  - [x] Editar nombre.
+  - [x] Cambiar contraseña (solo cuentas con contraseña; pide la actual).
+  - [x] Eliminar cuenta con confirmación y borrado en cascada.
+  - [x] Estadísticas en Perfil: juegos por estado, favoritos y puntuación media.
+- **Notas:** pantalla `Account` (desde Perfil → "Gestionar cuenta"). Cambiar contraseña y
+  eliminar cuenta piden la contraseña actual y usan el mismo límite de intentos que el login; la
+  contraseña incorrecta responde 400 (no 401, para no cerrar la sesión). El usuario público trae
+  `hasPassword` (preparado para las cuentas sociales de A4-4). Las estadísticas se calculan en la
+  app desde `LibraryContext` (sin endpoint), así siempre coinciden con la biblioteca.
 - **Terminado cuando:** las acciones funcionan, al eliminar no quedan filas del usuario y las
   estadísticas coinciden con la biblioteca.
 
