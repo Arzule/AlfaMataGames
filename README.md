@@ -517,7 +517,10 @@ Tabla generada a partir de `backend/src/routes/`.
 | GET | `/health` | No | Estado del servicio y de la BD (`{ "status": "ok", "db": "ok" }`; 503 si la BD no responde). |
 | POST | `/auth/register` | No | Registra un usuario y devuelve `{ token, user }`. |
 | POST | `/auth/login` | No | Inicia sesión y devuelve `{ token, user }`. |
-| GET | `/auth/me` | Bearer JWT | Devuelve `{ user }` del token actual (incluye `avatar`). |
+| GET | `/auth/me` | Bearer JWT | Devuelve `{ user }` del token actual (incluye `avatar` y `hasPassword`). |
+| PUT | `/auth/me` | Bearer JWT | Cambia el nombre: `{ name }` (2-80 caracteres). Devuelve `{ user }`. |
+| PUT | `/auth/me/password` | Bearer JWT | `{ currentPassword, newPassword }`. Actual incorrecta → 400 `WRONG_PASSWORD`; cuenta sin contraseña → 400 `NO_PASSWORD`. Límite de intentos como el login. |
+| DELETE | `/auth/me` | Bearer JWT | Elimina la cuenta y su biblioteca (cascada). Body `{ password }` si la cuenta tiene contraseña. Responde 204. |
 | PUT | `/auth/me/avatar` | Bearer JWT | Guarda la foto: `{ image: "data:image/jpeg;base64,..." }` (JPEG, PNG o WebP, máx. 200 KB). Devuelve `{ user }`. |
 | DELETE | `/auth/me/avatar` | Bearer JWT | Elimina la foto. Devuelve `{ user }`. |
 | GET | `/library` | Bearer JWT | Lista la biblioteca. Acepta `?favorite=true`. |
