@@ -51,7 +51,7 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   ErrorBoundary (pantalla de reintento global), OfflineBanner (aviso de red), Synopsis
   (sinopsis con etiqueta de traducción, "Ver original" y "Ver más"), ConfirmDialog (diálogo de
   confirmación propio y `ConfirmDialogHost`, montado en `App.js`), LibraryStats (estadísticas
-  de la biblioteca en Perfil).
+  de la biblioteca en Perfil), SocialLoginButtons (Google/Discord configurados en el backend).
 - `context/` — `AuthContext.js` (sesión, token, login/register/logout, restaura con `/auth/me`;
   updateName, changePassword y deleteAccount, que también borra los datos locales del usuario);
   `LibraryContext.js` (biblioteca del usuario con cambios optimistas).
@@ -63,7 +63,7 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   catálogo), `useGameReviews` (reseñas de la comunidad paginadas), `useNotificationPermission`,
   `useGameReminder` (recordatorio de un juego), `useDailyReminder` (diario, por usuario),
   `useNotificationBridge` (tocar notificación → navegar; restaura el diario al iniciar sesión),
-  `useNetworkStatus` (NetInfo), `useGameDescription` (sinopsis traducida con respaldo al texto original),
+  `useNetworkStatus` (NetInfo), `useOAuthProviders` (proveedores de login social), `useGameDescription` (sinopsis traducida con respaldo al texto original),
   `useDebounce`, `useGridColumns` (2/3/4 columnas y
   `GRID_PERFORMANCE_PROPS` para las FlatList).
 - `navigation/` — `AppNavigator.js`: Stack según sesión; Tabs Catálogo/Favoritos/Perfil +
@@ -71,7 +71,8 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
 - `screens/` — Login, Register, GameCatalog, GameDetail, Favorites, Profile (con estadísticas),
   Reminders, Account (nombre, contraseña y eliminar cuenta).
 - `services/` — `apiClient.js` (fetch al backend, timeout 10 s, Bearer, aviso de 401),
-  `authApi.js`, `libraryApi.js`, `reviewsApi.js`, `gamesApi.js` (catálogo, detalle, juego al azar y sinopsis, todo vía backend), `catalogCache.js` / `catalogCache.web.js` (caché del catálogo: expo-file-system
+  `authApi.js`, `oauthApi.js` y `socialAuth.js` (login social: navegador + deep link + PKCE),
+  `libraryApi.js`, `reviewsApi.js`, `gamesApi.js` (catálogo, detalle, juego al azar y sinopsis, todo vía backend), `catalogCache.js` / `catalogCache.web.js` (caché del catálogo: expo-file-system
   en nativo, AsyncStorage en web), `preferences.js` (preferencias en AsyncStorage),
   `notifications.js` / `notifications.web.js` (expo-notifications; en web, misma API sin efecto).
 - `theme/` — `colors.js`, `typography.js` (`fonts`, `fontSizes`).
@@ -88,8 +89,10 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   (`DB_HOST`, `DB_PORT`, `MYSQL_*`), `DB_SSL` opcional; exporta `getConnectionOptions`.
 - `controllers/` — `auth.controller.js`, `library.controller.js`, `reviews.controller.js`,
   `catalog.controller.js` (catálogo, juego al azar y detalle de IGDB),
-  `descriptions.controller.js` (sinopsis: caché → IGDB → DeepL).
-- `services/` — `igdb.service.js` (token de Twitch y normalización) y `deepl.service.js` (APIs externas con timeout; sus errores
+  `descriptions.controller.js` (sinopsis: caché → IGDB → DeepL), `oauth.controller.js` (login
+  social: state firmado, lista permitida de retornos, PKCE, vincular/desvincular).
+- `services/` — `igdb.service.js` (token de Twitch y normalización), `oauth.service.js` (Google y
+  Discord: URL de autorización, canje y perfil) y `deepl.service.js` (APIs externas con timeout; sus errores
   llevan `status`/`code` o `reason`).
 - `middleware/` — `auth.middleware.js` (`authRequired`), `error.middleware.js` (404 y errores JSON),
   `requestLogger.middleware.js` (una línea por petición, `req.id` y `X-Request-Id`).
@@ -97,6 +100,7 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   GET/PUT/DELETE `:gameId`) y `/games` (GET `/`, `/random` y `:gameId`: catálogo de IGDB; GET `:gameId/reviews`: reseñas de los demás usuarios;
   GET `:gameId/description`: sinopsis en español).
   El usuario público incluye `avatar` (data URI o null) y `hasPassword`.
+- `utils/users.js` — `signToken`, `publicUser` y `findUser` (compartidos por auth y oauth).
 - `utils/validators.js` — validaciones manuales y constantes (`STATUSES`, `REVIEW_MAX_LENGTH`).
 - `utils/logger.js` — `createLogger(ambito)`; nivel con `LOG_LEVEL`; oculta campos sensibles.
 

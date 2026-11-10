@@ -244,6 +244,11 @@ cp .env.example .env
 | `IGDB_CLIENT_SECRET` | Client Secret de esa aplicación. El backend pide con él un token de aplicación (OAuth client credentials), lo guarda en memoria y lo renueva antes de que venza. |
 | `DEEPL_API_KEY` | Opcional. Clave de DeepL API Free para traducir las sinopsis (solo el backend). Si falta, se muestra el texto original con una etiqueta. Ver [Sinopsis traducidas](#sinopsis-traducidas). |
 | `DEEPL_API_URL` | Opcional. Fuerza el endpoint de DeepL; por defecto, `api-free.deepl.com` si la clave termina en `:fx` y `api.deepl.com` si no. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Opcionales. Login con Google (solo el backend); sin ellas no aparece el botón. Ver [docs/OAUTH.md](docs/OAUTH.md). |
+| `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | Opcionales. Login con Discord (solo el backend). |
+| `OAUTH_CALLBACK_BASE_URL` | URL pública del backend para los callbacks (por defecto `http://localhost:3000`). |
+| `OAUTH_WEB_REDIRECTS` | Retornos web permitidos, origen + ruta separados por comas (por defecto `http://localhost:8081/oauth`). |
+| `OAUTH_ALLOW_EXPO_GO` | `true` permite volver a Expo Go (`exp://.../--/oauth`); en el docker-compose local es `true` por defecto. |
 | `EXPO_PUBLIC_API_URL` | URL base del backend para la app, con la **IP local de tu PC**, ej. `http://192.168.1.10:3000`. No uses `localhost`: el celular no puede resolverlo. |
 | `MYSQL_ROOT_PASSWORD` | Contraseña del usuario `root` de MySQL (la usa el contenedor). |
 | `MYSQL_DATABASE` | Nombre de la base de datos que se crea al inicializar MySQL. |
@@ -521,6 +526,12 @@ Tabla generada a partir de `backend/src/routes/`.
 | PUT | `/auth/me` | Bearer JWT | Cambia el nombre: `{ name }` (2-80 caracteres). Devuelve `{ user }`. |
 | PUT | `/auth/me/password` | Bearer JWT | `{ currentPassword, newPassword }`. Actual incorrecta → 400 `WRONG_PASSWORD`; cuenta sin contraseña → 400 `NO_PASSWORD`. Límite de intentos como el login. |
 | DELETE | `/auth/me` | Bearer JWT | Elimina la cuenta y su biblioteca (cascada). Body `{ password }` si la cuenta tiene contraseña. Responde 204. |
+| GET | `/auth/oauth/providers` | — | Proveedores de login social configurados: `{ providers: [{ id, label }] }`. |
+| POST | `/auth/oauth/:provider/start` | Opcional | `{ redirectUri, codeChallenge, link? }` → `{ url }` del proveedor. `link: true` exige Bearer y vincula a la cuenta actual. |
+| GET | `/auth/oauth/:provider/callback` | — | Retorno del proveedor; redirige al deep link con `?code=` (un solo uso, 2 min) o `?error=`. |
+| POST | `/auth/oauth/exchange` | — | `{ code, codeVerifier }` → `{ token, user }` (login) o `{ user, linked }` (vincular). |
+| GET | `/auth/me/identities` | Bearer JWT | Cuentas vinculadas: `{ identities: [{ provider, email, createdAt }], hasPassword }`. |
+| DELETE | `/auth/me/identities/:provider` | Bearer JWT | Desvincula; 400 `LAST_LOGIN_METHOD` si es el único método de acceso. |
 | PUT | `/auth/me/avatar` | Bearer JWT | Guarda la foto: `{ image: "data:image/jpeg;base64,..." }` (JPEG, PNG o WebP, máx. 200 KB). Devuelve `{ user }`. |
 | DELETE | `/auth/me/avatar` | Bearer JWT | Elimina la foto. Devuelve `{ user }`. |
 | GET | `/library` | Bearer JWT | Lista la biblioteca. Acepta `?favorite=true`. |

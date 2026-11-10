@@ -262,12 +262,16 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 - **Objetivo:** iniciar sesión con proveedores externos.
 - **Tareas:**
-  - [ ] Flujo OAuth en el backend; la app abre `expo-web-browser` (`openAuthSessionAsync`) y
+  - [x] Flujo OAuth en el backend; la app abre `expo-web-browser` (`openAuthSessionAsync`) y
     vuelve por deep link validado contra una lista permitida (Expo Go y APK).
-  - [ ] Migración: tabla de identidades vinculadas; `password_hash` opcional.
-  - [ ] Correo verificado coincidente → misma cuenta (vincular); si no → cuenta nueva.
-  - [ ] Ver y desvincular cuentas en Perfil sin quitar el último método de acceso.
-  - [ ] Guía para que el usuario cree las credenciales de Google Cloud y Discord.
+  - [x] Migración: tabla de identidades vinculadas; `password_hash` opcional.
+  - [x] Correo verificado coincidente → misma cuenta (vincular); si no → cuenta nueva.
+  - [x] Ver y desvincular cuentas en Perfil sin quitar el último método de acceso.
+  - [x] Guía para que el usuario cree las credenciales de Google Cloud y Discord (`docs/OAUTH.md`).
+  - [ ] Prueba real con las credenciales del usuario (web local; celular al desplegar).
+- **Notas:** PKCE entre app y backend (el deep link solo lleva un código de un solo uso de 2 min).
+  Probado con proveedor simulado (30 casos). Desde el celular solo se puede probar contra
+  producción: el callback local es `localhost`.
 - **Terminado cuando:** ambos proveedores funcionan en Expo Go y en el APK, la vinculación por
   correo es correcta y no se puede quedar sin método de acceso.
 
