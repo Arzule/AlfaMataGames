@@ -1,6 +1,6 @@
 // src/screens/AccountScreen.js
 // Gestión de la cuenta: editar nombre, cambiar contraseña y eliminar la cuenta.
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,13 +11,16 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import Header from '../components/Header';
 import FormInput from '../components/FormInput';
 import { useAuth } from '../hooks/useAuth';
 import { confirmAction } from '../utils/confirm';
+import { useOAuthProviders } from '../hooks/useOAuthProviders';
+import { PROVIDER_ICONS } from '../components/SocialLoginButtons';
+import { getIdentities, unlinkIdentity } from '../services/oauthApi';
 
 // Mismos límites que el backend (utils/validators.js).
 const NAME_MIN = 2;
@@ -93,6 +96,113 @@ function NameSection() {
       />
       <Feedback feedback={feedback} />
       <SubmitButton label="Guardar nombre" onPress={handleSave} busy={busy} />
+    </View>
+  );
+}
+
+// Cuentas de Google/Discord vinculadas: vincular o desvincular (nunca la última forma de entrar).
+function LinkedAccountsSection() {
+  const providers = useOAuthProviders();
+  const { linkProvider } = useAuth();
+  const [identities, setIdentities] = useState(null);
+  const [busy, setBusy] = useState(null);
+  const [feedback, setFeedback] = useState(null);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await getIdentities();
+      setIdentities(Array.isArray(data?.identities) ? data.identities : []);
+    } catch (err) {
+      setFeedback({ type: 'error', text: 'No se pudieron leer las cuentas vinculadas.' });
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (!providers.length) return null;
+
+  const handleLink = async (provider) => {
+    setBusy(provider.id);
+    setFeedback(null);
+    try {
+      const linked = await linkProvider(provider.id);
+      if (linked) {
+        await load();
+        setFeedback({ type: 'success', text: `${provider.label} vinculado.` });
+      }
+    } catch (err) {
+      setFeedback({ type: 'error', text: err.message });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleUnlink = async (provider) => {
+    const confirmed = await confirmAction({
+      title: `Desvincular ${provider.label}`,
+      message: `Ya no podrás iniciar sesión con ${provider.label} en esta cuenta.`,
+      confirmText: 'Desvincular',
+      cancelText: 'Cancelar',
+      destructive: true,
+      icon: 'link-2',
+    });
+    if (!confirmed) return;
+    setBusy(provider.id);
+    setFeedback(null);
+    try {
+      const data = await unlinkIdentity(provider.id);
+      setIdentities(data?.identities ?? []);
+      setFeedback({ type: 'success', text: `${provider.label} desvinculado.` });
+    } catch (err) {
+      setFeedback({ type: 'error', text: err.message });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Cuentas vinculadas</Text>
+      {identities === null ? (
+        <ActivityIndicator color={colors.primary} />
+      ) : (
+        providers.map((provider) => {
+          const identity = identities.find((item) => item.provider === provider.id);
+          return (
+            <View key={provider.id} style={styles.linkRow}>
+              <Ionicons
+                name={PROVIDER_ICONS[provider.id] || 'log-in-outline'}
+                size={18}
+                color={colors.textPrimary}
+              />
+              <View style={styles.linkTexts}>
+                <Text style={styles.linkTitle}>{provider.label}</Text>
+                <Text style={styles.hint}>
+                  {identity ? identity.email || 'Vinculada' : 'Sin vincular'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.linkBtn}
+                onPress={() => (identity ? handleUnlink(provider) : handleLink(provider))}
+                disabled={Boolean(busy)}
+                accessibilityRole="button"
+                accessibilityLabel={`${identity ? 'Desvincular' : 'Vincular'} ${provider.label}`}
+              >
+                {busy === provider.id ? (
+                  <ActivityIndicator color={colors.textPrimary} size="small" />
+                ) : (
+                  <Text style={[styles.linkBtnText, identity && styles.error]}>
+                    {identity ? 'Desvincular' : 'Vincular'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          );
+        })
+      )}
+      <Feedback feedback={feedback} />
     </View>
   );
 }
@@ -256,6 +366,7 @@ export default function AccountScreen({ navigation }) {
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <NameSection />
+          <LinkedAccountsSection />
           {user?.hasPassword !== false ? <PasswordSection /> : null}
           <DeleteSection />
         </ScrollView>
@@ -298,6 +409,36 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     gap: 10,
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 44,
+  },
+  linkTexts: {
+    flex: 1,
+    gap: 2,
+  },
+  linkTitle: {
+    color: colors.textPrimary,
+    fontSize: 14,
+    fontFamily: fonts.bodySemiBold,
+  },
+  linkBtn: {
+    minHeight: 44,
+    minWidth: 96,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  linkBtnText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontFamily: fonts.bodyBold,
   },
   dangerCard: {
     borderColor: colors.danger,

@@ -14,6 +14,7 @@ import { Image } from 'expo-image';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import FormInput from '../components/FormInput';
+import SocialLoginButtons from '../components/SocialLoginButtons';
 import { useAuth } from '../hooks/useAuth';
 
 const LOGO = require('../../assets/logo.png');
@@ -115,6 +116,8 @@ export default function LoginScreen({ navigation }) {
               <Text style={styles.submitBtnText}>Iniciar sesión</Text>
             )}
           </TouchableOpacity>
+
+          <SocialLoginButtons disabled={submitting} />
 
           <TouchableOpacity
             style={styles.linkRow}

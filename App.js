@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { Sora_600SemiBold, Sora_700Bold, Sora_800ExtraBold } from '@expo-google-fonts/sora';
@@ -15,6 +16,10 @@ import { ConfirmDialogHost } from './src/components/ConfirmDialog';
 import { colors } from './src/theme/colors';
 import { cleanExpiredCache } from './src/services/catalogCache';
 import { configureNotifications } from './src/services/notifications';
+
+// En web, la ventana emergente del login social vuelve a /oauth: entrega la URL a la ventana
+// principal y se cierra. En nativo no hace nada.
+WebBrowser.maybeCompleteAuthSession();
 
 export default function App() {
   // Al iniciar, borrar las entradas de caché vencidas (más de 7 días).
