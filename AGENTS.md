@@ -203,6 +203,8 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
   ocultar la opción).
 - **Sistema**: no detener ni modificar servicios locales de Windows ni el firewall; si hace
   falta, dar el comando al usuario sin ejecutarlo.
+- **Producción**: solo se redespliega en Azure cuando el usuario dice que la versión está lista
+  para `main` (ver `docs/DEPLOY.md`); las fases nuevas se prueban en local.
 - **Azure**: el agente puede crear, configurar y desplegar recursos con Azure CLI, solo en
   `rg-alfamatagames` y con el plan más barato; nunca tocar otros grupos de recursos (por ejemplo
   `rg-mantenio-pradosj`, de otro proyecto). Avisar al usuario si algo requiere su intervención.

@@ -51,6 +51,11 @@ se conservan en el disco). Para borrarlo todo: `az group delete -n rg-alfamataga
 
 ## Desplegar una nueva versión
 
+**Regla:** producción solo se actualiza cuando el usuario indica que una versión está lista para
+`main`; se despliega desde ese commit (`git checkout <commit>`, empaquetar backend y export web,
+`git checkout develop`). Las fases nuevas se prueban en local con Docker, no en Azure. Versión
+desplegada actualmente: `fc5f3b6` (despliegue inicial con la web; sin A4-3).
+
 Desde la raíz del repositorio (Git Bash), con acceso SSH:
 
 ```bash
