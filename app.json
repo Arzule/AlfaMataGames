@@ -2,6 +2,7 @@
   "expo": {
     "name": "AlfaMataGames",
     "slug": "AlfaMataGames",
+    "scheme": "alfamatagames",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -37,7 +38,8 @@
         {
           "color": "#8b5cf6"
         }
-      ]
+      ],
+      "expo-web-browser"
     ]
   }
 }

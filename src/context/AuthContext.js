@@ -12,6 +12,7 @@ import * as authApi from '../services/authApi';
 import * as storage from '../utils/storage';
 import { cancelAllReminders } from '../services/notifications';
 import { clearUserData } from '../services/preferences';
+import { runOAuthFlow } from '../services/socialAuth';
 
 // Clave con la que se guarda el token en el almacenamiento seguro.
 const TOKEN_KEY = 'alfamatagames.token';
@@ -105,6 +106,24 @@ export function AuthProvider({ children }) {
     [applySession]
   );
 
+  // Login social: null si el usuario cancela (no cambia nada).
+  const loginWithProvider = useCallback(
+    async (provider) => {
+      const data = await runOAuthFlow(provider);
+      if (data) await applySession(data);
+      return data;
+    },
+    [applySession]
+  );
+
+  // Vincula un proveedor a la cuenta actual. Devuelve true si se vinculó.
+  const linkProvider = useCallback(async (provider) => {
+    const data = await runOAuthFlow(provider, { link: true });
+    if (!data) return false;
+    if (data.user) setUser(data.user);
+    return true;
+  }, []);
+
   const logout = useCallback(async () => {
     await clearSession();
   }, [clearSession]);
@@ -160,6 +179,8 @@ export function AuthProvider({ children }) {
       updateName,
       changePassword,
       deleteAccount,
+      loginWithProvider,
+      linkProvider,
     }),
     [
       user,
@@ -173,6 +194,8 @@ export function AuthProvider({ children }) {
       updateName,
       changePassword,
       deleteAccount,
+      loginWithProvider,
+      linkProvider,
     ]
   );
 

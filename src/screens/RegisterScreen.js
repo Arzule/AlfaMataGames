@@ -14,6 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import FormInput from '../components/FormInput';
+import SocialLoginButtons from '../components/SocialLoginButtons';
 import { useAuth } from '../hooks/useAuth';
 
 export default function RegisterScreen({ navigation }) {
@@ -141,6 +142,8 @@ export default function RegisterScreen({ navigation }) {
               <Text style={styles.submitBtnText}>Registrarme</Text>
             )}
           </TouchableOpacity>
+
+          <SocialLoginButtons disabled={submitting} />
 
           <TouchableOpacity
             style={styles.linkRow}

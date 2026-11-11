@@ -11,7 +11,8 @@ const {
   deleteAvatar,
 } = require('../controllers/auth.controller');
 const rateLimit = require('express-rate-limit');
-const { authRequired } = require('../middleware/auth.middleware');
+const { authRequired, optionalAuth } = require('../middleware/auth.middleware');
+const oauth = require('../controllers/oauth.controller');
 
 const router = express.Router();
 
@@ -31,6 +32,13 @@ router.put('/me', authRequired, updateProfile);
 // Piden la contraseña actual: mismo límite contra fuerza bruta que el login.
 router.put('/me/password', authRequired, credentialsLimiter, changePassword);
 router.delete('/me', authRequired, credentialsLimiter, deleteAccount);
+// Login social (Google y Discord): ver controllers/oauth.controller.js.
+router.get('/oauth/providers', oauth.providers);
+router.post('/oauth/exchange', credentialsLimiter, oauth.exchange);
+router.post('/oauth/:provider/start', optionalAuth, oauth.start);
+router.get('/oauth/:provider/callback', oauth.callback);
+router.get('/me/identities', authRequired, oauth.identities);
+router.delete('/me/identities/:provider', authRequired, oauth.unlink);
 router.put('/me/avatar', authRequired, updateAvatar);
 router.delete('/me/avatar', authRequired, deleteAvatar);
 
