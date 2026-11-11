@@ -208,7 +208,61 @@ async function getGameDescription(gameId) {
   };
 }
 
+// --- Correspondencia con Steam (A4-5) ---
+// IGDB acepta hasta 500 resultados por consulta; los lotes de Steam son más pequeños.
+const STEAM_SOURCE = 1; // external_game_source de Steam
+const MAX_BATCH = 500;
+
+// appids de Steam -> Map(appid -> id de IGDB) con external_games.
+async function findSteamGames(appids) {
+  const result = new Map();
+  if (!appids.length) return result;
+  const uids = appids.slice(0, MAX_BATCH).map((appid) => `"${Number(appid)}"`).join(',');
+  const rows = await igdbQuery(
+    'external_games',
+    `fields game,uid; where external_game_source = ${STEAM_SOURCE} & uid = (${uids}); limit ${MAX_BATCH};`
+  );
+  for (const row of rows) {
+    if (row.game && !result.has(Number(row.uid))) result.set(Number(row.uid), row.game);
+  }
+  return result;
+}
+
+// Nombres exactos -> Map(nombre -> id de IGDB). Solo juegos principales, remakes y ediciones.
+// Si hay varios con el mismo nombre se prefiere el juego principal (game_type 0).
+async function findGamesByName(names) {
+  const result = new Map();
+  const safe = [...new Set(names)].filter((name) => name && !/["\\]/.test(name)).slice(0, MAX_BATCH);
+  if (!safe.length) return result;
+  const list = safe.map((name) => `"${name}"`).join(',');
+  const rows = await igdbQuery(
+    'games',
+    `fields id,name,game_type; where name = (${list}) & game_type = ${GAME_TYPES}; sort total_rating_count desc; limit ${MAX_BATCH};`
+  );
+  for (const row of rows) {
+    const current = result.get(row.name);
+    if (!current || (current.type !== 0 && row.game_type === 0)) {
+      result.set(row.name, { id: row.id, type: row.game_type });
+    }
+  }
+  return new Map([...result].map(([name, value]) => [name, value.id]));
+}
+
+// Resumen (nombre, portada, rating) de varios juegos por id.
+async function getGamesByIds(ids) {
+  const unique = [...new Set(ids)].slice(0, MAX_BATCH);
+  if (!unique.length) return [];
+  const games = await igdbQuery(
+    'games',
+    `fields ${LIST_FIELDS}; where id = (${unique.join(',')}); limit ${MAX_BATCH};`
+  );
+  return games.map(toListItem);
+}
+
 module.exports = {
+  findSteamGames,
+  findGamesByName,
+  getGamesByIds,
   listGames,
   getRandomGame,
   getGame,
