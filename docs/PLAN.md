@@ -281,15 +281,21 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 - **Objetivo:** importar la biblioteca de Steam.
 - **Tareas:**
-  - [ ] Verificación con Steam OpenID por el backend (mismo patrón de navegador y deep link).
-  - [ ] Importar con `GetOwnedGames` (clave de Steam solo en el backend); avisar si los detalles
+  - [x] Verificación con Steam OpenID por el backend (mismo patrón de navegador y deep link).
+  - [x] Importar con `GetOwnedGames` (clave de Steam solo en el backend); avisar si los detalles
     de juego del perfil no son públicos.
-  - [ ] Correspondencia Steam → IGDB con `external_games` (appid de Steam) y, si falta, por
+  - [x] Correspondencia Steam → IGDB con `external_games` (appid de Steam) y, si falta, por
     nombre, con tabla de caché (migración).
-  - [ ] Reglas por tiempo jugado (ver "Decisiones tomadas") y fuente de estado/favorito
+  - [x] Reglas por tiempo jugado (ver "Decisiones tomadas") y fuente de estado/favorito
     (steam o usuario, migración).
-  - [ ] Re-sincronizar: agrega juegos nuevos y actualiza solo lo que sigue con fuente steam.
-  - [ ] Procesar por lotes con progreso visible; informar juegos no encontrados.
+  - [x] Re-sincronizar: agrega juegos nuevos y actualiza solo lo que sigue con fuente steam.
+  - [x] Procesar por lotes con progreso visible; informar juegos no encontrados.
+  - [ ] Prueba real con la cuenta de Steam del usuario (web local; celular al desplegar).
+- **Notas:** Steam no es método de acceso (tabla `steam_accounts`). Vinculación con PKCE como el
+  login social. Lotes de 100 juegos (`/steam/sync` + `/steam/sync/next`, ~3 consultas a IGDB por
+  lote). Correspondencia por nombre exacto (sin ™/®) cuando falta `external_games`. Un juego que
+  el usuario borra no se vuelve a agregar (`user_steam_games`). Probado con Steam simulado e IGDB
+  real (36 casos).
 - **Terminado cuando:** una importación completa respeta las reglas, una re-sincronización no
   pisa cambios manuales y ninguna petición excede el tiempo de espera del hosting.
 

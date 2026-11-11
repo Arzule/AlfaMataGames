@@ -1,6 +1,7 @@
-# Login con Google y Discord
+# Login con Google y Discord, y conectar Steam
 
-Guía para crear las credenciales OAuth y probar el login social (fase A4-4).
+Guía para crear las credenciales OAuth y probar el login social (fase A4-4) y la conexión con
+Steam (fase A4-5).
 
 ## Cómo funciona
 
@@ -67,9 +68,33 @@ se despliega en Azure (Google no acepta callbacks con IP privada ni sin HTTPS).
 ## Producción
 
 En `~/alfamatagames/deploy/.env` de la VM (ver `deploy/.env.prod.example`): las cuatro
-credenciales, `OAUTH_CALLBACK_BASE_URL` con la URL pública, `OAUTH_WEB_REDIRECTS` con
+credenciales, `STEAM_API_KEY`, `OAUTH_CALLBACK_BASE_URL` con la URL pública, `OAUTH_WEB_REDIRECTS` con
 `<URL pública>/oauth` y `OAUTH_ALLOW_EXPO_GO=true` mientras se pruebe con Expo Go (pasar a
 `false` cuando solo se use el APK).
+
+## Steam
+
+Steam no es un método de inicio de sesión: se conecta desde **Perfil → Steam** a una cuenta ya
+iniciada y sirve para importar la biblioteca.
+
+1. Saca la clave en https://steamcommunity.com/dev/apikey (dominio:
+   `alfamatagames-api.chilecentral.cloudapp.azure.com`) y ponla en `STEAM_API_KEY` del `.env`.
+2. Steam OpenID **no requiere registrar** la URL de retorno: el backend usa
+   `<OAUTH_CALLBACK_BASE_URL>/steam/callback` y verifica cada respuesta preguntándole a Steam
+   (`check_authentication`). La vinculación se confirma con PKCE, igual que el login social.
+3. En Steam, los **detalles de juego** del perfil deben ser públicos (Perfil → Editar perfil →
+   Privacidad). Si no, la sincronización responde `PRIVATE_PROFILE` con estas instrucciones.
+
+**Sincronización** (por lotes de 100 juegos, con progreso en la app):
+
+- Correspondencia con IGDB por `external_games` (appid de Steam) y, si falta, por nombre exacto
+  (sin ™/®). La caché `steam_igdb_map` evita repetir consultas; los no encontrados se reintentan
+  a los 30 días y la app los lista al terminar.
+- Reglas por tiempo jugado: menos de 2 h → Pendiente; 2 h o más → Jugando; más de 50 h → además
+  favorito.
+- Lo que el usuario cambió a mano (estado o favorito) no se vuelve a tocar, un favorito quitado
+  no vuelve y un juego borrado de la biblioteca no se vuelve a agregar.
+- Desconectar Steam deja los juegos importados en la biblioteca.
 
 ## Errores frecuentes
 
@@ -78,4 +103,7 @@ credenciales, `OAUTH_CALLBACK_BASE_URL` con la URL pública, `OAUTH_WEB_REDIRECT
 - **"Access blocked: app has not completed the Google verification process"**: tu correo no está
   en *Test users*.
 - **"Tu correo en ese proveedor no está verificado"**: verifica el correo en Discord.
-- **No aparecen los botones**: faltan las credenciales en el backend o no se recreó el contenedor.
+- **No aparecen los botones** (o la tarjeta de Steam): faltan las credenciales en el backend o no
+  se recreó el contenedor (`docker compose up -d backend`).
+- **"Tus detalles de juego en Steam no son públicos"**: cambia la privacidad de los detalles de
+  juego a Público y vuelve a sincronizar.
