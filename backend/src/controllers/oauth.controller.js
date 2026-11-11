@@ -9,10 +9,10 @@
 //     resuelve la cuenta y redirige al deep link con un código de un solo uso (2 min).
 //  4. La app canjea ese código con POST /auth/oauth/exchange enviando el secreto (codeVerifier):
 //     aunque otra app capture el deep link, sin el secreto no obtiene la sesión.
-const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 const { signToken, publicUser, findUser } = require('../utils/users');
+const oneTimeCodes = require('../utils/oneTimeCodes');
 const oauth = require('../services/oauth.service');
 const { createLogger } = require('../utils/logger');
 
@@ -20,13 +20,7 @@ const log = createLogger('oauth');
 
 const STATE_AUDIENCE = 'oauth-state';
 const STATE_TTL = '10m';
-const LOGIN_CODE_TTL_MS = 2 * 60 * 1000;
-const CHALLENGE_REGEX = /^[A-Za-z0-9_-]{43}$/;
-const VERIFIER_REGEX = /^[A-Za-z0-9_-]{43,128}$/;
 const APP_SCHEME = 'alfamatagames:';
-
-// Códigos de un solo uso pendientes de canje (en memoria: duran 2 minutos).
-const pendingCodes = new Map();
 
 function oauthError(code) {
   return Object.assign(new Error(code), { code });
@@ -63,20 +57,6 @@ function isAllowedRedirect(uri) {
 function withQuery(uri, params) {
   const query = new URLSearchParams(params).toString();
   return `${uri}${uri.includes('?') ? '&' : '?'}${query}`;
-}
-
-function base64url(buffer) {
-  return buffer.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function savePendingCode(payload) {
-  const now = Date.now();
-  for (const [key, value] of pendingCodes) {
-    if (value.expiresAt <= now) pendingCodes.delete(key);
-  }
-  const code = base64url(crypto.randomBytes(32));
-  pendingCodes.set(code, { ...payload, expiresAt: now + LOGIN_CODE_TTL_MS });
-  return code;
 }
 
 // Nombre inicial de una cuenta nueva: el del proveedor o la parte local del correo.
@@ -179,7 +159,7 @@ function start(req, res) {
   if (!isAllowedRedirect(redirectUri)) {
     return res.status(400).json({ message: 'Dirección de retorno no permitida.' });
   }
-  if (typeof codeChallenge !== 'string' || !CHALLENGE_REGEX.test(codeChallenge)) {
+  if (!oneTimeCodes.isValidChallenge(codeChallenge)) {
     return res.status(400).json({ message: 'codeChallenge inválido.' });
   }
   if (link && !req.userId) {
@@ -235,7 +215,8 @@ async function callback(req, res) {
     } else {
       userId = await resolveLogin(provider, profile);
     }
-    const code = savePendingCode({
+    const code = oneTimeCodes.create({
+      kind: 'oauth',
       userId,
       mode: state.u ? 'link' : 'login',
       provider,
@@ -256,17 +237,11 @@ async function callback(req, res) {
 async function exchange(req, res, next) {
   try {
     const { code, codeVerifier } = req.body || {};
-    const pending = typeof code === 'string' ? pendingCodes.get(code) : null;
-    if (pending) pendingCodes.delete(code); // un solo intento por código
-    if (!pending || pending.expiresAt <= Date.now()) {
+    const { payload: pending, error } = oneTimeCodes.consume(code, codeVerifier);
+    if (error === 'CODE_EXPIRED' || (pending && pending.kind !== 'oauth')) {
       return res.status(400).json({ message: 'El inicio de sesión venció. Inténtalo de nuevo.', code: 'CODE_EXPIRED' });
     }
-    if (typeof codeVerifier !== 'string' || !VERIFIER_REGEX.test(codeVerifier)) {
-      return res.status(400).json({ message: 'codeVerifier inválido.', code: 'INVALID_VERIFIER' });
-    }
-    const expected = Buffer.from(pending.challenge);
-    const actual = Buffer.from(base64url(crypto.createHash('sha256').update(codeVerifier).digest()));
-    if (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) {
+    if (error) {
       return res.status(400).json({ message: 'codeVerifier inválido.', code: 'INVALID_VERIFIER' });
     }
 
@@ -333,6 +308,8 @@ module.exports = {
   exchange,
   identities,
   unlink,
-  // Para pruebas.
+  // Compartidos con Steam (steam.controller.js) y con las pruebas.
   isAllowedRedirect,
+  withQuery,
+  sendFailurePage,
 };
