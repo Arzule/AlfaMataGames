@@ -9,9 +9,10 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 - Entregados: Avance 1 y Avance 2.
 - Avance 3: A3-0 a A3-7 terminadas (pendiente: entrega por el usuario).
-- Avance 4: A4-1, A4-1b, A4-2 y A4-3 terminadas. Backend en producción:
+- Avance 4: A4-1, A4-1b, A4-2, A4-3 y A4-4 terminadas. Backend en producción:
   https://alfamatagames-api.chilecentral.cloudapp.azure.com (ver `docs/DEPLOY.md`).
-- **Fase actual: A4-4** (Login con Google y Discord).
+- **Fase actual: A4-5** (Conectar Steam). Pendiente de A4-4: probar el login social en el
+  celular cuando se despliegue en Azure (Expo Go) y en el APK (A4-7).
 
 ## Decisiones tomadas
 
@@ -258,7 +259,7 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Terminado cuando:** las acciones funcionan, al eliminar no quedan filas del usuario y las
   estadísticas coinciden con la biblioteca.
 
-### [ ] A4-4 Login con Google y Discord
+### [x] A4-4 Login con Google y Discord
 
 - **Objetivo:** iniciar sesión con proveedores externos.
 - **Tareas:**
@@ -268,7 +269,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   - [x] Correo verificado coincidente → misma cuenta (vincular); si no → cuenta nueva.
   - [x] Ver y desvincular cuentas en Perfil sin quitar el último método de acceso.
   - [x] Guía para que el usuario cree las credenciales de Google Cloud y Discord (`docs/OAUTH.md`).
-  - [ ] Prueba real con las credenciales del usuario (web local; celular al desplegar).
+  - [x] Prueba real con las credenciales del usuario en web local (Google y Discord OK).
+  - [ ] Prueba en el celular: al desplegar en Azure (Expo Go) y con el APK (A4-7).
 - **Notas:** PKCE entre app y backend (el deep link solo lleva un código de un solo uso de 2 min).
   Probado con proveedor simulado (30 casos). Desde el celular solo se puede probar contra
   producción: el callback local es `localhost`.
