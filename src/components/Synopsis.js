@@ -48,7 +48,7 @@ export default function Synopsis({ text, original, translated, notice, loading }
         <Text style={[styles.labelText, styles.labelInfo]}>
           {showOriginal ? 'Texto original' : 'Traducido automáticamente'}
         </Text>
-        <TouchableOpacity onPress={() => setShowOriginal((value) => !value)} hitSlop={8}>
+        <TouchableOpacity accessibilityRole="button" onPress={() => setShowOriginal((value) => !value)} hitSlop={8}>
           <Text style={styles.link}>{showOriginal ? 'Ver traducción' : 'Ver original'}</Text>
         </TouchableOpacity>
       </View>
@@ -79,7 +79,7 @@ export default function Synopsis({ text, original, translated, notice, loading }
             {visibleText}
           </Text>
           {isLong ? (
-            <TouchableOpacity onPress={() => setExpanded((value) => !value)} hitSlop={8}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => setExpanded((value) => !value)} hitSlop={8}>
               <Text style={styles.link}>{expanded ? 'Ver menos' : 'Ver más'}</Text>
             </TouchableOpacity>
           ) : null}
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   link: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: 12,
     fontFamily: fonts.bodyBold,
   },

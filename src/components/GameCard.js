@@ -22,6 +22,7 @@ function GameCard({ game, onPress, status = null, platform }) {
 
   return (
     <TouchableOpacity
+      accessibilityRole="button"
       style={styles.card}
       onPress={onPress ? () => onPress(game) : undefined}
       activeOpacity={0.85}

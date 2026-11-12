@@ -4,9 +4,11 @@ export const colors = {
   surface: '#1a1a22',
   border: '#222230',
   primary: '#8b5cf6',
+  // Texto y enlaces violetas: primary no llega a 4.5:1 sobre surface (WCAG AA).
+  primaryText: '#a78bfa',
   textPrimary: '#ffffff',
   textSecondary: '#9e9eaf',
-  textMuted: '#65657a',
+  textMuted: '#85859b', // 4.8:1 sobre surface (antes #65657a, 3:1)
   success: '#10b981',
   successBg: 'rgba(16, 185, 129, 0.13)',
   warning: '#f5a623',

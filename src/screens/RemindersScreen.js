@@ -130,6 +130,7 @@ export default function RemindersScreen({ navigation }) {
           <View style={styles.itemMain}>{content}</View>
         ) : (
           <TouchableOpacity
+            accessibilityRole="button"
             style={styles.itemMain}
             onPress={() => navigation.navigate('GameDetail', { gameId: item.gameId })}
           >
@@ -137,6 +138,7 @@ export default function RemindersScreen({ navigation }) {
           </TouchableOpacity>
         )}
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.cancelBtn}
           onPress={() => handleCancel(item)}
           accessibilityLabel="Cancelar recordatorio"
@@ -153,7 +155,9 @@ export default function RemindersScreen({ navigation }) {
         title="Recordatorios"
         left={
           <TouchableOpacity
+            accessibilityRole="button"
             style={styles.backBtn}
+            hitSlop={4}
             onPress={() => navigation.goBack()}
             accessibilityLabel="Volver"
           >
@@ -162,7 +166,7 @@ export default function RemindersScreen({ navigation }) {
         }
         right={
           items.length > 1 ? (
-            <TouchableOpacity onPress={handleCancelAll}>
+            <TouchableOpacity accessibilityRole="button" onPress={handleCancelAll}>
               <Text style={styles.linkText}>Cancelar todos</Text>
             </TouchableOpacity>
           ) : null
@@ -218,7 +222,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   linkText: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: 13,
     fontFamily: fonts.bodyBold,
   },
@@ -282,7 +286,7 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     width: 44,
-    height: 44,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 4,

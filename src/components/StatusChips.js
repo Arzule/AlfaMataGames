@@ -25,6 +25,7 @@ export default function StatusChips({ value = null, onChange }) {
         const statusStyle = STATUS_STYLES[status];
         return (
           <TouchableOpacity
+            accessibilityRole="button"
             key={status}
             activeOpacity={0.7}
             disabled={!interactive}

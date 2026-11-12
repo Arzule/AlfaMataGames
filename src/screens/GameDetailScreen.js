@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Keyboard,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -37,10 +38,15 @@ const REVIEW_SCROLL_MARGIN = 16;
 const REVIEW_MAX_LENGTH = 1000;
 // Ancho máximo del contenido en tablets y web.
 const CONTENT_MAX_WIDTH = 720;
+// Solo web en pantallas anchas: el banner va al costado (columna fija) y la información al lado.
+const WIDE_LAYOUT_MIN_WIDTH = 1024;
+const FOOTER_HEIGHT = 80;
 
 export default function GameDetailScreen({ route, navigation }) {
   const { gameId } = route.params;
   const insets = useSafeAreaInsets();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const wide = Platform.OS === 'web' && windowWidth >= WIDE_LAYOUT_MIN_WIDTH;
 
   const { getEntry, isFavorite, saveEntry, loading: libraryLoading } = useLibrary();
 
@@ -152,7 +158,9 @@ export default function GameDetailScreen({ route, navigation }) {
 
   const backButton = (
     <TouchableOpacity
+      accessibilityRole="button"
       style={styles.iconBtn}
+      hitSlop={4}
       onPress={() => navigation.goBack()}
       accessibilityLabel="Volver"
     >
@@ -224,9 +232,15 @@ export default function GameDetailScreen({ route, navigation }) {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View ref={contentRef} collapsable={false}>
-          {/* Hero */}
-          <View style={styles.heroBlock}>
+        <View ref={contentRef} collapsable={false} style={wide ? styles.wideRow : undefined}>
+          {/* Hero: arriba en móvil; en web ancha, banner lateral fijo al hacer scroll */}
+          <View
+            style={
+              wide
+                ? [styles.heroBlockWide, { height: windowHeight - FOOTER_HEIGHT - insets.bottom }]
+                : styles.heroBlock
+            }
+          >
             <Image
               source={game.heroImage ? { uri: game.heroImage } : null}
               style={styles.heroImage}
@@ -240,7 +254,7 @@ export default function GameDetailScreen({ route, navigation }) {
           </View>
 
           {/* Meta */}
-          <View style={styles.metaSection}>
+          <View style={[styles.metaSection, wide && styles.metaSectionWide]}>
             <View style={styles.tagsRow}>
               <View style={styles.yearBadge}>
                 <Text style={styles.yearText}>{year}</Text>
@@ -315,6 +329,7 @@ export default function GameDetailScreen({ route, navigation }) {
                   {reviewText.length}/{REVIEW_MAX_LENGTH}
                 </Text>
                 <TouchableOpacity
+                  accessibilityRole="button"
                   style={[styles.reviewBtn, (libraryLoading || busy) && styles.btnDisabled]}
                   onPress={handleSaveReview}
                   disabled={libraryLoading || busy}
@@ -341,6 +356,7 @@ export default function GameDetailScreen({ route, navigation }) {
                       {formatDateTime(gameReminder.reminder.fireAt)}
                     </Text>
                     <TouchableOpacity
+                      accessibilityRole="button"
                       onPress={gameReminder.cancel}
                       disabled={gameReminder.busy}
                       hitSlop={8}
@@ -350,6 +366,7 @@ export default function GameDetailScreen({ route, navigation }) {
                   </View>
                 ) : (
                   <TouchableOpacity
+                    accessibilityRole="button"
                     style={[styles.reminderBtn, gameReminder.busy && styles.btnDisabled]}
                     onPress={() => setSheetVisible(true)}
                     disabled={gameReminder.busy}
@@ -374,7 +391,7 @@ export default function GameDetailScreen({ route, navigation }) {
                   </Text>
                 ) : null}
                 {gameReminder.permissionStatus === 'blocked' ? (
-                  <TouchableOpacity onPress={gameReminder.openSettings}>
+                  <TouchableOpacity accessibilityRole="button" onPress={gameReminder.openSettings}>
                     <Text style={styles.linkText}>
                       Notificaciones bloqueadas · Abrir ajustes
                     </Text>
@@ -397,7 +414,7 @@ export default function GameDetailScreen({ route, navigation }) {
               ) : community.error && !community.reviews.length ? (
                 <View style={styles.communityMessage}>
                   <Text style={styles.hintText}>{community.error}</Text>
-                  <TouchableOpacity onPress={community.reload}>
+                  <TouchableOpacity accessibilityRole="button" onPress={community.reload}>
                     <Text style={styles.linkText}>Reintentar</Text>
                   </TouchableOpacity>
                 </View>
@@ -415,6 +432,7 @@ export default function GameDetailScreen({ route, navigation }) {
                   ) : null}
                   {community.hasMore ? (
                     <TouchableOpacity
+                      accessibilityRole="button"
                       style={styles.moreBtn}
                       onPress={community.loadMore}
                       disabled={community.loadingMore}
@@ -437,6 +455,7 @@ export default function GameDetailScreen({ route, navigation }) {
       {keyboardVisible ? null : (
         <View style={[styles.footerBar, { paddingBottom: insets.bottom + 12 }]}>
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.favoriteBtn, (libraryLoading || busy) && styles.btnDisabled]}
             onPress={handleToggleFavorite}
             disabled={libraryLoading || busy}
@@ -501,6 +520,24 @@ const styles = StyleSheet.create({
   heroBlock: {
     width: '100%',
     height: 260,
+  },
+  wideRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  heroBlockWide: {
+    width: '42%',
+    maxWidth: 640,
+    top: 0,
+    // react-native-web: el banner queda fijo mientras se desplaza la información.
+    ...Platform.select({ web: { position: 'sticky' } }),
+  },
+  metaSectionWide: {
+    flex: 1,
+    alignSelf: 'flex-start',
+    width: 'auto',
+    paddingHorizontal: 40,
+    paddingTop: 32,
   },
   heroImage: {
     ...StyleSheet.absoluteFillObject,
@@ -644,7 +681,7 @@ const styles = StyleSheet.create({
   reviewBtn: {
     alignSelf: 'flex-start',
     paddingHorizontal: 16,
-    height: 40,
+    minHeight: 44,
     borderRadius: 8,
     backgroundColor: colors.primary,
     alignItems: 'center',
@@ -656,7 +693,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 16,
-    height: 40,
+    minHeight: 44,
     borderRadius: 8,
     backgroundColor: colors.badgeNeutral,
     borderWidth: 1,
@@ -710,7 +747,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   linkText: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: 13,
     fontFamily: fonts.bodyBold,
   },
@@ -738,7 +775,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 48,
+    minHeight: 48,
     borderRadius: 8,
     backgroundColor: colors.badgeNeutral,
     borderWidth: 1,

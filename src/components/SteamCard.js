@@ -279,16 +279,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    minHeight: 32,
+    minHeight: 44,
   },
   link: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: 12,
     fontFamily: fonts.bodyBold,
   },
   unlinkBtn: {
     alignSelf: 'center',
-    minHeight: 36,
+    minHeight: 44,
     justifyContent: 'center',
   },
   danger: {
