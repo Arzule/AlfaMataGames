@@ -18,8 +18,10 @@ import Header from '../components/Header';
 import Avatar from '../components/Avatar';
 import DateTimePickerModal from '../components/DateTimePickerModal';
 import LibraryStats from '../components/LibraryStats';
+import SteamCard from '../components/SteamCard';
 import { useAuth } from '../hooks/useAuth';
 import { useLibrary } from '../hooks/useLibrary';
+import { useSteam } from '../hooks/useSteam';
 import { computeLibraryStats } from '../utils/libraryStats';
 import { useAvatarPicker, CAMERA_SUPPORTED } from '../hooks/useAvatarPicker';
 import { confirmAction } from '../utils/confirm';
@@ -42,6 +44,7 @@ export default function ProfileScreen({ navigation }) {
   const [cacheMessage, setCacheMessage] = useState(null);
   const [crashTest, setCrashTest] = useState(false);
   const avatarPicker = useAvatarPicker();
+  const steam = useSteam();
   const cameraBlocked = avatarPicker.cameraStatus === 'blocked';
 
   // "Agitar para descubrir": null mientras se comprueba el sensor.
@@ -204,6 +207,8 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         <LibraryStats stats={stats} loading={library.loading && !library.items.length} />
+
+        <SteamCard steam={steam} />
 
         {/* En web no hay sensor: la opción se oculta (queda el botón "Juego al azar"). */}
         {SHAKE_SUPPORTED ? (

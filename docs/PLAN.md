@@ -9,10 +9,10 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 - Entregados: Avance 1 y Avance 2.
 - Avance 3: A3-0 a A3-7 terminadas (pendiente: entrega por el usuario).
-- Avance 4: A4-1, A4-1b, A4-2, A4-3 y A4-4 terminadas. Backend en producción:
+- Avance 4: A4-1, A4-1b, A4-2, A4-3, A4-4 y A4-5 terminadas. Backend en producción:
   https://alfamatagames-api.chilecentral.cloudapp.azure.com (ver `docs/DEPLOY.md`).
-- **Fase actual: A4-5** (Conectar Steam). Pendiente de A4-4: probar el login social en el
-  celular cuando se despliegue en Azure (Expo Go) y en el APK (A4-7).
+- **Fase actual: A4-6** (Push remotas). Pendiente de A4-4 y A4-5: probar login social y Steam en
+  el celular cuando se despliegue en Azure (Expo Go) y en el APK (A4-7).
 
 ## Decisiones tomadas
 
@@ -277,19 +277,27 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Terminado cuando:** ambos proveedores funcionan en Expo Go y en el APK, la vinculación por
   correo es correcta y no se puede quedar sin método de acceso.
 
-### [ ] A4-5 Conectar Steam
+### [x] A4-5 Conectar Steam
 
 - **Objetivo:** importar la biblioteca de Steam.
 - **Tareas:**
-  - [ ] Verificación con Steam OpenID por el backend (mismo patrón de navegador y deep link).
-  - [ ] Importar con `GetOwnedGames` (clave de Steam solo en el backend); avisar si los detalles
+  - [x] Verificación con Steam OpenID por el backend (mismo patrón de navegador y deep link).
+  - [x] Importar con `GetOwnedGames` (clave de Steam solo en el backend); avisar si los detalles
     de juego del perfil no son públicos.
-  - [ ] Correspondencia Steam → IGDB con `external_games` (appid de Steam) y, si falta, por
+  - [x] Correspondencia Steam → IGDB con `external_games` (appid de Steam) y, si falta, por
     nombre, con tabla de caché (migración).
-  - [ ] Reglas por tiempo jugado (ver "Decisiones tomadas") y fuente de estado/favorito
+  - [x] Reglas por tiempo jugado (ver "Decisiones tomadas") y fuente de estado/favorito
     (steam o usuario, migración).
-  - [ ] Re-sincronizar: agrega juegos nuevos y actualiza solo lo que sigue con fuente steam.
-  - [ ] Procesar por lotes con progreso visible; informar juegos no encontrados.
+  - [x] Re-sincronizar: agrega juegos nuevos y actualiza solo lo que sigue con fuente steam.
+  - [x] Procesar por lotes con progreso visible; informar juegos no encontrados.
+  - [x] Prueba real con la cuenta de Steam del usuario en web local (conectar e importar OK).
+  - [ ] Prueba en el celular: al desplegar en Azure (Expo Go) y con el APK (A4-7).
+- **Notas:** Steam no es método de acceso (tabla `steam_accounts`). Vinculación con PKCE como el
+  login social. Lotes de 100 juegos (`/steam/sync` + `/steam/sync/next`, ~3 consultas a IGDB por
+  lote). Correspondencia por nombre exacto (sin ™/®) cuando falta `external_games`. Un juego que
+  el usuario borra no se vuelve a agregar (`user_steam_games`). Probado con Steam simulado e IGDB
+  real (36 casos). En web el login social y Steam van en la misma pestaña (sin ventana emergente:
+  Google corta `window.opener`).
 - **Terminado cuando:** una importación completa respeta las reglas, una re-sincronización no
   pisa cambios manuales y ninguna petición excede el tiempo de espera del hosting.
 

@@ -246,6 +246,7 @@ cp .env.example .env
 | `DEEPL_API_URL` | Opcional. Fuerza el endpoint de DeepL; por defecto, `api-free.deepl.com` si la clave termina en `:fx` y `api.deepl.com` si no. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Opcionales. Login con Google (solo el backend); sin ellas no aparece el botón. Ver [docs/OAUTH.md](docs/OAUTH.md). |
 | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | Opcionales. Login con Discord (solo el backend). |
+| `STEAM_API_KEY` | Opcional. Steam Web API (solo el backend); sin ella no aparece la tarjeta de Steam en Perfil. Ver [docs/OAUTH.md](docs/OAUTH.md#steam). |
 | `OAUTH_CALLBACK_BASE_URL` | URL pública del backend para los callbacks (por defecto `http://localhost:3000`). |
 | `OAUTH_WEB_REDIRECTS` | Retornos web permitidos, origen + ruta separados por comas (por defecto `http://localhost:8081/oauth`). |
 | `OAUTH_ALLOW_EXPO_GO` | `true` permite volver a Expo Go (`exp://.../--/oauth`); en el docker-compose local es `true` por defecto. |
@@ -532,6 +533,13 @@ Tabla generada a partir de `backend/src/routes/`.
 | POST | `/auth/oauth/exchange` | — | `{ code, codeVerifier }` → `{ token, user }` (login) o `{ user, linked }` (vincular). |
 | GET | `/auth/me/identities` | Bearer JWT | Cuentas vinculadas: `{ identities: [{ provider, email, createdAt }], hasPassword }`. |
 | DELETE | `/auth/me/identities/:provider` | Bearer JWT | Desvincula; 400 `LAST_LOGIN_METHOD` si es el único método de acceso. |
+| GET | `/steam` | Bearer JWT | Estado de Steam: `{ available, linked, steamId, personaName, lastSyncAt, sync }`. |
+| POST | `/steam/link/start` | Bearer JWT | `{ redirectUri, codeChallenge }` → `{ url }` de Steam OpenID. 409 `ALREADY_LINKED`. |
+| GET | `/steam/callback` | — | Retorno de Steam: verifica la firma con Steam y vuelve al deep link con `?code=` o `?error=`. |
+| POST | `/steam/link/confirm` | Bearer JWT | `{ code, codeVerifier }` → estado. 409 `STEAM_TAKEN` si la cuenta de Steam es de otro usuario. |
+| DELETE | `/steam` | Bearer JWT | Desconecta Steam (los juegos importados se quedan). |
+| POST | `/steam/sync` | Bearer JWT | Pide los juegos a Steam y prepara la sincronización: `{ sync: { total, processed, added, updated, notFoundCount, done } }`. 409 `PRIVATE_PROFILE` si los detalles de juego no son públicos. |
+| POST | `/steam/sync/next` | Bearer JWT | Procesa el siguiente lote (100 juegos) y devuelve el progreso; al terminar incluye `notFound` (nombres). |
 | PUT | `/auth/me/avatar` | Bearer JWT | Guarda la foto: `{ image: "data:image/jpeg;base64,..." }` (JPEG, PNG o WebP, máx. 200 KB). Devuelve `{ user }`. |
 | DELETE | `/auth/me/avatar` | Bearer JWT | Elimina la foto. Devuelve `{ user }`. |
 | GET | `/library` | Bearer JWT | Lista la biblioteca. Acepta `?favorite=true`. |
@@ -578,6 +586,7 @@ Definido en `database/init/01-schema.sql` y las migraciones de `backend/migratio
 | `game_rating` | DECIMAL(3,2) NULL | Valoración del catálogo (0-5). |
 | `is_favorite` | TINYINT(1) | Por defecto `0`. |
 | `status` | ENUM(...) NULL | `Jugando`, `Completado`, `Pendiente`, `Abandonado`. |
+| `status_source`, `favorite_source` | ENUM(`steam`,`user`) NULL | Quién puso el estado / favorito (migración `007`): Steam solo actualiza lo que sigue con fuente `steam`. |
 | `user_score` | TINYINT NULL | 0-5 (con `CHECK`). |
 | `review` | TEXT NULL | Reseña del usuario. |
 | `review_updated_at` | TIMESTAMP NULL | Última edición del texto de la reseña (orden de las reseñas de la comunidad). |
@@ -600,6 +609,12 @@ Caché de sinopsis traducidas. Clave primaria `(game_id, lang)`.
 | `translated_text` | MEDIUMTEXT | Traducción. |
 | `provider` | VARCHAR(20) | `deepl`. |
 | `created_at` / `updated_at` | TIMESTAMP | Fechas de creación y actualización. |
+
+### Tablas de Steam (migración `007`)
+
+- `steam_accounts`: cuenta de Steam por usuario (`user_id` PK, `steam_id` único, `persona_name`, `last_sync_at`).
+- `steam_igdb_map`: caché compartida appid de Steam → juego de IGDB (`igdb_game_id` NULL = no encontrado, se reintenta a los 30 días; `matched_by` `external` o `name`).
+- `user_steam_games`: juegos de Steam ya procesados por usuario y minutos jugados; evita volver a agregar un juego que el usuario borró.
 
 ---
 

@@ -12,7 +12,8 @@ import * as authApi from '../services/authApi';
 import * as storage from '../utils/storage';
 import { cancelAllReminders } from '../services/notifications';
 import { clearUserData } from '../services/preferences';
-import { runOAuthFlow } from '../services/socialAuth';
+import { runOAuthFlow, completeWebRedirect } from '../services/socialAuth';
+import { confirmAction } from '../utils/confirm';
 
 // Clave con la que se guarda el token en el almacenamiento seguro.
 const TOKEN_KEY = 'alfamatagames.token';
@@ -66,9 +67,35 @@ export function AuthProvider({ children }) {
       } catch (err) {
         // Token inválido o expirado: limpiar la sesión.
         await clearSession();
-      } finally {
-        if (isMounted) setLoading(false);
       }
+
+      // Web: volvimos del proveedor (login social, vincular o Steam) en esta misma pestaña.
+      const redirect = await completeWebRedirect();
+      if (isMounted && redirect) {
+        if (redirect.data && redirect.kind === 'login' && redirect.data.token && redirect.data.user) {
+          setAuthToken(redirect.data.token);
+          setToken(redirect.data.token);
+          setUser(redirect.data.user);
+          await storage.setItem(TOKEN_KEY, redirect.data.token);
+        } else if (redirect.data && redirect.kind === 'link' && redirect.data.user) {
+          setUser(redirect.data.user);
+        }
+        const SUCCESS = {
+          link: 'Cuenta vinculada. La ves en Perfil → Gestionar cuenta.',
+          steam: 'Cuenta de Steam conectada. Ve a Perfil para importar tu biblioteca.',
+        };
+        const text = redirect.error || SUCCESS[redirect.kind];
+        if (text) {
+          confirmAction({
+            title: redirect.error ? 'No se pudo completar' : 'Listo',
+            message: text,
+            confirmText: 'Entendido',
+            cancelText: 'Cerrar',
+            icon: redirect.error ? 'alert-circle' : 'check-circle',
+          });
+        }
+      }
+      if (isMounted) setLoading(false);
     })();
 
     return () => {
