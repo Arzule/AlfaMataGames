@@ -184,7 +184,10 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
   local desde cero con datos de prueba; no editarlo de forma que rompa una BD existente.
 - **Login social y Steam**: OAuth/OpenID mediado por el backend, con el navegador del sistema
   (`expo-web-browser`) y regreso a la app por deep link validado contra una lista permitida
-  (en Expo Go el retorno es `exp://...`; en el APK, el `scheme` propio).
+  (en Expo Go el retorno es `exp://...`; en el APK, el `scheme` propio). **En web no hay ventana
+  emergente**: Google corta `window.opener` (COOP) y nunca volvía; la misma pestaña va al
+  proveedor y vuelve a `/oauth`, y `completeWebRedirect` (socialAuth, llamado en `AuthContext`
+  al restaurar la sesión) canjea con el secreto PKCE guardado en sessionStorage.
 
 ## Problemas conocidos
 

@@ -58,8 +58,9 @@ App ──POST /auth/oauth/exchange { code, codeVerifier }──▶ Backend ─�
 2. La app debe apuntar al backend local: `EXPO_PUBLIC_API_URL=http://<IP LAN>:3000` y
    `npx expo start -c`.
 3. Abre la versión web en la PC (`w`, http://localhost:8081): en Login aparecen
-   "Continuar con Google/Discord". El navegador abre una ventana emergente y al terminar se
-   cierra sola (si el navegador bloquea las ventanas emergentes, permítelas para localhost).
+   "Continuar con Google/Discord". En web la misma pestaña va al proveedor y vuelve a la app
+   con la sesión iniciada (sin ventana emergente: Google corta `window.opener` y la ventana nunca
+   podía avisar a la app).
 
 **Limitación en local:** el callback local es `http://localhost:3000`, que solo existe en la PC.
 Desde el celular (Expo Go) el login social se prueba contra **producción**, cuando la versión

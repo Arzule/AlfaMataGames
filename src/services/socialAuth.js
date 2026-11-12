@@ -5,6 +5,7 @@
 // 2. Pide al backend la URL del proveedor (o de Steam) y la abre; el backend vuelve a `redirectUri` con un
 //    código de un solo uso.
 // 3. Canjea el código enviando el secreto: sin él, quien capture el deep link no obtiene nada.
+import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import * as Crypto from 'expo-crypto';
@@ -52,7 +53,13 @@ export function getRedirectUri() {
 // Genera el PKCE, abre el navegador y canjea el código con `finish(code, codeVerifier)`.
 // Devuelve la respuesta del canje, o null si el usuario cancela. Lanza Error con un mensaje para
 // mostrar.
-async function runBrowserFlow(start, finish) {
+// En web no hay ventana emergente: Google corta `window.opener` (COOP) y la ventana nunca podía
+// avisar a la app. La misma pestaña va al proveedor y vuelve a <origen>/oauth; el secreto PKCE
+// queda en sessionStorage y completeWebRedirect() termina el canje al recargar la app.
+const WEB_PENDING_KEY = 'alfamatagames-auth-pending';
+const FINISHERS = { login: exchangeCode, link: exchangeCode, steam: confirmSteamLink };
+
+async function runBrowserFlow(start, finish, kind) {
   const codeVerifier = toHex(Crypto.getRandomBytes(32));
   const digest = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, codeVerifier, {
     encoding: Crypto.CryptoEncoding.BASE64,
@@ -60,6 +67,13 @@ async function runBrowserFlow(start, finish) {
   const redirectUri = getRedirectUri();
 
   const { url } = await start({ redirectUri, codeChallenge: toBase64Url(digest) });
+
+  if (Platform.OS === 'web') {
+    window.sessionStorage.setItem(WEB_PENDING_KEY, JSON.stringify({ kind, codeVerifier }));
+    window.location.assign(url);
+    // La página se va al proveedor: esta promesa no se resuelve.
+    return new Promise(() => {});
+  }
 
   const result = await WebBrowser.openAuthSessionAsync(url, redirectUri);
   if (result.type !== 'success' || !result.url) return null;
@@ -76,10 +90,50 @@ async function runBrowserFlow(start, finish) {
 
 /** Login social o vincular un proveedor: { token, user } o { user, linked }; null si cancela. */
 export function runOAuthFlow(provider, { link = false } = {}) {
-  return runBrowserFlow((params) => startOAuth(provider, { ...params, link }), exchangeCode);
+  return runBrowserFlow(
+    (params) => startOAuth(provider, { ...params, link }),
+    exchangeCode,
+    link ? 'link' : 'login'
+  );
 }
 
 /** Conectar Steam: devuelve el estado de Steam actualizado, o null si cancela. */
 export function runSteamLinkFlow() {
-  return runBrowserFlow(startSteamLink, confirmSteamLink);
+  return runBrowserFlow(startSteamLink, confirmSteamLink, 'steam');
+}
+
+/**
+ * Solo web: si la app se cargó en el retorno (<origen>/oauth?code=...|error=...), termina el
+ * canje y limpia la URL. Devuelve null (nada pendiente o cancelado), { kind, data } o
+ * { kind, error }. kind: 'login' | 'link' | 'steam'. Llamarlo con la sesión ya restaurada.
+ */
+export async function completeWebRedirect() {
+  if (Platform.OS !== 'web') return null;
+  const { pathname, href } = window.location;
+  const params = readParams(href);
+  if (!pathname.endsWith('/oauth') || (!params.code && !params.error)) return null;
+
+  let pending = null;
+  try {
+    pending = JSON.parse(window.sessionStorage.getItem(WEB_PENDING_KEY) || 'null');
+  } catch (err) {
+    pending = null;
+  }
+  window.sessionStorage.removeItem(WEB_PENDING_KEY);
+  // Quita el código de la barra de direcciones y del historial.
+  window.history.replaceState(null, '', pathname.replace(/\/oauth$/, '/'));
+
+  const finish = pending && FINISHERS[pending.kind];
+  if (!finish || params.error === 'CANCELLED') return null;
+  if (params.error) {
+    return {
+      kind: pending.kind,
+      error: ERROR_MESSAGES[params.error] || 'No se pudo completar. Inténtalo de nuevo.',
+    };
+  }
+  try {
+    return { kind: pending.kind, data: await finish(params.code, pending.codeVerifier) };
+  } catch (err) {
+    return { kind: pending.kind, error: err.message };
+  }
 }
