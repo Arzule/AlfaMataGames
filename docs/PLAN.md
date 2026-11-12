@@ -11,7 +11,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - Avance 3: A3-0 a A3-7 terminadas (pendiente: entrega por el usuario).
 - Avance 4: A4-1, A4-1b, A4-2, A4-3, A4-4 y A4-5 terminadas. Backend en producción:
   https://alfamatagames-api.chilecentral.cloudapp.azure.com (ver `docs/DEPLOY.md`).
-- **Fase actual: A4-6** (Push remotas). Pendiente de A4-4 y A4-5: probar login social y Steam en
+- **Fase actual: A4-7** (EAS Build y APK). Orden de lo que queda: A4-7 → A4-6 → A4-7b → A4-8
+  (A4-7 antes que A4-6: las push remotas solo se prueban en el APK). Pendiente de A4-4 y A4-5: probar login social y Steam en
   el celular cuando se despliegue en Azure (Expo Go) y en el APK (A4-7).
 
 ## Decisiones tomadas
@@ -301,18 +302,6 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Terminado cuando:** una importación completa respeta las reglas, una re-sincronización no
   pisa cambios manuales y ninguna petición excede el tiempo de espera del hosting.
 
-### [ ] A4-6 Push remotas para recordatorios
-
-- **Objetivo:** recordatorios enviados desde el servidor.
-- **Tareas:**
-  - [ ] Registrar el token de Expo Push del dispositivo.
-  - [ ] Recordatorios guardados en el servidor (migración).
-  - [ ] Envío con Expo Push Service por un endpoint protegido que invoca un cron externo.
-  - [ ] Recordatorios locales como respaldo en Expo Go.
-  - [ ] Guía para configurar las credenciales FCM en EAS.
-- **Terminado cuando:** en el APK llega una push programada desde el servidor y en Expo Go
-  siguen funcionando las locales.
-
 ### [ ] A4-7 EAS Build y pruebas del APK
 
 - **Objetivo:** generar y probar el APK.
@@ -327,9 +316,29 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
     `emulator`) e imagen "Google Play" (necesaria para push);
     3) Android Studio completo.
     Incluir requisitos (virtualización activada) e instalación con `adb`.
+  - [ ] Antes del APK: desplegar en Azure la versión aprobada por el usuario (merge a `main`), con
+    las credenciales de OAuth y `STEAM_API_KEY` en la VM y las URLs de callback de producción
+    registradas en Google y Discord.
+  - [ ] Probar en el celular (APK) lo pendiente de A4-4 y A4-5: login con Google/Discord, vincular
+    cuentas y conectar e importar Steam (retorno por el `scheme` `alfamatagames://`).
   - [ ] Distribución del APK (GitHub Releases).
 - **Terminado cuando:** el usuario genera e instala el APK de `preview` y la app funciona contra
-  el backend en Azure.
+  el backend en Azure, incluidos el login social y Steam.
+- **Nota de orden:** va antes de A4-6 porque las push remotas solo se pueden probar en el APK.
+
+### [ ] A4-6 Push remotas para recordatorios
+
+- **Objetivo:** recordatorios enviados desde el servidor.
+- **Tareas:**
+  - [ ] Registrar el token de Expo Push del dispositivo.
+  - [ ] Recordatorios guardados en el servidor (migración).
+  - [ ] Envío con Expo Push Service por un endpoint protegido que invoca un cron externo.
+  - [ ] Recordatorios locales como respaldo en Expo Go.
+  - [ ] Guía para configurar las credenciales FCM en EAS.
+- **Requiere:** el APK de A4-7 (Expo Go en Android no recibe push remotas); al agregar las
+  credenciales FCM hay que generar un APK nuevo.
+- **Terminado cuando:** en el APK llega una push programada desde el servidor y en Expo Go
+  siguen funcionando las locales.
 
 ### [ ] A4-7b Accesibilidad y pulido final de UI
 
