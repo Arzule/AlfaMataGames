@@ -172,6 +172,10 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
   centrado (formularios 420, Perfil 480, detalle y listas 720) y las grillas van de 2 a 6
   columnas (`useGridColumns`). Pantallas con datos remotos: carga, vacío (`EmptyState`) y error
   con "Reintentar" (`ErrorState`); al refrescar no se reemplaza una lista ya visible.
+- **Accesibilidad**: todo táctil lleva `accessibilityRole` y, si solo tiene icono,
+  `accessibilityLabel`; zona táctil ≥ 44x44 (`hitSlop` si el botón es menor); botones y campos con
+  `minHeight`, no `height`, para la letra grande del sistema. Texto violeta con
+  `colors.primaryText` (no `primary`, que no llega a 4.5:1 sobre `surface`).
 - **Rendimiento**: componentes de listas con `React.memo` y handlers estables (`onPress`
   recibe el elemento); valores de contexto con `useMemo`.
 - **Steam**: no es un método de acceso (tabla propia `steam_accounts`, no `user_identities`).

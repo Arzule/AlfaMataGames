@@ -345,14 +345,19 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Objetivo:** interfaz profesional y accesible para la entrega final.
 - **Tema del sílabo:** UI/UX e innovación (accesibilidad).
 - **Tareas:**
-  - [ ] `accessibilityLabel` y `accessibilityRole` en botones con icono.
-  - [ ] Zonas táctiles de al menos 44x44.
-  - [ ] Contraste suficiente entre texto y fondo.
-  - [ ] Soporte del tamaño de letra del sistema sin romper el diseño.
+  - [x] `accessibilityLabel` y `accessibilityRole` en botones con icono.
+  - [x] Zonas táctiles de al menos 44x44.
+  - [x] Contraste suficiente entre texto y fondo.
+  - [x] Soporte del tamaño de letra del sistema sin romper el diseño.
   - [ ] Revisión final de coherencia visual.
-  - [ ] **Fix (solo web):** el banner (`heroImage`) del detalle del juego se ve muy angosto en
+  - [x] **Fix (solo web):** el banner (`heroImage`) del detalle del juego se ve muy angosto en
     pantallas anchas. Propuesta: en web con ancho grande, mostrarlo como banner lateral (imagen a
     un lado y la información al otro) para aprovechar el monitor; en móvil queda igual.
+- **Notas:** rol `button` en todos los táctiles (58) y etiquetas en los que solo tienen icono
+  (ojo de contraseña, estrellas con su estado); `hitSlop` en los botones de 36 px; `height` fijo
+  → `minHeight` en botones y campos (no recorta con letra grande); `textMuted` #65657a → #85859b
+  (4.8:1) y `primaryText` #a78bfa para textos violetas (4.08 → 6.35:1). Banner del detalle en web
+  ≥ 1024 px: columna izquierda fija (sticky) y la información a la derecha.
 - **Terminado cuando:** todos los botones con icono se anuncian con lector de pantalla, ninguna
   zona táctil es menor de 44x44, y con letra grande del sistema no se corta ni solapa texto.
 
