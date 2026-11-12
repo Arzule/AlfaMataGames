@@ -307,10 +307,10 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Objetivo:** generar y probar el APK.
 - **Tema del sílabo:** builds con Expo y APK.
 - **Tareas:**
-  - [ ] `app.json` de producción: nombre, icono, splash, `android.package`, `scheme` para deep
+  - [x] `app.json` de producción: nombre, icono, splash, `android.package`, `scheme` para deep
     links, versiones, permisos y textos de uso.
-  - [ ] `eas.json` con perfiles `development`, `preview` (APK) y `production`; variables en EAS.
-  - [ ] `docs/APK.md`: generar el APK y probarlo, de más ligera a más pesada:
+  - [x] `eas.json` con perfiles `development`, `preview` (APK) y `production`; variables en EAS.
+  - [x] `docs/APK.md`: generar el APK y probarlo, de más ligera a más pesada:
     1) celular Android del usuario (recomendada; las push funcionan de verdad);
     2) emulador solo con herramientas de línea de comandos del SDK (`sdkmanager`, `avdmanager`,
     `emulator`) e imagen "Google Play" (necesaria para push);

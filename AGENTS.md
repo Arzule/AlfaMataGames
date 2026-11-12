@@ -30,6 +30,9 @@ curso: entrega final (Avance 4, Unidad 4). Fase actual y decisiones: `docs/PLAN.
   Docker Compose (`deploy/`: MySQL + backend + Caddy HTTPS) en
   https://alfamatagames-api.chilecentral.cloudapp.azure.com. Se apaga sola el 1/1/2027. Ver
   `docs/DEPLOY.md` (por qué no Container Apps/MySQL Flexible y cómo redesplegar).
+- APK: EAS Build (`eas.json`: `development`, `preview` = APK, `production` = AAB), paquete
+  `com.alfamatagames.app`, proyecto `@arzule/AlfaMataGames`. `EXPO_PUBLIC_API_URL` del APK es
+  variable de EAS (el `.env` no se sube). Guía: `docs/APK.md`.
 
 ## Cómo correrlo en local (Windows, PowerShell)
 
