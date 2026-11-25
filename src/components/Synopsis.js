@@ -19,7 +19,8 @@ const NOTICE_LABELS = {
   unavailable: 'Texto original · traducción no disponible',
 };
 
-export default function Synopsis({ text, original, translated, notice, loading }) {
+// onImage: el texto va sobre una imagen (banner de fondo en web) y usa un tono casi blanco.
+export default function Synopsis({ text, original, translated, notice, loading, onImage = false }) {
   const [expanded, setExpanded] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
 
@@ -67,13 +68,13 @@ export default function Synopsis({ text, original, translated, notice, loading }
       <Text style={styles.title}>SINOPSIS</Text>
       {label}
       {isEmpty ? (
-        <Text style={styles.text}>
+        <Text style={[styles.text, onImage && styles.textOnImage]}>
           {loading ? 'Cargando sinopsis…' : 'Sin descripción disponible.'}
         </Text>
       ) : (
         <>
           <Text
-            style={[styles.text, loading && styles.textLoading]}
+            style={[styles.text, onImage && styles.textOnImage, loading && styles.textLoading]}
             numberOfLines={expanded ? undefined : COLLAPSED_LINES}
           >
             {visibleText}
@@ -95,6 +96,7 @@ Synopsis.propTypes = {
   translated: PropTypes.bool,
   notice: PropTypes.string,
   loading: PropTypes.bool,
+  onImage: PropTypes.bool,
 };
 
 const styles = StyleSheet.create({
@@ -122,6 +124,9 @@ const styles = StyleSheet.create({
   },
   labelWarning: {
     color: colors.warning,
+  },
+  textOnImage: {
+    color: colors.textOnImage,
   },
   text: {
     color: colors.textSecondary,

@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
@@ -40,13 +41,17 @@ const REVIEW_MAX_LENGTH = 1000;
 const CONTENT_MAX_WIDTH = 720;
 // Solo web en pantallas anchas: el banner va al costado (columna fija) y la información al lado.
 const WIDE_LAYOUT_MIN_WIDTH = 1024;
-const FOOTER_HEIGHT = 80;
+const HERO_HEIGHT = 260;
+const HERO_WIDE_HEIGHT = 420;
 
 export default function GameDetailScreen({ route, navigation }) {
   const { gameId } = route.params;
   const insets = useSafeAreaInsets();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  const wide = Platform.OS === 'web' && windowWidth >= WIDE_LAYOUT_MIN_WIDTH;
+  const isWeb = Platform.OS === 'web';
+  const wide = isWeb && windowWidth >= WIDE_LAYOUT_MIN_WIDTH;
+  // Proporción real del banner (se conoce al cargar la imagen); 16:9 mientras tanto.
+  const [bannerRatio, setBannerRatio] = useState(16 / 9);
 
   const { getEntry, isFavorite, saveEntry, loading: libraryLoading } = useLibrary();
 
@@ -222,6 +227,11 @@ export default function GameDetailScreen({ route, navigation }) {
   const handleSaveReview = () =>
     runSave('review', { review: reviewText.trim() ? reviewText.trim() : null });
 
+  // Web ancha: el banner (o la portada si no hay banner) va completo como fondo semitransparente.
+  const bannerBackground = wide && Boolean(game.heroImage);
+  // En web ancha (banner o portada de fondo) los textos grises pasan a un tono casi blanco.
+  const textTone = wide ? styles.textOnBanner : null;
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -232,40 +242,163 @@ export default function GameDetailScreen({ route, navigation }) {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View ref={contentRef} collapsable={false} style={wide ? styles.wideRow : undefined}>
-          {/* Hero: arriba en móvil; en web ancha, banner lateral fijo al hacer scroll */}
+        <View ref={contentRef} collapsable={false}>
+          {bannerBackground && game.heroIsCover ? (
+            // Web ancha sin banner: la portada completa, del alto de la pantalla, centrada, como
+            // fondo semitransparente; se desvanece a los lados y abajo.
+            <View style={[styles.bannerBackground, { height: windowHeight }]} pointerEvents="none">
+              <View style={[styles.coverBackground, { height: windowHeight }]}>
+                <Image
+                  source={{ uri: game.heroImage }}
+                  style={[styles.heroImage, styles.bannerBackgroundImage]}
+                  contentFit="cover"
+                  transition={200}
+                />
+                <LinearGradient
+                  colors={[colors.background, 'transparent', 'transparent', colors.background]}
+                  locations={[0, 0.2, 0.8, 1]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.heroImage}
+                />
+              </View>
+              <LinearGradient
+                colors={['transparent', colors.backgroundFadeSoft, colors.background]}
+                locations={[0.4, 0.7, 1]}
+                style={styles.heroImage}
+              />
+            </View>
+          ) : bannerBackground ? (
+            // Web ancha con banner: la imagen completa (a todo el ancho, con su proporción, sin
+            // recorte) como fondo semitransparente detrás del contenido, desvanecida abajo.
+            <View
+              style={[styles.bannerBackground, { height: windowWidth / bannerRatio }]}
+              pointerEvents="none"
+            >
+              <Image
+                source={{ uri: game.heroImage }}
+                style={[styles.heroImage, styles.bannerBackgroundImage]}
+                contentFit="cover"
+                transition={200}
+                onLoad={(event) => {
+                  const { width, height } = event.source || {};
+                  if (width && height) setBannerRatio(width / height);
+                }}
+              />
+              <LinearGradient
+                colors={['transparent', colors.backgroundFadeSoft, colors.background]}
+                locations={[0.4, 0.7, 1]}
+                style={styles.heroImage}
+              />
+            </View>
+          ) : null}
+          {/* Hero. En web ancha (como Backloggd): banner a todo el ancho que se desvanece hacia el
+              fondo por abajo; la información empieza sobre su parte baja. */}
           <View
             style={
-              wide
-                ? [styles.heroBlockWide, { height: windowHeight - FOOTER_HEIGHT - insets.bottom }]
-                : styles.heroBlock
+              bannerBackground ? styles.bannerSpacer : wide ? styles.heroBlockWide : styles.heroBlock
             }
           >
-            <Image
-              source={game.heroImage ? { uri: game.heroImage } : null}
-              style={styles.heroImage}
-              contentFit="cover"
-              transition={200}
-            />
-            <View style={styles.heroOverlay} />
-            <View style={[styles.heroActions, { paddingTop: insets.top + 12 }]}>
-              {backButton}
-            </View>
+            {bannerBackground ? null : game.heroIsCover ? (
+              // Sin artwork: la portada centrada, con su proporción, al doble del alto del banner
+              // (se ve solo su mitad superior, sin estirarla).
+              <View style={styles.heroCoverWrap} pointerEvents="none">
+                <View style={[styles.heroCover, { height: (wide ? HERO_WIDE_HEIGHT : HERO_HEIGHT) * 2 }]}>
+                  <Image
+                    source={game.heroImage ? { uri: game.heroImage } : null}
+                    style={styles.heroImage}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                  {/* Desvanecido a los lados de la portada. */}
+                  <LinearGradient
+                    colors={[colors.background, 'transparent', 'transparent', colors.background]}
+                    locations={[0, 0.18, 0.82, 1]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.heroImage}
+                  />
+                </View>
+              </View>
+            ) : (
+              <Image
+                source={game.heroImage ? { uri: game.heroImage } : null}
+                style={styles.heroImage}
+                contentFit="cover"
+                transition={200}
+              />
+            )}
+            {bannerBackground ? null : wide ? (
+              <>
+                {/* Desvanecido largo y suave: termina a la altura del final del título. */}
+                <LinearGradient
+                  colors={[
+                    'transparent',
+                    colors.backgroundFadeSoft,
+                    colors.backgroundFadeStrong,
+                    colors.background,
+                  ]}
+                  locations={[0.2, 0.5, 0.7, 0.85]}
+                  style={styles.heroImage}
+                  pointerEvents="none"
+                />
+              </>
+            ) : (
+              <>
+                <View style={styles.heroOverlay} />
+                <View style={[styles.heroActions, { paddingTop: insets.top + 12 }]}>
+                  {backButton}
+                </View>
+              </>
+            )}
           </View>
 
           {/* Meta */}
-          <View style={[styles.metaSection, wide && styles.metaSectionWide]}>
-            <View style={styles.tagsRow}>
-              <View style={styles.yearBadge}>
-                <Text style={styles.yearText}>{year}</Text>
+          <View
+            style={[
+              styles.metaSection,
+              wide && (bannerBackground ? styles.metaSectionOverBanner : styles.metaSectionWide),
+            ]}
+          >
+            {wide ? null : (
+              <View style={styles.tagsRow}>
+                <View style={styles.yearBadge}>
+                  <Text style={[styles.yearText, textTone]}>{year}</Text>
+                </View>
               </View>
-            </View>
+            )}
 
-            <Text style={styles.title}>{game.name}</Text>
-            <Text style={styles.developer}>{developer}</Text>
+            {wide ? (
+              // Web ancha: volver a la izquierda del título; el año va junto al estudio.
+              <View style={styles.titleRow}>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Volver"
+                  style={styles.backBtnInline}
+                  hitSlop={4}
+                  onPress={() => navigation.goBack()}
+                >
+                  <Feather name="arrow-left" size={18} color={colors.primaryText} />
+                </TouchableOpacity>
+                <Text style={[styles.title, styles.titleFlex]}>{game.name}</Text>
+              </View>
+            ) : (
+              <Text style={styles.title}>{game.name}</Text>
+            )}
+            {wide ? (
+              // Web ancha: estudio en su línea y el año debajo.
+              <>
+                <Text style={[styles.developer, textTone]}>{developer}</Text>
+                <View style={[styles.yearBadge, styles.yearBadgeAlone]}>
+                  <Text style={[styles.yearText, textTone]}>{year}</Text>
+                </View>
+              </>
+            ) : (
+              <Text style={[styles.developer, textTone]}>{developer}</Text>
+            )}
 
-            <View style={styles.ratingSection}>
-              <Text style={styles.ratingLabel}>VALORACIÓN</Text>
+            <View style={[styles.ratingSection, wide && styles.plainBox, wide && styles.ratingStacked]}>
+              <Text style={[styles.ratingLabel, textTone]}>VALORACIÓN</Text>
               <View style={styles.starsRow}>
                 <Feather name="star" size={16} color={colors.warning} />
                 <Text style={styles.ratingValue}>{game.rating?.toFixed(1) ?? '0.0'}</Text>
@@ -273,9 +406,9 @@ export default function GameDetailScreen({ route, navigation }) {
             </View>
 
             <View style={styles.statsRow}>
-              <View style={styles.statBox}>
+              <View style={[styles.statBox, wide && styles.plainBox]}>
                 <Feather name="monitor" size={14} color={colors.textSecondary} />
-                <Text style={styles.statLabel}>PLATAFORMAS</Text>
+                <Text style={[styles.statLabel, textTone]}>PLATAFORMAS</Text>
                 <Text style={styles.statValue} numberOfLines={2}>
                   {platforms}
                 </Text>
@@ -288,6 +421,7 @@ export default function GameDetailScreen({ route, navigation }) {
               translated={description.translated}
               notice={description.notice}
               loading={description.loading}
+              onImage={wide}
             />
 
             {/* Mi biblioteca */}
@@ -295,7 +429,7 @@ export default function GameDetailScreen({ route, navigation }) {
               <Text style={styles.sectionTitle}>MI BIBLIOTECA</Text>
 
               <View style={styles.libraryRow}>
-                <Text style={styles.fieldLabel}>Estado</Text>
+                <Text style={[styles.fieldLabel, textTone]}>Estado</Text>
                 <StatusChips
                   value={entry?.status ?? null}
                   onChange={canEdit ? handleStatusChange : undefined}
@@ -303,7 +437,7 @@ export default function GameDetailScreen({ route, navigation }) {
               </View>
 
               <View style={styles.libraryRow}>
-                <Text style={styles.fieldLabel}>Tu puntuación</Text>
+                <Text style={[styles.fieldLabel, textTone]}>Tu puntuación</Text>
                 <Rating
                   value={entry?.userScore ?? null}
                   onChange={canEdit ? handleScoreChange : undefined}
@@ -312,7 +446,7 @@ export default function GameDetailScreen({ route, navigation }) {
               </View>
 
               <View ref={reviewRowRef} collapsable={false} style={styles.libraryRow}>
-                <Text style={styles.fieldLabel}>Tu reseña</Text>
+                <Text style={[styles.fieldLabel, textTone]}>Tu reseña</Text>
                 <TextInput
                   style={styles.reviewInput}
                   placeholder="Escribe tu reseña..."
@@ -325,7 +459,7 @@ export default function GameDetailScreen({ route, navigation }) {
                   maxLength={REVIEW_MAX_LENGTH}
                   editable={!libraryLoading}
                 />
-                <Text style={styles.counterText}>
+                <Text style={[styles.counterText, textTone]}>
                   {reviewText.length}/{REVIEW_MAX_LENGTH}
                 </Text>
                 <TouchableOpacity
@@ -344,9 +478,9 @@ export default function GameDetailScreen({ route, navigation }) {
 
               {/* Recordatorio para jugar (notificación local; no disponible en web) */}
               <View style={styles.libraryRow}>
-                <Text style={styles.fieldLabel}>Recordatorio</Text>
+                <Text style={[styles.fieldLabel, textTone]}>Recordatorio</Text>
                 {!gameReminder.supported ? (
-                  <Text style={styles.hintText}>
+                  <Text style={[styles.hintText, textTone]}>
                     Los recordatorios están disponibles en la app del celular.
                   </Text>
                 ) : gameReminder.reminder ? (
@@ -400,7 +534,7 @@ export default function GameDetailScreen({ route, navigation }) {
               </View>
 
               {libraryLoading ? (
-                <Text style={styles.hintText}>Cargando tu biblioteca...</Text>
+                <Text style={[styles.hintText, textTone]}>Cargando tu biblioteca...</Text>
               ) : null}
               {saveError ? <Text style={styles.saveErrorText}>{saveError}</Text> : null}
             </View>
@@ -413,13 +547,13 @@ export default function GameDetailScreen({ route, navigation }) {
                 <ActivityIndicator color={colors.primary} style={styles.communitySpinner} />
               ) : community.error && !community.reviews.length ? (
                 <View style={styles.communityMessage}>
-                  <Text style={styles.hintText}>{community.error}</Text>
+                  <Text style={[styles.hintText, textTone]}>{community.error}</Text>
                   <TouchableOpacity accessibilityRole="button" onPress={community.reload}>
                     <Text style={styles.linkText}>Reintentar</Text>
                   </TouchableOpacity>
                 </View>
               ) : !community.reviews.length ? (
-                <Text style={styles.hintText}>
+                <Text style={[styles.hintText, textTone]}>
                   Nadie más ha reseñado este juego todavía.
                 </Text>
               ) : (
@@ -519,25 +653,43 @@ const styles = StyleSheet.create({
   },
   heroBlock: {
     width: '100%',
-    height: 260,
+    height: HERO_HEIGHT,
   },
-  wideRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+  bannerBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
+  // Más transparente para no interferir con la lectura.
+  bannerBackgroundImage: {
+    opacity: 0.5,
+  },
+  coverBackground: {
+    alignSelf: 'center',
+    aspectRatio: 264 / 374,
+  },
+  bannerSpacer: {
+    height: 160,
+  },
+  metaSectionOverBanner: {
+    zIndex: 1,
   },
   heroBlockWide: {
-    width: '42%',
-    maxWidth: 640,
-    top: 0,
-    // react-native-web: el banner queda fijo mientras se desplaza la información.
-    ...Platform.select({ web: { position: 'sticky' } }),
+    width: '100%',
+    height: HERO_WIDE_HEIGHT,
+  },
+  heroCoverWrap: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  heroCover: {
+    aspectRatio: 264 / 374,
   },
   metaSectionWide: {
-    flex: 1,
-    alignSelf: 'flex-start',
-    width: 'auto',
-    paddingHorizontal: 40,
-    paddingTop: 32,
+    // Sube sobre la parte baja del banner, ya desvanecida.
+    marginTop: -140,
   },
   heroImage: {
     ...StyleSheet.absoluteFillObject,
@@ -587,6 +739,35 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontFamily: fonts.headingExtraBold,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  titleFlex: {
+    flex: 1,
+  },
+  yearBadgeAlone: {
+    alignSelf: 'flex-start',
+  },
+  // Web ancha: "VALORACIÓN" en una línea y el puntaje debajo.
+  ratingStacked: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+    gap: 4,
+  },
+  // Distinto del fondo (tarjeta con borde y flecha violeta) sin desentonar con la página.
+  backBtnInline: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryBg,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
   developer: {
     color: colors.textSecondary,
     fontSize: 12,
@@ -621,6 +802,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  // Web ancha: valoración y plataformas sin recuadro, como el resto del detalle.
+  textOnBanner: {
+    color: colors.textOnImage,
+  },
+  plainBox: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingHorizontal: 0,
   },
   statBox: {
     flex: 1,
