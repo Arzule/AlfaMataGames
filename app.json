@@ -39,7 +39,15 @@
           "color": "#8b5cf6"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "AlfaMataGames usa tu ubicación una sola vez para mostrar tu ciudad en el Perfil.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": false
+        }
+      ]
     ]
   }
 }

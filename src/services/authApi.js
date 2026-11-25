@@ -33,6 +33,16 @@ export function deleteAvatar() {
   return request('/auth/me/avatar', { method: 'DELETE', auth: true });
 }
 
+// Guarda la ciudad a partir de coordenadas (redondeadas). Devuelve { user }.
+export function updateLocation(latitude, longitude) {
+  return request('/auth/me/location', { method: 'PUT', body: { latitude, longitude }, auth: true });
+}
+
+// Borra la ciudad del Perfil. Devuelve { user }.
+export function deleteLocation() {
+  return request('/auth/me/location', { method: 'DELETE', auth: true });
+}
+
 // Cambia el nombre del usuario. Devuelve { user }.
 export function updateProfile(name) {
   return request('/auth/me', { method: 'PUT', body: { name }, auth: true });
