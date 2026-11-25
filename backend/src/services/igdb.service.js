@@ -26,7 +26,9 @@ const DETAIL_FIELDS = [
   'total_rating',
   'cover.image_id',
   'artworks.image_id',
-  'screenshots.image_id',
+  'artworks.width',
+  'artworks.height',
+  'artworks.artwork_type',
   'platforms.name',
   'involved_companies.developer',
   'involved_companies.company.name',
@@ -143,15 +145,52 @@ function toListItem(game) {
   };
 }
 
+// Banner del detalle según el tipo de artwork de IGDB (artwork_types): primero el arte principal
+// (2 = key art sin logo, 3 = key art con logo); si no hay, un arte genérico (1) cuando es el único del
+// juego o tiene formato de banner (proporción ≥ 2.8, como 1920x620 o 3840x1240). Cuando hay varios
+// genéricos sin ese formato suelen ser páginas de artbook y no se usan. Prueba: también se acepta un
+// genérico de 1000x620 (arte promocional de Assassin's Creed Brotherhood).
+// Siempre apaisado y, entre los válidos, el de mayor resolución. Logos, iconos, portadas alternativas, infografías y arte
+// conceptual no se usan. Sin banner se usa la portada (`heroIsCover`: la app muestra su mitad
+// superior sin deformarla).
+const KEY_ART_TYPES = [2, 3];
+const GENERIC_ART_TYPE = 1;
+const MIN_BANNER_RATIO = 1.3;
+const GENERIC_BANNER_RATIO = 2.8;
+const GENERIC_PROMO_SIZE = { width: 1000, height: 620 };
+const areaOf = (img) => (img.width || 0) * (img.height || 0);
+const isLandscape = (img) => img.width && img.height && img.width / img.height >= MIN_BANNER_RATIO;
+const largest = (list) => list.reduce((top, img) => (!top || areaOf(img) > areaOf(top) ? img : top), null);
+
+// Devuelve { id, isCover }.
+function pickBanner(game) {
+  const all = (game.artworks || []).filter((img) => img?.image_id);
+  const artworks = all.filter(isLandscape);
+  const generics = all.filter((img) => img.artwork_type === GENERIC_ART_TYPE);
+  const bannerGenerics = all.filter(
+    (img) =>
+      img.artwork_type === GENERIC_ART_TYPE && img.width && img.height && img.width / img.height >= GENERIC_BANNER_RATIO
+  );
+  const best =
+    largest(artworks.filter((img) => KEY_ART_TYPES.includes(img.artwork_type))) ??
+    largest(bannerGenerics) ??
+    generics.find(
+      (img) => img.width === GENERIC_PROMO_SIZE.width && img.height === GENERIC_PROMO_SIZE.height
+    ) ??
+    (generics.length === 1 && isLandscape(generics[0]) ? generics[0] : null);
+  if (best) return { id: best.image_id, isCover: false };
+  return { id: game.cover?.image_id ?? null, isCover: true };
+}
+
 function toDetail(game) {
-  const heroId =
-    game.artworks?.[0]?.image_id ?? game.screenshots?.[0]?.image_id ?? game.cover?.image_id;
+  const banner = pickBanner(game);
   const developer = game.involved_companies?.find((item) => item.developer)?.company?.name;
   return {
     id: game.id,
     name: game.name ?? '',
     image: imageUrl(game.cover?.image_id, 'cover_big'),
-    heroImage: imageUrl(heroId, '1080p'),
+    heroImage: imageUrl(banner.id, '1080p'),
+    heroIsCover: banner.isCover,
     released: game.first_release_date
       ? new Date(game.first_release_date * 1000).toISOString().slice(0, 10)
       : null,
