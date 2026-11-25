@@ -3,7 +3,8 @@ const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 
 // Columnas para armar el usuario público (password_hash solo se usa para hasPassword).
-const USER_COLUMNS = 'id, name, email, avatar, password_hash';
+const USER_COLUMNS =
+  'id, name, email, avatar, password_hash, city, country, location_lat, location_lng';
 
 // Firma un token con el id del usuario.
 function signToken(userId) {
@@ -21,6 +22,15 @@ function publicUser(row) {
     email: row.email,
     avatar: row.avatar ?? null,
     hasPassword: Boolean(row.password_hash),
+    // Ciudad del Perfil (coordenadas redondeadas a 2 decimales) o null.
+    location: row.city
+      ? {
+          city: row.city,
+          country: row.country ?? null,
+          latitude: row.location_lat === null ? null : Number(row.location_lat),
+          longitude: row.location_lng === null ? null : Number(row.location_lng),
+        }
+      : null,
   };
 }
 
