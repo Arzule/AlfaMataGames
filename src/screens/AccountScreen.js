@@ -39,6 +39,7 @@ function Feedback({ feedback }) {
 function SubmitButton({ label, onPress, busy, destructive = false }) {
   return (
     <TouchableOpacity
+      accessibilityRole="button"
       style={[styles.submitBtn, destructive && styles.submitBtnDanger, busy && styles.disabled]}
       onPress={onPress}
       disabled={busy}
@@ -394,7 +395,7 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     width: 44,
-    height: 44,
+    minHeight: 44,
     borderRadius: 22,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -436,7 +437,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   linkBtnText: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: 13,
     fontFamily: fonts.bodyBold,
   },
@@ -470,7 +471,7 @@ const styles = StyleSheet.create({
     color: colors.success,
   },
   submitBtn: {
-    height: 44,
+    minHeight: 44,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',

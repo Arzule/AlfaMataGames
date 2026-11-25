@@ -15,14 +15,14 @@ export default function RecentSearches({ items, onSelect, onRemove, onClear }) {
       <View style={styles.headerRow}>
         <Text style={styles.heading}>Búsquedas recientes</Text>
         {onClear ? (
-          <TouchableOpacity onPress={onClear} hitSlop={8}>
+          <TouchableOpacity accessibilityRole="button" onPress={onClear} hitSlop={8}>
             <Text style={styles.clear}>Borrar todo</Text>
           </TouchableOpacity>
         ) : null}
       </View>
       {items.map((term) => (
         <View key={term} style={styles.row}>
-          <TouchableOpacity style={styles.term} onPress={() => onSelect(term)}>
+          <TouchableOpacity accessibilityRole="button" style={styles.term} onPress={() => onSelect(term)}>
             <Feather name="clock" size={14} color={colors.textMuted} />
             <Text style={styles.termText} numberOfLines={1}>
               {term}
@@ -30,6 +30,7 @@ export default function RecentSearches({ items, onSelect, onRemove, onClear }) {
           </TouchableOpacity>
           {onRemove ? (
             <TouchableOpacity
+              accessibilityRole="button"
               onPress={() => onRemove(term)}
               hitSlop={8}
               accessibilityLabel={`Quitar ${term} de recientes`}
@@ -72,7 +73,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodySemiBold,
   },
   clear: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: 12,
     fontFamily: fonts.bodyBold,
   },

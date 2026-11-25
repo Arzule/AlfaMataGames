@@ -1,6 +1,6 @@
 // src/navigation/AppNavigator.js
 import React from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -23,6 +23,29 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 // Permite navegar desde fuera de las pantallas (al tocar una notificación).
 const navigationRef = createNavigationContainerRef();
+
+// Solo web: cada pantalla tiene su URL y el botón "atrás" del navegador recorre el historial de
+// la app (sin esto volvía a la página anterior del navegador, por ejemplo el login).
+// En nativo no se usa: los deep links los maneja expo-web-browser (login social y Steam).
+const webLinking = {
+  prefixes: [],
+  config: {
+    screens: {
+      MainTabs: {
+        screens: {
+          Catalogo: '',
+          Favoritos: 'favoritos',
+          Perfil: 'perfil',
+        },
+      },
+      GameDetail: { path: 'juego/:gameId', parse: { gameId: Number } },
+      Reminders: 'recordatorios',
+      Account: 'cuenta',
+      Login: 'login',
+      Register: 'registro',
+    },
+  },
+};
 
 function MainTabs() {
   return (
@@ -91,7 +114,11 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer ref={navigationRef} onReady={onNavigationReady}>
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={onNavigationReady}
+      linking={Platform.OS === 'web' ? webLinking : undefined}
+    >
       {user ? (
         // Sesión iniciada: catálogo (tabs), detalle y perfil.
         <Stack.Navigator screenOptions={{ headerShown: false }}>

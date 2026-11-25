@@ -18,7 +18,7 @@ export default function ErrorState({ message, onRetry }) {
       />
       <Text style={styles.message}>{message}</Text>
       {onRetry ? (
-        <TouchableOpacity onPress={onRetry}>
+        <TouchableOpacity accessibilityRole="button" onPress={onRetry}>
           <Text style={styles.retry}>Reintentar</Text>
         </TouchableOpacity>
       ) : null}
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   retry: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: 13,
     fontFamily: fonts.bodyBold,
   },

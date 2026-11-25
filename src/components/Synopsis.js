@@ -19,7 +19,8 @@ const NOTICE_LABELS = {
   unavailable: 'Texto original · traducción no disponible',
 };
 
-export default function Synopsis({ text, original, translated, notice, loading }) {
+// onImage: el texto va sobre una imagen (banner de fondo en web) y usa un tono casi blanco.
+export default function Synopsis({ text, original, translated, notice, loading, onImage = false }) {
   const [expanded, setExpanded] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
 
@@ -48,7 +49,7 @@ export default function Synopsis({ text, original, translated, notice, loading }
         <Text style={[styles.labelText, styles.labelInfo]}>
           {showOriginal ? 'Texto original' : 'Traducido automáticamente'}
         </Text>
-        <TouchableOpacity onPress={() => setShowOriginal((value) => !value)} hitSlop={8}>
+        <TouchableOpacity accessibilityRole="button" onPress={() => setShowOriginal((value) => !value)} hitSlop={8}>
           <Text style={styles.link}>{showOriginal ? 'Ver traducción' : 'Ver original'}</Text>
         </TouchableOpacity>
       </View>
@@ -67,19 +68,19 @@ export default function Synopsis({ text, original, translated, notice, loading }
       <Text style={styles.title}>SINOPSIS</Text>
       {label}
       {isEmpty ? (
-        <Text style={styles.text}>
+        <Text style={[styles.text, onImage && styles.textOnImage]}>
           {loading ? 'Cargando sinopsis…' : 'Sin descripción disponible.'}
         </Text>
       ) : (
         <>
           <Text
-            style={[styles.text, loading && styles.textLoading]}
+            style={[styles.text, onImage && styles.textOnImage, loading && styles.textLoading]}
             numberOfLines={expanded ? undefined : COLLAPSED_LINES}
           >
             {visibleText}
           </Text>
           {isLong ? (
-            <TouchableOpacity onPress={() => setExpanded((value) => !value)} hitSlop={8}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => setExpanded((value) => !value)} hitSlop={8}>
               <Text style={styles.link}>{expanded ? 'Ver menos' : 'Ver más'}</Text>
             </TouchableOpacity>
           ) : null}
@@ -95,6 +96,7 @@ Synopsis.propTypes = {
   translated: PropTypes.bool,
   notice: PropTypes.string,
   loading: PropTypes.bool,
+  onImage: PropTypes.bool,
 };
 
 const styles = StyleSheet.create({
@@ -123,6 +125,9 @@ const styles = StyleSheet.create({
   labelWarning: {
     color: colors.warning,
   },
+  textOnImage: {
+    color: colors.textOnImage,
+  },
   text: {
     color: colors.textSecondary,
     fontSize: 12,
@@ -133,7 +138,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   link: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: 12,
     fontFamily: fonts.bodyBold,
   },

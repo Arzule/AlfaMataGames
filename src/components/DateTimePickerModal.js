@@ -91,10 +91,11 @@ export default function DateTimePickerModal({
             onValueChange={(event, date) => setDraft(date)}
           />
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.btn} onPress={onCancel}>
+            <TouchableOpacity accessibilityRole="button" style={styles.btn} onPress={onCancel}>
               <Text style={styles.cancelText}>Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              accessibilityRole="button"
               style={[styles.btn, styles.confirmBtn]}
               onPress={() => onConfirm(draft ?? value)}
             >

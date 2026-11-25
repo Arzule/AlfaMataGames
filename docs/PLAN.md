@@ -8,10 +8,10 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 ## Estado
 
 - Entregados: Avance 1 y Avance 2.
-- Avance 3: A3-0 a A3-7 terminadas (pendiente: entrega por el usuario).
-- Avance 4: A4-1, A4-1b, A4-2, A4-3, A4-4 y A4-5 terminadas. Backend en producción:
+- Entregado: Avance 3 (A3-0 a A3-7).
+- Avance 4: A4-1, A4-1b, A4-2, A4-3, A4-4, A4-5 y A4-7b terminadas. Backend en producción:
   https://alfamatagames-api.chilecentral.cloudapp.azure.com (ver `docs/DEPLOY.md`).
-- **Fase actual: A4-7** (EAS Build y APK). Orden de lo que queda: A4-7 → A4-6 → A4-7b → A4-8
+- **Fase actual: A4-7** (EAS Build y APK). Orden de lo que queda: A4-7 → A4-6 → A4-8
   (A4-7 antes que A4-6: las push remotas solo se prueban en el APK). Pendiente de A4-4 y A4-5: probar login social y Steam en
   el celular cuando se despliegue en Azure (Expo Go) y en el APK (A4-7).
 
@@ -340,19 +340,27 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Terminado cuando:** en el APK llega una push programada desde el servidor y en Expo Go
   siguen funcionando las locales.
 
-### [ ] A4-7b Accesibilidad y pulido final de UI
+### [x] A4-7b Accesibilidad y pulido final de UI
 
 - **Objetivo:** interfaz profesional y accesible para la entrega final.
 - **Tema del sílabo:** UI/UX e innovación (accesibilidad).
 - **Tareas:**
-  - [ ] `accessibilityLabel` y `accessibilityRole` en botones con icono.
-  - [ ] Zonas táctiles de al menos 44x44.
-  - [ ] Contraste suficiente entre texto y fondo.
-  - [ ] Soporte del tamaño de letra del sistema sin romper el diseño.
-  - [ ] Revisión final de coherencia visual.
-  - [ ] **Fix (solo web):** el banner (`heroImage`) del detalle del juego se ve muy angosto en
+  - [x] `accessibilityLabel` y `accessibilityRole` en botones con icono.
+  - [x] Zonas táctiles de al menos 44x44.
+  - [x] Contraste suficiente entre texto y fondo.
+  - [x] Soporte del tamaño de letra del sistema sin romper el diseño.
+  - [x] Revisión final de coherencia visual (detalle web revisado con el usuario).
+  - [ ] Probar en el celular TalkBack y la letra grande del sistema (con el APK de A4-7).
+  - [x] **Fix (solo web):** el banner (`heroImage`) del detalle del juego se ve muy angosto en
     pantallas anchas. Propuesta: en web con ancho grande, mostrarlo como banner lateral (imagen a
     un lado y la información al otro) para aprovechar el monitor; en móvil queda igual.
+- **Notas:** rol `button` en todos los táctiles (58) y etiquetas en los que solo tienen icono
+  (ojo de contraseña, estrellas con su estado); `hitSlop` en los botones de 36 px; `height` fijo
+  → `minHeight` en botones y campos (no recorta con letra grande); `textMuted` #65657a → #85859b
+  (4.8:1) y `primaryText` #a78bfa para textos violetas (4.08 → 6.35:1). Banner del detalle en web
+  ≥ 1024 px: banner (o portada) completo como fondo al 50 %, textos en `textOnImage`, volver junto al
+  título; el backend elige el banner por `artwork_type` (key art; genérico con forma de banner, único
+  o de 1000x620; si no, portada). Rutas web para el botón atrás del navegador.
 - **Terminado cuando:** todos los botones con icono se anuncian con lector de pantalla, ninguna
   zona táctil es menor de 44x44, y con letra grande del sistema no se corta ni solapa texto.
 

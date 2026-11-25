@@ -148,6 +148,7 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.photoActions}>
             {CAMERA_SUPPORTED ? (
               <TouchableOpacity
+                accessibilityRole="button"
                 style={styles.photoBtn}
                 onPress={avatarPicker.takePhoto}
                 disabled={avatarPicker.busy}
@@ -157,6 +158,7 @@ export default function ProfileScreen({ navigation }) {
               </TouchableOpacity>
             ) : null}
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.photoBtn}
               onPress={avatarPicker.pickPhoto}
               disabled={avatarPicker.busy}
@@ -166,6 +168,7 @@ export default function ProfileScreen({ navigation }) {
             </TouchableOpacity>
             {user?.avatar ? (
               <TouchableOpacity
+                accessibilityRole="button"
                 style={styles.photoBtn}
                 onPress={avatarPicker.deletePhoto}
                 disabled={avatarPicker.busy}
@@ -189,7 +192,7 @@ export default function ProfileScreen({ navigation }) {
           ) : null}
 
           {CAMERA_SUPPORTED && cameraBlocked ? (
-            <TouchableOpacity onPress={avatarPicker.openSettings}>
+            <TouchableOpacity accessibilityRole="button" onPress={avatarPicker.openSettings}>
               <Text style={styles.settingsLink}>
                 Permiso de cámara bloqueado · Abrir ajustes
               </Text>
@@ -261,6 +264,7 @@ export default function ProfileScreen({ navigation }) {
           </View>
           {daily.supported && daily.pref.enabled ? (
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.timeRow}
               onPress={() => setTimePickerVisible(true)}
               disabled={daily.busy}
@@ -282,7 +286,7 @@ export default function ProfileScreen({ navigation }) {
             </Text>
           ) : null}
           {daily.supported && daily.permissionStatus === 'blocked' ? (
-            <TouchableOpacity onPress={daily.openSettings}>
+            <TouchableOpacity accessibilityRole="button" onPress={daily.openSettings}>
               <Text style={styles.settingsLink}>
                 Notificaciones bloqueadas · Abrir ajustes
               </Text>
@@ -305,6 +309,7 @@ export default function ProfileScreen({ navigation }) {
 
         <View style={styles.cacheBlock}>
           <TouchableOpacity
+            accessibilityRole="button"
             style={styles.secondaryBtn}
             onPress={handleClearCache}
             disabled={clearing}
@@ -320,14 +325,14 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         {__DEV__ ? (
-          <TouchableOpacity style={styles.secondaryBtn} onPress={() => setCrashTest(true)}>
+          <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => setCrashTest(true)}>
             <Feather name="alert-octagon" size={18} color={colors.warning} />
             <Text style={styles.secondaryText}>Simular error (solo desarrollo)</Text>
           </TouchableOpacity>
         ) : null}
         {crashTest ? <RenderCrashTest /> : null}
 
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        <TouchableOpacity accessibilityRole="button" style={styles.logoutBtn} onPress={handleLogout}>
           <Feather name="log-out" size={18} color={colors.textPrimary} />
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </TouchableOpacity>
@@ -416,7 +421,7 @@ const styles = StyleSheet.create({
     color: colors.success,
   },
   settingsLink: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: 12,
     fontFamily: fonts.bodyBold,
     textAlign: 'center',
@@ -473,7 +478,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
   },
   settingsLinkInline: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: 12,
     fontFamily: fonts.bodyBold,
   },
@@ -485,7 +490,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 48,
+    minHeight: 48,
     borderRadius: 8,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -507,7 +512,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 48,
+    minHeight: 48,
     borderRadius: 8,
     backgroundColor: colors.primary,
   },

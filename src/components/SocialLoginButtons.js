@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    height: 48,
+    minHeight: 48,
     borderRadius: 8,
     backgroundColor: colors.surface,
     borderWidth: 1,
