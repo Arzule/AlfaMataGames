@@ -25,6 +25,12 @@ export async function cancelReminder() {}
 
 export async function cancelAllReminders() {}
 
+export async function startPushSession() {
+  return false;
+}
+
+export async function endPushSession() {}
+
 export async function listReminders() {
   return [];
 }

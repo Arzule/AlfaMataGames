@@ -12,6 +12,7 @@ import {
   getInitialNotificationTap,
   getNotificationPermission,
   scheduleDailyReminder,
+  startPushSession,
 } from '../services/notifications';
 import { getDailyReminderPref } from '../services/preferences';
 
@@ -62,6 +63,8 @@ export function useNotificationBridge({ user, navigationRef }) {
     if (!NOTIFICATIONS_SUPPORTED) return;
     (async () => {
       try {
+        // Activa las push del APK (si el permiso ya estaba) antes de restaurar el diario.
+        await startPushSession();
         const pref = await getDailyReminderPref(userId);
         if (!pref.enabled) return;
         const permission = await getNotificationPermission();
