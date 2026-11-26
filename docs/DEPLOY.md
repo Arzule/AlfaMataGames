@@ -54,8 +54,8 @@ se conservan en el disco). Para borrarlo todo: `az group delete -n rg-alfamataga
 **Regla:** producción solo se actualiza cuando el usuario indica que una versión está lista para
 `main`; se despliega desde ese commit (`git checkout <commit>`, empaquetar backend y export web,
 `git checkout develop`). Las fases nuevas se prueban en local con Docker, no en Azure. Versión
-desplegada actualmente: `f39c604` (26/11/2026: A4-3 a A4-7c, migraciones `006`–`008`, login
-social, Steam y ciudad del Perfil).
+desplegada actualmente: `2beb97a` (26/11/2026: A4-3 a A4-7c y A4-6, migraciones `006`–`009`, login
+social, Steam, ciudad del Perfil y push remotas).
 
 **SSH por IP:** la regla `ssh-admin` del NSG `nsg-amg-chilecentral` solo admite la IP pública de
 la PC del autor. Si cambia ("Connection timed out" en el puerto 22), actualizarla:
