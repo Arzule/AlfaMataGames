@@ -4,7 +4,7 @@
 {$DOMAIN} {
 	encode gzip
 
-	@api path /auth /auth/* /games /games/* /library /library/* /steam /steam/* /health
+	@api path /auth /auth/* /games /games/* /library /library/* /steam /steam/* /push /push/* /health
 	handle @api {
 		reverse_proxy backend:3000
 	}
