@@ -676,7 +676,7 @@ Las ramas se integran a `develop` con `git merge --no-ff` para conservar el hist
 - Gestión de cuenta (datos, contraseña, eliminar cuenta) y estadísticas en Perfil.
 - Inicio de sesión con Google y Discord, e importación de la biblioteca de Steam.
 - Recordatorios con notificaciones push desde el servidor.
-- APK con EAS Build, accesibilidad y pulido final.
+- APK con EAS Build (configuración lista: `eas.json` y guía en [docs/APK.md](docs/APK.md)), accesibilidad y pulido final.
 
 ---
 
