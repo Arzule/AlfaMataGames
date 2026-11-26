@@ -54,7 +54,15 @@ se conservan en el disco). Para borrarlo todo: `az group delete -n rg-alfamataga
 **Regla:** producción solo se actualiza cuando el usuario indica que una versión está lista para
 `main`; se despliega desde ese commit (`git checkout <commit>`, empaquetar backend y export web,
 `git checkout develop`). Las fases nuevas se prueban en local con Docker, no en Azure. Versión
-desplegada actualmente: `fc5f3b6` (despliegue inicial con la web; sin A4-3).
+desplegada actualmente: `f39c604` (26/11/2026: A4-3 a A4-7c, migraciones `006`–`008`, login
+social, Steam y ciudad del Perfil).
+
+**SSH por IP:** la regla `ssh-admin` del NSG `nsg-amg-chilecentral` solo admite la IP pública de
+la PC del autor. Si cambia ("Connection timed out" en el puerto 22), actualizarla:
+`az network nsg rule update -g rg-alfamatagames --nsg-name nsg-amg-chilecentral -n ssh-admin --source-address-prefixes <IP>/32`.
+
+Si cambia el `Caddyfile` (por ejemplo, una ruta nueva de la API), reiniciar Caddy después del
+despliegue: `sudo docker compose -f docker-compose.prod.yml restart caddy`.
 
 Desde la raíz del repositorio (Git Bash), con acceso SSH:
 
@@ -71,7 +79,10 @@ Las migraciones nuevas se aplican solas al arrancar el backend.
 En la VM, `~/alfamatagames/deploy/.env` (permisos 600; plantilla en `deploy/.env.prod.example`):
 `DOMAIN`, `MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `JWT_SECRET`
 (mínimo 32 caracteres), `JWT_EXPIRES_IN`, `CORS_ORIGINS`, `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET`,
-`DEEPL_API_KEY`. Las contraseñas generadas están también en el `.env` local del autor (sección
+`DEEPL_API_KEY`, y para login social y Steam `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+`DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `STEAM_API_KEY`, `OAUTH_CALLBACK_BASE_URL` (la URL
+pública), `OAUTH_WEB_REDIRECTS` (`<URL pública>/oauth`) y `OAUTH_ALLOW_EXPO_GO` (`true` mientras
+se pruebe con Expo Go). Las contraseñas generadas están también en el `.env` local del autor (sección
 "Azure (produccion)"); nunca se commitean.
 
 ## Base de datos
@@ -100,7 +111,7 @@ y reiniciar con `npx expo start -c`. En EAS (A4-7) se define la misma variable e
 ## Versión web de la app
 
 La misma URL sirve la app web (export de Expo) en `/`; Caddy envía `/auth`, `/games`, `/library`
-y `/health` al backend y el resto a los archivos estáticos (`deploy/web`, con `index.html` de
+`/steam` y `/health` al backend y el resto a los archivos estáticos (`deploy/web`, con `index.html` de
 respaldo). Al ser el mismo dominio no hace falta CORS. Para actualizarla (con
 `EXPO_PUBLIC_API_URL` apuntando a esta URL en el `.env`):
 
