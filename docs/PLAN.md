@@ -12,7 +12,8 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - Avance 4: A4-1, A4-1b, A4-2, A4-3, A4-4, A4-5, A4-7b y A4-7c terminadas. Backend en producción:
   https://alfamatagames-api.chilecentral.cloudapp.azure.com (ver `docs/DEPLOY.md`).
 - **Fase actual: A4-7** (EAS Build y APK). Orden de lo que queda: A4-7 → A4-6 → A4-8
-  (A4-7 antes que A4-6: las push remotas solo se prueban en el APK). Pendiente de A4-4 y A4-5: probar login social y Steam en
+  (A4-7 antes que A4-6: las push remotas solo se prueban en el APK; el código de A4-6 se hizo antes
+  del primer build para generar un solo APK). Pendiente de A4-4 y A4-5: probar login social y Steam en
   el celular cuando se despliegue en Azure (Expo Go) y en el APK (A4-7).
 
 ## Decisiones tomadas
@@ -330,11 +331,16 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 - **Objetivo:** recordatorios enviados desde el servidor.
 - **Tareas:**
-  - [ ] Registrar el token de Expo Push del dispositivo.
-  - [ ] Recordatorios guardados en el servidor (migración).
-  - [ ] Envío con Expo Push Service por un endpoint protegido que invoca un cron externo.
-  - [ ] Recordatorios locales como respaldo en Expo Go.
-  - [ ] Guía para configurar las credenciales FCM en EAS.
+  - [x] Registrar el token de Expo Push del dispositivo (`PUT /push/token`).
+  - [x] Recordatorios guardados en el servidor (migración `009`).
+  - [x] Envío con Expo Push Service desde un programador interno del backend (cada minuto; la VM
+    está siempre encendida, así que no hace falta un cron externo).
+  - [x] Recordatorios locales como respaldo en Expo Go (y sin red o sin token).
+  - [x] Credenciales FCM: proyecto de Firebase, `google-services.json` en `app.json` y clave de
+    cuenta de servicio subida a EAS (hecho por el usuario el 26/11).
+  - [ ] Probar en el APK: recordatorio de juego, diario y tocar la notificación.
+- **Verificación local:** backend 11/11 (token, validaciones, upsert, lista) y envío real a Expo
+  Push (un token inexistente se descarta solo); exports Android y web.
 - **Requiere:** el APK de A4-7 (Expo Go en Android no recibe push remotas); al agregar las
   credenciales FCM hay que generar un APK nuevo.
 - **Terminado cuando:** en el APK llega una push programada desde el servidor y en Expo Go
