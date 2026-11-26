@@ -12,9 +12,9 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - Avance 4: A4-1, A4-1b, A4-2, A4-3, A4-4, A4-5, A4-7b, A4-7c y A4-8 terminadas. Backend y web en
   producción: https://alfamatagames-api.chilecentral.cloudapp.azure.com (versión `2beb97a`, con
   A4-6; ver `docs/DEPLOY.md`).
-- **Pendiente (lo hace el usuario):** generar el APK `preview` con EAS e instalarlo; probar en el
+- **Pendiente (lo hace el usuario):** instalar el APK `preview` (generado el 26/11) y probar en el
   celular login social, Steam, push remotas (A4-6), "Mi ciudad" (A4-7c) y TalkBack/letra grande
-  (A4-7b); publicar el APK en GitHub Releases con el tag `v1.0.0`. Con eso se cierran A4-7 y A4-6.
+  (A4-7b). Con eso se cierran A4-7 y A4-6. APK publicado en el release `v1.0.0`.
 
 ## Decisiones tomadas
 
@@ -322,7 +322,7 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
     registradas en Google y Discord.
   - [ ] Probar en el celular (APK) lo pendiente de A4-4 y A4-5: login con Google/Discord, vincular
     cuentas y conectar e importar Steam (retorno por el `scheme` `alfamatagames://`).
-  - [ ] Distribución del APK (GitHub Releases).
+  - [x] Distribución del APK (GitHub Releases): `v1.0.0` con `AlfaMataGames-v1.0.0.apk` (26/11).
 - **Terminado cuando:** el usuario genera e instala el APK de `preview` y la app funciona contra
   el backend en Azure, incluidos el login social y Steam.
 - **Nota de orden:** va antes de A4-6 porque las push remotas solo se pueden probar en el APK.
