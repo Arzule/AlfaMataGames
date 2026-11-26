@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "83870570727",
+    "project_id": "alfamatagames-566eb",
+    "storage_bucket": "alfamatagames-566eb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:83870570727:android:6c6a7aa64926ed7fb06a42",
+        "android_client_info": {
+          "package_name": "com.alfamatagames.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcLSiwaAOTAGcx-S4j89eTKHOpjgZeM7s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
