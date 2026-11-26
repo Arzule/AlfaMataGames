@@ -23,6 +23,7 @@ enlaza cada criterio con su evidencia.
 - Catálogo de juegos con búsqueda (con *debounce*) y paginación "infinita".
 - Filtro por estado usando la biblioteca del usuario (Jugando, Completado, Pendiente, Abandonado).
 - Pantalla de detalle del juego (portada, año, desarrollador, plataformas, sinopsis).
+- Ciudad y país en el Perfil a partir de la ubicación aproximada (solo se guardan ciudad y país).
 - Biblioteca por usuario: favorito, estado, puntuación (0-5) y reseña (hasta 1000 caracteres).
 - Pantalla de Favoritos con actualización por *pull-to-refresh*.
 - Cambios optimistas con reversión si el backend falla.
@@ -243,6 +244,7 @@ cp .env.example .env
 | `IGDB_CLIENT_ID` | Client ID de tu aplicación de Twitch para IGDB. Solo la usa el backend (catálogo, detalle, juego al azar y sinopsis); la app nunca la conoce. |
 | `IGDB_CLIENT_SECRET` | Client Secret de esa aplicación. El backend pide con él un token de aplicación (OAuth client credentials), lo guarda en memoria y lo renueva antes de que venza. |
 | `DEEPL_API_KEY` | Opcional. Clave de DeepL API Free para traducir las sinopsis (solo el backend). Si falta, se muestra el texto original con una etiqueta. Ver [Sinopsis traducidas](#sinopsis-traducidas). |
+| `NOMINATIM_URL` | Opcional. Servidor de Nominatim para obtener la ciudad; por defecto, `https://nominatim.openstreetmap.org`. |
 | `DEEPL_API_URL` | Opcional. Fuerza el endpoint de DeepL; por defecto, `api-free.deepl.com` si la clave termina en `:fx` y `api.deepl.com` si no. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Opcionales. Login con Google (solo el backend); sin ellas no aparece el botón. Ver [docs/OAUTH.md](docs/OAUTH.md). |
 | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | Opcionales. Login con Discord (solo el backend). |
@@ -345,6 +347,7 @@ local o en la nube, sin borrarla.
 | `003-fecha-resena.sql` | Columna `user_games.review_updated_at` e índice para las reseñas de la comunidad. |
 | `004-traducciones.sql` | Tabla `game_translations` (caché de sinopsis traducidas). |
 | `005-catalogo-igdb.sql` | Vacía `user_games` y `game_translations` al pasar de RAWG a IGDB (los ids no coinciden). |
+| `008-ubicacion-usuario.sql` | Columnas `users.city`, `users.country` y `users.location_updated_at` ("Mi ciudad"). |
 
 - **Automático:** al arrancar, el backend aplica en orden las migraciones que faltan y las
   registra en la tabla `schema_migrations`. Si una falla, el backend no arranca y muestra el error.
@@ -376,11 +379,15 @@ Creadas por `database/init/02-seed.sql`:
 | --- | --- | --- |
 | Cámara | Tomar la foto de perfil | Al tocar "Cámara" en Perfil, después de una explicación |
 | Fotos | — | No se pide: la galería usa el selector del sistema |
+| Ubicación (primer plano) | Mostrar tu ciudad en Perfil ("Mi ciudad") | Al tocar "Usar mi ubicación", después de una explicación (en web, el diálogo del navegador) |
 | Notificaciones | Recordatorios para jugar | Al programar el primer recordatorio o activar el diario, después de una explicación |
 
 - Si el permiso se niega, se puede volver a intentar; si queda **bloqueado** (el sistema ya no
   pregunta), la app lo indica y ofrece **Abrir ajustes**. Al volver, el estado se actualiza solo.
-- La app **no pide ubicación** ni micrófono (`microphonePermission: false` en `app.json`).
+- La ubicación se usa una sola vez para obtener la **ciudad y el país**: la app envía la
+  posición redondeada (~1 km), el backend consulta Nominatim (OpenStreetMap) y **solo guarda
+  ciudad y país**, nunca coordenadas. Nunca en segundo plano. No se pide micrófono
+  (`microphonePermission: false` en `app.json`).
 - En **web** no hay opción de cámara; "Galería" abre el selector de archivos del navegador.
 - Textos de uso de los permisos: plugin `expo-image-picker` en `app.json`.
 - El **acelerómetro** no necesita permiso en Android/iOS. Solo se lee con el Catálogo en
@@ -542,6 +549,8 @@ Tabla generada a partir de `backend/src/routes/`.
 | POST | `/steam/sync/next` | Bearer JWT | Procesa el siguiente lote (100 juegos) y devuelve el progreso; al terminar incluye `notFound` (nombres). |
 | PUT | `/auth/me/avatar` | Bearer JWT | Guarda la foto: `{ image: "data:image/jpeg;base64,..." }` (JPEG, PNG o WebP, máx. 200 KB). Devuelve `{ user }`. |
 | DELETE | `/auth/me/avatar` | Bearer JWT | Elimina la foto. Devuelve `{ user }`. |
+| PUT | `/auth/me/location` | Bearer JWT | `{ latitude, longitude }`: obtiene ciudad y país (Nominatim) y los guarda; 404 si no hay localidad, 503 si el servicio falla. Devuelve `{ user }` con `location { city, country }`. |
+| DELETE | `/auth/me/location` | Bearer JWT | Quita la ciudad. Devuelve `{ user }`. |
 | GET | `/library` | Bearer JWT | Lista la biblioteca. Acepta `?favorite=true`. |
 | GET | `/library/:gameId` | Bearer JWT | Devuelve `{ entry }` de un juego (o `null`). |
 | PUT | `/library/:gameId` | Bearer JWT | Crea o actualiza (upsert parcial) la entrada. |
@@ -572,6 +581,7 @@ Definido en `database/init/01-schema.sql` y las migraciones de `backend/migratio
 | `email` | VARCHAR(255) | Único. |
 | `password_hash` | VARCHAR(255) | Hash bcrypt (nunca en texto plano). |
 | `avatar` | MEDIUMTEXT NULL | Foto de perfil como data URI base64 (migración `002`). |
+| `city`, `country` | VARCHAR NULL | Ciudad y país del Perfil (migración `008`); sin coordenadas. |
 | `created_at` | TIMESTAMP | Por defecto `CURRENT_TIMESTAMP`. |
 
 ### Tabla `user_games`

@@ -9,7 +9,7 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 - Entregados: Avance 1 y Avance 2.
 - Entregado: Avance 3 (A3-0 a A3-7).
-- Avance 4: A4-1, A4-1b, A4-2, A4-3, A4-4, A4-5 y A4-7b terminadas. Backend en producción:
+- Avance 4: A4-1, A4-1b, A4-2, A4-3, A4-4, A4-5, A4-7b y A4-7c terminadas. Backend en producción:
   https://alfamatagames-api.chilecentral.cloudapp.azure.com (ver `docs/DEPLOY.md`).
 - **Fase actual: A4-7** (EAS Build y APK). Orden de lo que queda: A4-7 → A4-6 → A4-8
   (A4-7 antes que A4-6: las push remotas solo se prueban en el APK). Pendiente de A4-4 y A4-5: probar login social y Steam en
@@ -40,7 +40,7 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   botón "Borrar caché" en Perfil.
 - **Permisos**: cámara y notificaciones con un hook común (`usePermission`). La galería no
   requiere permiso en SDK 57 (selector del sistema).
-  **No se pide ubicación** (ninguna función la usa).
+  Ubicación solo para "Mi ciudad" (A4-7c): una vez, en primer plano; se guardan ciudad y país.
 - **Avatar**: cuadrado de 256 px en JPEG comprimido, guardado en la BD (columna `avatar`);
   iniciales si no hay foto.
 - **Sensor**: el acelerómetro solo está activo con el Catálogo enfocado y la app en primer plano.
@@ -339,6 +339,18 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   credenciales FCM hay que generar un APK nuevo.
 - **Terminado cuando:** en el APK llega una push programada desde el servidor y en Expo Go
   siguen funcionando las locales.
+
+### [x] A4-7c Ciudad en el Perfil
+
+- **Objetivo:** mostrar la ciudad y el país del usuario en Perfil (opcional pendiente de A3-3).
+- **Tareas:**
+  - [x] Migración `008`: `users.city`, `users.country`, `location_updated_at` (sin coordenadas).
+  - [x] `PUT/DELETE /auth/me/location`: geocodificación inversa con Nominatim (OpenStreetMap).
+  - [x] Tarjeta "Mi ciudad" con expo-location (permiso con explicación previa; en web, el
+    navegador) y avisos claros si no hay permiso o ubicación.
+  - [ ] Probar en el celular (Expo Go o APK): en la PC de desarrollo no hay servicio de ubicación.
+- **Verificación:** backend 13/13 (Lima, Arequipa, océano 404, validaciones, borrar); en web
+  el error sin ubicación muestra el aviso.
 
 ### [x] A4-7b Accesibilidad y pulido final de UI
 
