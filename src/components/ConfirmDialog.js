@@ -37,7 +37,7 @@ export default function ConfirmDialog({
       onRequestClose={onCancel}
       onDismiss={onDismiss}
     >
-      <Pressable style={styles.backdrop} onPress={onCancel} accessibilityLabel={cancelText}>
+      <Pressable accessibilityRole="button" style={styles.backdrop} onPress={onCancel} accessibilityLabel={cancelText}>
         {/* Pressable interno para que tocar la tarjeta no cierre el diálogo. */}
         <Pressable style={styles.card} onPress={() => {}} accessibilityViewIsModal>
           <View style={[styles.iconCircle, { backgroundColor: destructive ? colors.dangerBg : colors.primaryBg }]}>
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   },
   iconCircle: {
     width: 48,
-    height: 48,
+    minHeight: 48,
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',

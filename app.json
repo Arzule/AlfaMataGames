@@ -2,19 +2,25 @@
   "expo": {
     "name": "AlfaMataGames",
     "slug": "AlfaMataGames",
+    "scheme": "alfamatagames",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.alfamatagames.app"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0f0f14",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.alfamatagames.app",
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -37,7 +43,32 @@
         {
           "color": "#8b5cf6"
         }
+      ],
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "AlfaMataGames usa tu ubicación una sola vez para mostrar tu ciudad en el Perfil.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0f0f14"
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e271ae71-e629-4b3e-9fa7-32456c3addb6"
+      }
+    },
+    "owner": "arzule",
+    "backgroundColor": "#0f0f14"
   }
 }

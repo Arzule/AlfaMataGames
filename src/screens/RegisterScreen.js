@@ -14,6 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import FormInput from '../components/FormInput';
+import SocialLoginButtons from '../components/SocialLoginButtons';
 import { useAuth } from '../hooks/useAuth';
 
 export default function RegisterScreen({ navigation }) {
@@ -131,6 +132,7 @@ export default function RegisterScreen({ navigation }) {
           )}
 
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
             onPress={handleSubmit}
             disabled={submitting}
@@ -142,7 +144,10 @@ export default function RegisterScreen({ navigation }) {
             )}
           </TouchableOpacity>
 
+          <SocialLoginButtons disabled={submitting} />
+
           <TouchableOpacity
+            accessibilityRole="button"
             style={styles.linkRow}
             onPress={() => navigation.navigate('Login')}
             disabled={submitting}
@@ -175,7 +180,7 @@ const styles = StyleSheet.create({
   },
   logoPlaceholder: {
     width: 56,
-    height: 56,
+    minHeight: 56,
     borderRadius: 28,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -210,7 +215,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   submitBtn: {
-    height: 48,
+    minHeight: 48,
     backgroundColor: colors.primary,
     borderRadius: 8,
     alignItems: 'center',
@@ -230,7 +235,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   linkText: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: 13,
     fontFamily: fonts.bodySemiBold,
   },

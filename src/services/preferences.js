@@ -60,3 +60,15 @@ export async function setDailyReminderPref(userId, pref) {
     return false;
   }
 }
+
+// Búsquedas recientes, por usuario (las usa useRecentSearches).
+export const recentSearchesKey = (userId) => `alfamatagames.recentSearches.${userId ?? 'anon'}`;
+
+// Borra los datos locales de un usuario (al eliminar su cuenta).
+export async function clearUserData(userId) {
+  try {
+    await AsyncStorage.multiRemove([dailyKey(userId), recentSearchesKey(userId)]);
+  } catch (err) {
+    log.warn('No se pudieron borrar los datos locales del usuario', err);
+  }
+}

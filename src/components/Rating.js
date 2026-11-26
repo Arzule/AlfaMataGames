@@ -19,7 +19,11 @@ export default function Rating({ value = null, onChange, size = 24, readOnly = f
   };
 
   return (
-    <View style={styles.row}>
+    <View
+      style={styles.row}
+      accessible={!interactive}
+      accessibilityLabel={interactive ? undefined : `Puntuación: ${current} de 5`}
+    >
       {STARS.map((star) => {
         const filled = star <= current;
         const icon = (
@@ -41,9 +45,13 @@ export default function Rating({ value = null, onChange, size = 24, readOnly = f
 
         return (
           <TouchableOpacity
+            accessibilityRole="button"
             key={star}
             style={styles.star}
             activeOpacity={0.7}
+            accessibilityLabel={`Puntuar ${star} de 5`}
+            hitSlop={8}
+            accessibilityState={{ selected: filled }}
             onPress={() => handlePress(star)}
           >
             {icon}

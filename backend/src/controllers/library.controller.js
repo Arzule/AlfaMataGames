@@ -191,6 +191,17 @@ async function upsert(req, res, next) {
       values
     );
 
+    // Lo que el usuario cambia a mano deja de seguir a Steam (ver steam.controller.js).
+    const sources = [];
+    if (fields.status !== undefined) sources.push("status_source = 'user'");
+    if (fields.is_favorite !== undefined) sources.push("favorite_source = 'user'");
+    if (sources.length) {
+      await pool.query(
+        `UPDATE user_games SET ${sources.join(', ')} WHERE user_id = ? AND game_id = ?`,
+        [req.userId, gameId]
+      );
+    }
+
     const [rows] = await pool.query(
       'SELECT * FROM user_games WHERE user_id = ? AND game_id = ?',
       [req.userId, gameId]

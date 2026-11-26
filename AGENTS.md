@@ -30,6 +30,9 @@ curso: entrega final (Avance 4, Unidad 4). Fase actual y decisiones: `docs/PLAN.
   Docker Compose (`deploy/`: MySQL + backend + Caddy HTTPS) en
   https://alfamatagames-api.chilecentral.cloudapp.azure.com. Se apaga sola el 1/1/2027. Ver
   `docs/DEPLOY.md` (por qué no Container Apps/MySQL Flexible y cómo redesplegar).
+- APK: EAS Build (`eas.json`: `development`, `preview` = APK, `production` = AAB), paquete
+  `com.alfamatagames.app`, proyecto `@arzule/AlfaMataGames`. `EXPO_PUBLIC_API_URL` del APK es
+  variable de EAS (el `.env` no se sube). Guía: `docs/APK.md`.
 
 ## Cómo correrlo en local (Windows, PowerShell)
 
@@ -50,8 +53,11 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   recordatorio), DateTimePickerModal (fecha/hora: diálogos en Android, modal en iOS),
   ErrorBoundary (pantalla de reintento global), OfflineBanner (aviso de red), Synopsis
   (sinopsis con etiqueta de traducción, "Ver original" y "Ver más"), ConfirmDialog (diálogo de
-  confirmación propio y `ConfirmDialogHost`, montado en `App.js`).
-- `context/` — `AuthContext.js` (sesión, token, login/register/logout, restaura con `/auth/me`);
+  confirmación propio y `ConfirmDialogHost`, montado en `App.js`), LibraryStats (estadísticas
+  de la biblioteca en Perfil), SocialLoginButtons (Google/Discord configurados en el backend),
+  SteamCard (conectar Steam y sincronizar con progreso), LocationCard ("Mi ciudad").
+- `context/` — `AuthContext.js` (sesión, token, login/register/logout, restaura con `/auth/me`;
+  updateName, changePassword y deleteAccount, que también borra los datos locales del usuario);
   `LibraryContext.js` (biblioteca del usuario con cambios optimistas).
 - `hooks/` — `useAuth`, `useLibrary` (consumen contextos), `useGames` (catálogo con
   búsqueda, paginación, caché y `offline`), `useRecentSearches` (AsyncStorage, por usuario),
@@ -61,20 +67,24 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   catálogo), `useGameReviews` (reseñas de la comunidad paginadas), `useNotificationPermission`,
   `useGameReminder` (recordatorio de un juego), `useDailyReminder` (diario, por usuario),
   `useNotificationBridge` (tocar notificación → navegar; restaura el diario al iniciar sesión),
-  `useNetworkStatus` (NetInfo), `useGameDescription` (sinopsis traducida con respaldo al texto original),
+  `useNetworkStatus` (NetInfo), `useOAuthProviders` (proveedores de login social), `useSteam` (conectar, desconectar y sincronizar Steam por lotes), `useUserLocation` (ciudad con expo-location), `useGameDescription` (sinopsis traducida con respaldo al texto original),
   `useDebounce`, `useGridColumns` (2/3/4 columnas y
   `GRID_PERFORMANCE_PROPS` para las FlatList).
 - `navigation/` — `AppNavigator.js`: Stack según sesión; Tabs Catálogo/Favoritos/Perfil +
-  `GameDetail` + `Reminders`; `navigationRef` para navegar desde notificaciones.
-- `screens/` — Login, Register, GameCatalog, GameDetail, Favorites, Profile, Reminders.
+  `GameDetail` + `Reminders` + `Account`; `navigationRef` para navegar desde notificaciones.
+- `screens/` — Login, Register, GameCatalog, GameDetail, Favorites, Profile (con estadísticas),
+  Reminders, Account (nombre, contraseña y eliminar cuenta).
 - `services/` — `apiClient.js` (fetch al backend, timeout 10 s, Bearer, aviso de 401),
-  `authApi.js`, `libraryApi.js`, `reviewsApi.js`, `gamesApi.js` (catálogo, detalle, juego al azar y sinopsis, todo vía backend), `catalogCache.js` / `catalogCache.web.js` (caché del catálogo: expo-file-system
+  `authApi.js`, `oauthApi.js`, `steamApi.js` y `socialAuth.js` (login social y conectar Steam:
+  navegador + deep link + PKCE),
+  `libraryApi.js`, `reviewsApi.js`, `gamesApi.js` (catálogo, detalle, juego al azar y sinopsis, todo vía backend), `catalogCache.js` / `catalogCache.web.js` (caché del catálogo: expo-file-system
   en nativo, AsyncStorage en web), `preferences.js` (preferencias en AsyncStorage),
   `notifications.js` / `notifications.web.js` (expo-notifications; en web, misma API sin efecto).
 - `theme/` — `colors.js`, `typography.js` (`fonts`, `fontSizes`).
 - `utils/` — `storage.js` (token seguro nativo/web), `confirm.js` (`confirmAction`: abre ConfirmDialog),
   `mapGame.js` (`mapCatalogGame`: juego del backend → formato de GameCard), `cacheEntry.js` (formato y vencimiento de 7 días), `avatarImage.js` (recorte cuadrado 256 px JPEG),
-  `dateFormat.js` (fechas y horas sin Intl), `logger.js` (logger central).
+  `dateFormat.js` (fechas y horas sin Intl), `logger.js` (logger central), `libraryStats.js`
+  (estadísticas calculadas en la app desde LibraryContext, sin endpoint).
 - `shims/` — `TopicSubscriptionModule.android.js` (lo usa `metro.config.js`).
 
 `backend/src/`
@@ -84,15 +94,22 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   (`DB_HOST`, `DB_PORT`, `MYSQL_*`), `DB_SSL` opcional; exporta `getConnectionOptions`.
 - `controllers/` — `auth.controller.js`, `library.controller.js`, `reviews.controller.js`,
   `catalog.controller.js` (catálogo, juego al azar y detalle de IGDB),
-  `descriptions.controller.js` (sinopsis: caché → IGDB → DeepL).
-- `services/` — `igdb.service.js` (token de Twitch y normalización) y `deepl.service.js` (APIs externas con timeout; sus errores
+  `descriptions.controller.js` (sinopsis: caché → IGDB → DeepL), `oauth.controller.js` (login
+  social: state firmado, lista permitida de retornos, PKCE, vincular/desvincular),
+  `steam.controller.js` (Steam OpenID, sincronización por lotes, correspondencia con IGDB y reglas
+  por tiempo jugado).
+- `services/` — `igdb.service.js` (token de Twitch y normalización), `oauth.service.js` (Google y
+  Discord: URL de autorización, canje y perfil), `steam.service.js` (OpenID y Web API de Steam), `geocode.service.js` (Nominatim: ciudad y país) y `deepl.service.js` (APIs externas con timeout; sus errores
   llevan `status`/`code` o `reason`).
 - `middleware/` — `auth.middleware.js` (`authRequired`), `error.middleware.js` (404 y errores JSON),
   `requestLogger.middleware.js` (una línea por petición, `req.id` y `X-Request-Id`).
-- `routes/` — `/auth` (register, login, me, PUT/DELETE `me/avatar`), `/library` (GET lista,
+- `routes/` — `/auth` (register, login, GET/PUT/DELETE `me`, PUT `me/password`, PUT/DELETE `me/avatar`), `/library` (GET lista,
   GET/PUT/DELETE `:gameId`) y `/games` (GET `/`, `/random` y `:gameId`: catálogo de IGDB; GET `:gameId/reviews`: reseñas de los demás usuarios;
-  GET `:gameId/description`: sinopsis en español).
-  El usuario público incluye `avatar` (data URI o null).
+  GET `:gameId/description`: sinopsis en español) y `/steam` (estado, conectar/desconectar,
+  `callback` de OpenID y `sync` / `sync/next`).
+  El usuario público incluye `avatar` (data URI o null) y `hasPassword`.
+- `utils/users.js` — `signToken`, `publicUser` y `findUser` (compartidos por auth y oauth).
+- `utils/oneTimeCodes.js` — códigos de un solo uso con PKCE (login social y Steam).
 - `utils/validators.js` — validaciones manuales y constantes (`STATUSES`, `REVIEW_MAX_LENGTH`).
 - `utils/logger.js` — `createLogger(ambito)`; nivel con `LOG_LEVEL`; oculta campos sensibles.
 
@@ -124,8 +141,8 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
   días; expo-file-system no funciona en web, por eso existe `catalogCache.web.js` (Metro elige
   el archivo por plataforma). Imágenes con `expo-image` (no usar `Image` de react-native).
 - **Permisos**: siempre con `usePermission` (explicación previa con `confirmAction`, estado
-  `blocked` con "Abrir ajustes"). La galería no pide permiso (selector del sistema). Nunca
-  pedir ubicación. Textos de uso en los plugins de `app.json`.
+  `blocked` con "Abrir ajustes"). La galería no pide permiso (selector del sistema).
+  Ubicación solo para "Mi ciudad" (primer plano, una vez); en web se pide directo al navegador. Textos de uso en los plugins de `app.json`.
 - **Foto de perfil** como data URI en `users.avatar` (≤ 200 KB, firma del archivo validada en
   el backend); `express.json` acepta hasta 400 KB y los 413 responden JSON.
 - **Notificaciones locales**: siempre por `services/notifications` (nunca importar
@@ -158,14 +175,30 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
   centrado (formularios 420, Perfil 480, detalle y listas 720) y las grillas van de 2 a 6
   columnas (`useGridColumns`). Pantallas con datos remotos: carga, vacío (`EmptyState`) y error
   con "Reintentar" (`ErrorState`); al refrescar no se reemplaza una lista ya visible.
+- **Accesibilidad**: todo táctil lleva `accessibilityRole` y, si solo tiene icono,
+  `accessibilityLabel`; zona táctil ≥ 44x44 (`hitSlop` si el botón es menor); botones y campos con
+  `minHeight`, no `height`, para la letra grande del sistema. Texto violeta con
+  `colors.primaryText` (no `primary`, que no llega a 4.5:1 sobre `surface`).
 - **Rendimiento**: componentes de listas con `React.memo` y handlers estables (`onPress`
   recibe el elemento); valores de contexto con `useMemo`.
+- **Ciudad del Perfil**: la app envía la posición redondeada a 2 decimales a
+  `PUT /auth/me/location`; el backend obtiene ciudad y país con Nominatim (OpenStreetMap, sin
+  clave, 1 petición/s, User-Agent propio) y **solo guarda `city`/`country`**, nunca coordenadas.
+  La app muestra solo ciudad y país (sin mapa).
+- **Steam**: no es un método de acceso (tabla propia `steam_accounts`, no `user_identities`).
+  Sincronización por lotes de 100 (`/steam/sync` + `/steam/sync/next`), ninguna petición larga.
+  Correspondencia con IGDB por `external_games` y, si falta, por nombre exacto; caché en
+  `steam_igdb_map`. `PUT /library` marca `status_source`/`favorite_source` = `user` y Steam ya no
+  toca esos campos; un juego borrado por el usuario no se vuelve a agregar.
 - **Esquema**: todo cambio de BD va **siempre por migraciones** (`backend/migrations`, archivo
   nuevo con el siguiente número; nunca editar uno ya aplicado). `database/init` solo crea la BD
   local desde cero con datos de prueba; no editarlo de forma que rompa una BD existente.
 - **Login social y Steam**: OAuth/OpenID mediado por el backend, con el navegador del sistema
   (`expo-web-browser`) y regreso a la app por deep link validado contra una lista permitida
-  (en Expo Go el retorno es `exp://...`; en el APK, el `scheme` propio).
+  (en Expo Go el retorno es `exp://...`; en el APK, el `scheme` propio). **En web no hay ventana
+  emergente**: Google corta `window.opener` (COOP) y nunca volvía; la misma pestaña va al
+  proveedor y vuelve a `/oauth`, y `completeWebRedirect` (socialAuth, llamado en `AuthContext`
+  al restaurar la sesión) canjea con el secreto PKCE guardado en sessionStorage.
 
 ## Problemas conocidos
 
@@ -186,7 +219,8 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
 
 - **Ramas**: una fase del plan por rama, creada desde `develop`: `feature/<id-fase>-<nombre>` o
   `fix/<nombre>`. Integrar con `git merge --no-ff` a `develop` sin borrar la rama.
-  **Nunca** `git push` ni tocar `main`: el usuario hace los push, los merges a `main` y los tags.
+  Al terminar y verificar una fase, el agente hace `git push` de `develop` y de la rama de la
+  fase. **Nunca** tocar `main`: los merges a `main`, su push y los tags los hace el usuario.
 - **Commits**: Conventional Commits en español **sin tildes** (evita problemas de codificación en
   PowerShell), uno por cambio lógico.
 - **Secretos**: no leer ni imprimir `.env` salvo permiso explícito; nunca commitearlo; nunca
@@ -198,6 +232,8 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
   ocultar la opción).
 - **Sistema**: no detener ni modificar servicios locales de Windows ni el firewall; si hace
   falta, dar el comando al usuario sin ejecutarlo.
+- **Producción**: solo se redespliega en Azure cuando el usuario dice que la versión está lista
+  para `main` (ver `docs/DEPLOY.md`); las fases nuevas se prueban en local.
 - **Azure**: el agente puede crear, configurar y desplegar recursos con Azure CLI, solo en
   `rg-alfamatagames` y con el plan más barato; nunca tocar otros grupos de recursos (por ejemplo
   `rg-mantenio-pradosj`, de otro proyecto). Avisar al usuario si algo requiere su intervención.

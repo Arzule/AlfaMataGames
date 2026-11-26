@@ -32,6 +32,7 @@ export default function SearchBar({
       />
       {value ? (
         <TouchableOpacity
+          accessibilityRole="button"
           onPress={() => onChangeText('')}
           hitSlop={8}
           accessibilityLabel="Limpiar búsqueda"
@@ -58,7 +59,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    height: 44,
+    minHeight: 44,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,

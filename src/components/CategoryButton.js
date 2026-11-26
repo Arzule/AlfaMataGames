@@ -9,6 +9,7 @@ import { fonts } from '../theme/typography';
 export default function CategoryButton({ label, active = false, onPress }) {
   return (
     <TouchableOpacity
+      accessibilityRole="button"
       style={[styles.chip, active && styles.chipActive]}
       onPress={onPress}
       activeOpacity={0.8}

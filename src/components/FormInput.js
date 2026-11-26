@@ -25,7 +25,12 @@ export default function FormInput({ label, icon, error, secureTextEntry, style, 
           {...props}
         />
         {isSecure ? (
-          <TouchableOpacity onPress={() => setHidden((prev) => !prev)}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={hidden ? 'Mostrar contraseña' : 'Ocultar contraseña'}
+            hitSlop={12}
+            onPress={() => setHidden((prev) => !prev)}
+          >
             <Feather
               name={hidden ? 'eye' : 'eye-off'}
               size={18}
@@ -62,7 +67,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    height: 48,
+    minHeight: 48,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,

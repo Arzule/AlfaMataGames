@@ -23,6 +23,7 @@ enlaza cada criterio con su evidencia.
 - Catálogo de juegos con búsqueda (con *debounce*) y paginación "infinita".
 - Filtro por estado usando la biblioteca del usuario (Jugando, Completado, Pendiente, Abandonado).
 - Pantalla de detalle del juego (portada, año, desarrollador, plataformas, sinopsis).
+- Ciudad y país en el Perfil a partir de la ubicación aproximada (solo se guardan ciudad y país).
 - Biblioteca por usuario: favorito, estado, puntuación (0-5) y reseña (hasta 1000 caracteres).
 - Pantalla de Favoritos con actualización por *pull-to-refresh*.
 - Cambios optimistas con reversión si el backend falla.
@@ -243,7 +244,14 @@ cp .env.example .env
 | `IGDB_CLIENT_ID` | Client ID de tu aplicación de Twitch para IGDB. Solo la usa el backend (catálogo, detalle, juego al azar y sinopsis); la app nunca la conoce. |
 | `IGDB_CLIENT_SECRET` | Client Secret de esa aplicación. El backend pide con él un token de aplicación (OAuth client credentials), lo guarda en memoria y lo renueva antes de que venza. |
 | `DEEPL_API_KEY` | Opcional. Clave de DeepL API Free para traducir las sinopsis (solo el backend). Si falta, se muestra el texto original con una etiqueta. Ver [Sinopsis traducidas](#sinopsis-traducidas). |
+| `NOMINATIM_URL` | Opcional. Servidor de Nominatim para obtener la ciudad; por defecto, `https://nominatim.openstreetmap.org`. |
 | `DEEPL_API_URL` | Opcional. Fuerza el endpoint de DeepL; por defecto, `api-free.deepl.com` si la clave termina en `:fx` y `api.deepl.com` si no. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Opcionales. Login con Google (solo el backend); sin ellas no aparece el botón. Ver [docs/OAUTH.md](docs/OAUTH.md). |
+| `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | Opcionales. Login con Discord (solo el backend). |
+| `STEAM_API_KEY` | Opcional. Steam Web API (solo el backend); sin ella no aparece la tarjeta de Steam en Perfil. Ver [docs/OAUTH.md](docs/OAUTH.md#steam). |
+| `OAUTH_CALLBACK_BASE_URL` | URL pública del backend para los callbacks (por defecto `http://localhost:3000`). |
+| `OAUTH_WEB_REDIRECTS` | Retornos web permitidos, origen + ruta separados por comas (por defecto `http://localhost:8081/oauth`). |
+| `OAUTH_ALLOW_EXPO_GO` | `true` permite volver a Expo Go (`exp://.../--/oauth`); en el docker-compose local es `true` por defecto. |
 | `EXPO_PUBLIC_API_URL` | URL base del backend para la app, con la **IP local de tu PC**, ej. `http://192.168.1.10:3000`. No uses `localhost`: el celular no puede resolverlo. |
 | `MYSQL_ROOT_PASSWORD` | Contraseña del usuario `root` de MySQL (la usa el contenedor). |
 | `MYSQL_DATABASE` | Nombre de la base de datos que se crea al inicializar MySQL. |
@@ -339,6 +347,7 @@ local o en la nube, sin borrarla.
 | `003-fecha-resena.sql` | Columna `user_games.review_updated_at` e índice para las reseñas de la comunidad. |
 | `004-traducciones.sql` | Tabla `game_translations` (caché de sinopsis traducidas). |
 | `005-catalogo-igdb.sql` | Vacía `user_games` y `game_translations` al pasar de RAWG a IGDB (los ids no coinciden). |
+| `008-ubicacion-usuario.sql` | Columnas `users.city`, `users.country` y `users.location_updated_at` ("Mi ciudad"). |
 
 - **Automático:** al arrancar, el backend aplica en orden las migraciones que faltan y las
   registra en la tabla `schema_migrations`. Si una falla, el backend no arranca y muestra el error.
@@ -370,11 +379,15 @@ Creadas por `database/init/02-seed.sql`:
 | --- | --- | --- |
 | Cámara | Tomar la foto de perfil | Al tocar "Cámara" en Perfil, después de una explicación |
 | Fotos | — | No se pide: la galería usa el selector del sistema |
+| Ubicación (primer plano) | Mostrar tu ciudad en Perfil ("Mi ciudad") | Al tocar "Usar mi ubicación", después de una explicación (en web, el diálogo del navegador) |
 | Notificaciones | Recordatorios para jugar | Al programar el primer recordatorio o activar el diario, después de una explicación |
 
 - Si el permiso se niega, se puede volver a intentar; si queda **bloqueado** (el sistema ya no
   pregunta), la app lo indica y ofrece **Abrir ajustes**. Al volver, el estado se actualiza solo.
-- La app **no pide ubicación** ni micrófono (`microphonePermission: false` en `app.json`).
+- La ubicación se usa una sola vez para obtener la **ciudad y el país**: la app envía la
+  posición redondeada (~1 km), el backend consulta Nominatim (OpenStreetMap) y **solo guarda
+  ciudad y país**, nunca coordenadas. Nunca en segundo plano. No se pide micrófono
+  (`microphonePermission: false` en `app.json`).
 - En **web** no hay opción de cámara; "Galería" abre el selector de archivos del navegador.
 - Textos de uso de los permisos: plugin `expo-image-picker` en `app.json`.
 - El **acelerómetro** no necesita permiso en Android/iOS. Solo se lee con el Catálogo en
@@ -517,9 +530,27 @@ Tabla generada a partir de `backend/src/routes/`.
 | GET | `/health` | No | Estado del servicio y de la BD (`{ "status": "ok", "db": "ok" }`; 503 si la BD no responde). |
 | POST | `/auth/register` | No | Registra un usuario y devuelve `{ token, user }`. |
 | POST | `/auth/login` | No | Inicia sesión y devuelve `{ token, user }`. |
-| GET | `/auth/me` | Bearer JWT | Devuelve `{ user }` del token actual (incluye `avatar`). |
+| GET | `/auth/me` | Bearer JWT | Devuelve `{ user }` del token actual (incluye `avatar` y `hasPassword`). |
+| PUT | `/auth/me` | Bearer JWT | Cambia el nombre: `{ name }` (2-80 caracteres). Devuelve `{ user }`. |
+| PUT | `/auth/me/password` | Bearer JWT | `{ currentPassword, newPassword }`. Actual incorrecta → 400 `WRONG_PASSWORD`; cuenta sin contraseña → 400 `NO_PASSWORD`. Límite de intentos como el login. |
+| DELETE | `/auth/me` | Bearer JWT | Elimina la cuenta y su biblioteca (cascada). Body `{ password }` si la cuenta tiene contraseña. Responde 204. |
+| GET | `/auth/oauth/providers` | — | Proveedores de login social configurados: `{ providers: [{ id, label }] }`. |
+| POST | `/auth/oauth/:provider/start` | Opcional | `{ redirectUri, codeChallenge, link? }` → `{ url }` del proveedor. `link: true` exige Bearer y vincula a la cuenta actual. |
+| GET | `/auth/oauth/:provider/callback` | — | Retorno del proveedor; redirige al deep link con `?code=` (un solo uso, 2 min) o `?error=`. |
+| POST | `/auth/oauth/exchange` | — | `{ code, codeVerifier }` → `{ token, user }` (login) o `{ user, linked }` (vincular). |
+| GET | `/auth/me/identities` | Bearer JWT | Cuentas vinculadas: `{ identities: [{ provider, email, createdAt }], hasPassword }`. |
+| DELETE | `/auth/me/identities/:provider` | Bearer JWT | Desvincula; 400 `LAST_LOGIN_METHOD` si es el único método de acceso. |
+| GET | `/steam` | Bearer JWT | Estado de Steam: `{ available, linked, steamId, personaName, lastSyncAt, sync }`. |
+| POST | `/steam/link/start` | Bearer JWT | `{ redirectUri, codeChallenge }` → `{ url }` de Steam OpenID. 409 `ALREADY_LINKED`. |
+| GET | `/steam/callback` | — | Retorno de Steam: verifica la firma con Steam y vuelve al deep link con `?code=` o `?error=`. |
+| POST | `/steam/link/confirm` | Bearer JWT | `{ code, codeVerifier }` → estado. 409 `STEAM_TAKEN` si la cuenta de Steam es de otro usuario. |
+| DELETE | `/steam` | Bearer JWT | Desconecta Steam (los juegos importados se quedan). |
+| POST | `/steam/sync` | Bearer JWT | Pide los juegos a Steam y prepara la sincronización: `{ sync: { total, processed, added, updated, notFoundCount, done } }`. 409 `PRIVATE_PROFILE` si los detalles de juego no son públicos. |
+| POST | `/steam/sync/next` | Bearer JWT | Procesa el siguiente lote (100 juegos) y devuelve el progreso; al terminar incluye `notFound` (nombres). |
 | PUT | `/auth/me/avatar` | Bearer JWT | Guarda la foto: `{ image: "data:image/jpeg;base64,..." }` (JPEG, PNG o WebP, máx. 200 KB). Devuelve `{ user }`. |
 | DELETE | `/auth/me/avatar` | Bearer JWT | Elimina la foto. Devuelve `{ user }`. |
+| PUT | `/auth/me/location` | Bearer JWT | `{ latitude, longitude }`: obtiene ciudad y país (Nominatim) y los guarda; 404 si no hay localidad, 503 si el servicio falla. Devuelve `{ user }` con `location { city, country }`. |
+| DELETE | `/auth/me/location` | Bearer JWT | Quita la ciudad. Devuelve `{ user }`. |
 | GET | `/library` | Bearer JWT | Lista la biblioteca. Acepta `?favorite=true`. |
 | GET | `/library/:gameId` | Bearer JWT | Devuelve `{ entry }` de un juego (o `null`). |
 | PUT | `/library/:gameId` | Bearer JWT | Crea o actualiza (upsert parcial) la entrada. |
@@ -550,6 +581,7 @@ Definido en `database/init/01-schema.sql` y las migraciones de `backend/migratio
 | `email` | VARCHAR(255) | Único. |
 | `password_hash` | VARCHAR(255) | Hash bcrypt (nunca en texto plano). |
 | `avatar` | MEDIUMTEXT NULL | Foto de perfil como data URI base64 (migración `002`). |
+| `city`, `country` | VARCHAR NULL | Ciudad y país del Perfil (migración `008`); sin coordenadas. |
 | `created_at` | TIMESTAMP | Por defecto `CURRENT_TIMESTAMP`. |
 
 ### Tabla `user_games`
@@ -564,6 +596,7 @@ Definido en `database/init/01-schema.sql` y las migraciones de `backend/migratio
 | `game_rating` | DECIMAL(3,2) NULL | Valoración del catálogo (0-5). |
 | `is_favorite` | TINYINT(1) | Por defecto `0`. |
 | `status` | ENUM(...) NULL | `Jugando`, `Completado`, `Pendiente`, `Abandonado`. |
+| `status_source`, `favorite_source` | ENUM(`steam`,`user`) NULL | Quién puso el estado / favorito (migración `007`): Steam solo actualiza lo que sigue con fuente `steam`. |
 | `user_score` | TINYINT NULL | 0-5 (con `CHECK`). |
 | `review` | TEXT NULL | Reseña del usuario. |
 | `review_updated_at` | TIMESTAMP NULL | Última edición del texto de la reseña (orden de las reseñas de la comunidad). |
@@ -586,6 +619,12 @@ Caché de sinopsis traducidas. Clave primaria `(game_id, lang)`.
 | `translated_text` | MEDIUMTEXT | Traducción. |
 | `provider` | VARCHAR(20) | `deepl`. |
 | `created_at` / `updated_at` | TIMESTAMP | Fechas de creación y actualización. |
+
+### Tablas de Steam (migración `007`)
+
+- `steam_accounts`: cuenta de Steam por usuario (`user_id` PK, `steam_id` único, `persona_name`, `last_sync_at`).
+- `steam_igdb_map`: caché compartida appid de Steam → juego de IGDB (`igdb_game_id` NULL = no encontrado, se reintenta a los 30 días; `matched_by` `external` o `name`).
+- `user_steam_games`: juegos de Steam ya procesados por usuario y minutos jugados; evita volver a agregar un juego que el usuario borró.
 
 ---
 
@@ -637,7 +676,7 @@ Las ramas se integran a `develop` con `git merge --no-ff` para conservar el hist
 - Gestión de cuenta (datos, contraseña, eliminar cuenta) y estadísticas en Perfil.
 - Inicio de sesión con Google y Discord, e importación de la biblioteca de Steam.
 - Recordatorios con notificaciones push desde el servidor.
-- APK con EAS Build, accesibilidad y pulido final.
+- APK con EAS Build (configuración lista: `eas.json` y guía en [docs/APK.md](docs/APK.md)), accesibilidad y pulido final.
 
 ---
 

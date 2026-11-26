@@ -8,10 +8,12 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 ## Estado
 
 - Entregados: Avance 1 y Avance 2.
-- Avance 3: A3-0 a A3-7 terminadas (pendiente: entrega por el usuario).
-- Avance 4: A4-1, A4-1b y A4-2 terminadas. Backend en producción:
+- Entregado: Avance 3 (A3-0 a A3-7).
+- Avance 4: A4-1, A4-1b, A4-2, A4-3, A4-4, A4-5, A4-7b y A4-7c terminadas. Backend en producción:
   https://alfamatagames-api.chilecentral.cloudapp.azure.com (ver `docs/DEPLOY.md`).
-- **Fase actual: A4-3** (Gestión de cuenta y estadísticas).
+- **Fase actual: A4-7** (EAS Build y APK). Orden de lo que queda: A4-7 → A4-6 → A4-8
+  (A4-7 antes que A4-6: las push remotas solo se prueban en el APK). Pendiente de A4-4 y A4-5: probar login social y Steam en
+  el celular cuando se despliegue en Azure (Expo Go) y en el APK (A4-7).
 
 ## Decisiones tomadas
 
@@ -38,7 +40,7 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   botón "Borrar caché" en Perfil.
 - **Permisos**: cámara y notificaciones con un hook común (`usePermission`). La galería no
   requiere permiso en SDK 57 (selector del sistema).
-  **No se pide ubicación** (ninguna función la usa).
+  Ubicación solo para "Mi ciudad" (A4-7c): una vez, en primer plano; se guardan ciudad y país.
 - **Avatar**: cuadrado de 256 px en JPEG comprimido, guardado en la BD (columna `avatar`);
   iniciales si no hay foto.
 - **Sensor**: el acelerómetro solo está activo con el Catálogo enfocado y la app en primer plano.
@@ -242,45 +244,87 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **>>> HITO:** backend desplegado en Azure con URL pública HTTPS (A4-4 a A4-6 la requieren).
   El usuario solo interviene si hace falta un inicio de sesión o una aprobación de costos.
 
-### [ ] A4-3 Gestión de cuenta y estadísticas
+### [x] A4-3 Gestión de cuenta y estadísticas
 
 - **Objetivo:** control de la cuenta por el usuario.
 - **Tareas:**
-  - [ ] Editar nombre.
-  - [ ] Cambiar contraseña (solo cuentas con contraseña; pide la actual).
-  - [ ] Eliminar cuenta con confirmación y borrado en cascada.
-  - [ ] Estadísticas en Perfil: juegos por estado, favoritos y puntuación media.
+  - [x] Editar nombre.
+  - [x] Cambiar contraseña (solo cuentas con contraseña; pide la actual).
+  - [x] Eliminar cuenta con confirmación y borrado en cascada.
+  - [x] Estadísticas en Perfil: juegos por estado, favoritos y puntuación media.
+- **Notas:** pantalla `Account` (desde Perfil → "Gestionar cuenta"). Cambiar contraseña y
+  eliminar cuenta piden la contraseña actual y usan el mismo límite de intentos que el login; la
+  contraseña incorrecta responde 400 (no 401, para no cerrar la sesión). El usuario público trae
+  `hasPassword` (preparado para las cuentas sociales de A4-4). Las estadísticas se calculan en la
+  app desde `LibraryContext` (sin endpoint), así siempre coinciden con la biblioteca.
 - **Terminado cuando:** las acciones funcionan, al eliminar no quedan filas del usuario y las
   estadísticas coinciden con la biblioteca.
 
-### [ ] A4-4 Login con Google y Discord
+### [x] A4-4 Login con Google y Discord
 
 - **Objetivo:** iniciar sesión con proveedores externos.
 - **Tareas:**
-  - [ ] Flujo OAuth en el backend; la app abre `expo-web-browser` (`openAuthSessionAsync`) y
+  - [x] Flujo OAuth en el backend; la app abre `expo-web-browser` (`openAuthSessionAsync`) y
     vuelve por deep link validado contra una lista permitida (Expo Go y APK).
-  - [ ] Migración: tabla de identidades vinculadas; `password_hash` opcional.
-  - [ ] Correo verificado coincidente → misma cuenta (vincular); si no → cuenta nueva.
-  - [ ] Ver y desvincular cuentas en Perfil sin quitar el último método de acceso.
-  - [ ] Guía para que el usuario cree las credenciales de Google Cloud y Discord.
+  - [x] Migración: tabla de identidades vinculadas; `password_hash` opcional.
+  - [x] Correo verificado coincidente → misma cuenta (vincular); si no → cuenta nueva.
+  - [x] Ver y desvincular cuentas en Perfil sin quitar el último método de acceso.
+  - [x] Guía para que el usuario cree las credenciales de Google Cloud y Discord (`docs/OAUTH.md`).
+  - [x] Prueba real con las credenciales del usuario en web local (Google y Discord OK).
+  - [ ] Prueba en el celular: al desplegar en Azure (Expo Go) y con el APK (A4-7).
+- **Notas:** PKCE entre app y backend (el deep link solo lleva un código de un solo uso de 2 min).
+  Probado con proveedor simulado (30 casos). Desde el celular solo se puede probar contra
+  producción: el callback local es `localhost`.
 - **Terminado cuando:** ambos proveedores funcionan en Expo Go y en el APK, la vinculación por
   correo es correcta y no se puede quedar sin método de acceso.
 
-### [ ] A4-5 Conectar Steam
+### [x] A4-5 Conectar Steam
 
 - **Objetivo:** importar la biblioteca de Steam.
 - **Tareas:**
-  - [ ] Verificación con Steam OpenID por el backend (mismo patrón de navegador y deep link).
-  - [ ] Importar con `GetOwnedGames` (clave de Steam solo en el backend); avisar si los detalles
+  - [x] Verificación con Steam OpenID por el backend (mismo patrón de navegador y deep link).
+  - [x] Importar con `GetOwnedGames` (clave de Steam solo en el backend); avisar si los detalles
     de juego del perfil no son públicos.
-  - [ ] Correspondencia Steam → IGDB con `external_games` (appid de Steam) y, si falta, por
+  - [x] Correspondencia Steam → IGDB con `external_games` (appid de Steam) y, si falta, por
     nombre, con tabla de caché (migración).
-  - [ ] Reglas por tiempo jugado (ver "Decisiones tomadas") y fuente de estado/favorito
+  - [x] Reglas por tiempo jugado (ver "Decisiones tomadas") y fuente de estado/favorito
     (steam o usuario, migración).
-  - [ ] Re-sincronizar: agrega juegos nuevos y actualiza solo lo que sigue con fuente steam.
-  - [ ] Procesar por lotes con progreso visible; informar juegos no encontrados.
+  - [x] Re-sincronizar: agrega juegos nuevos y actualiza solo lo que sigue con fuente steam.
+  - [x] Procesar por lotes con progreso visible; informar juegos no encontrados.
+  - [x] Prueba real con la cuenta de Steam del usuario en web local (conectar e importar OK).
+  - [ ] Prueba en el celular: al desplegar en Azure (Expo Go) y con el APK (A4-7).
+- **Notas:** Steam no es método de acceso (tabla `steam_accounts`). Vinculación con PKCE como el
+  login social. Lotes de 100 juegos (`/steam/sync` + `/steam/sync/next`, ~3 consultas a IGDB por
+  lote). Correspondencia por nombre exacto (sin ™/®) cuando falta `external_games`. Un juego que
+  el usuario borra no se vuelve a agregar (`user_steam_games`). Probado con Steam simulado e IGDB
+  real (36 casos). En web el login social y Steam van en la misma pestaña (sin ventana emergente:
+  Google corta `window.opener`).
 - **Terminado cuando:** una importación completa respeta las reglas, una re-sincronización no
   pisa cambios manuales y ninguna petición excede el tiempo de espera del hosting.
+
+### [ ] A4-7 EAS Build y pruebas del APK
+
+- **Objetivo:** generar y probar el APK.
+- **Tema del sílabo:** builds con Expo y APK.
+- **Tareas:**
+  - [x] `app.json` de producción: nombre, icono, splash, `android.package`, `scheme` para deep
+    links, versiones, permisos y textos de uso.
+  - [x] `eas.json` con perfiles `development`, `preview` (APK) y `production`; variables en EAS.
+  - [x] `docs/APK.md`: generar el APK y probarlo, de más ligera a más pesada:
+    1) celular Android del usuario (recomendada; las push funcionan de verdad);
+    2) emulador solo con herramientas de línea de comandos del SDK (`sdkmanager`, `avdmanager`,
+    `emulator`) e imagen "Google Play" (necesaria para push);
+    3) Android Studio completo.
+    Incluir requisitos (virtualización activada) e instalación con `adb`.
+  - [ ] Antes del APK: desplegar en Azure la versión aprobada por el usuario (merge a `main`), con
+    las credenciales de OAuth y `STEAM_API_KEY` en la VM y las URLs de callback de producción
+    registradas en Google y Discord.
+  - [ ] Probar en el celular (APK) lo pendiente de A4-4 y A4-5: login con Google/Discord, vincular
+    cuentas y conectar e importar Steam (retorno por el `scheme` `alfamatagames://`).
+  - [ ] Distribución del APK (GitHub Releases).
+- **Terminado cuando:** el usuario genera e instala el APK de `preview` y la app funciona contra
+  el backend en Azure, incluidos el login social y Steam.
+- **Nota de orden:** va antes de A4-6 porque las push remotas solo se pueden probar en el APK.
 
 ### [ ] A4-6 Push remotas para recordatorios
 
@@ -291,37 +335,44 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
   - [ ] Envío con Expo Push Service por un endpoint protegido que invoca un cron externo.
   - [ ] Recordatorios locales como respaldo en Expo Go.
   - [ ] Guía para configurar las credenciales FCM en EAS.
+- **Requiere:** el APK de A4-7 (Expo Go en Android no recibe push remotas); al agregar las
+  credenciales FCM hay que generar un APK nuevo.
 - **Terminado cuando:** en el APK llega una push programada desde el servidor y en Expo Go
   siguen funcionando las locales.
 
-### [ ] A4-7 EAS Build y pruebas del APK
+### [x] A4-7c Ciudad en el Perfil
 
-- **Objetivo:** generar y probar el APK.
-- **Tema del sílabo:** builds con Expo y APK.
+- **Objetivo:** mostrar la ciudad y el país del usuario en Perfil (opcional pendiente de A3-3).
 - **Tareas:**
-  - [ ] `app.json` de producción: nombre, icono, splash, `android.package`, `scheme` para deep
-    links, versiones, permisos y textos de uso.
-  - [ ] `eas.json` con perfiles `development`, `preview` (APK) y `production`; variables en EAS.
-  - [ ] `docs/APK.md`: generar el APK y probarlo, de más ligera a más pesada:
-    1) celular Android del usuario (recomendada; las push funcionan de verdad);
-    2) emulador solo con herramientas de línea de comandos del SDK (`sdkmanager`, `avdmanager`,
-    `emulator`) e imagen "Google Play" (necesaria para push);
-    3) Android Studio completo.
-    Incluir requisitos (virtualización activada) e instalación con `adb`.
-  - [ ] Distribución del APK (GitHub Releases).
-- **Terminado cuando:** el usuario genera e instala el APK de `preview` y la app funciona contra
-  el backend en Azure.
+  - [x] Migración `008`: `users.city`, `users.country`, `location_updated_at` (sin coordenadas).
+  - [x] `PUT/DELETE /auth/me/location`: geocodificación inversa con Nominatim (OpenStreetMap).
+  - [x] Tarjeta "Mi ciudad" con expo-location (permiso con explicación previa; en web, el
+    navegador) y avisos claros si no hay permiso o ubicación.
+  - [ ] Probar en el celular (Expo Go o APK): en la PC de desarrollo no hay servicio de ubicación.
+- **Verificación:** backend 13/13 (Lima, Arequipa, océano 404, validaciones, borrar); en web
+  el error sin ubicación muestra el aviso.
 
-### [ ] A4-7b Accesibilidad y pulido final de UI
+### [x] A4-7b Accesibilidad y pulido final de UI
 
 - **Objetivo:** interfaz profesional y accesible para la entrega final.
 - **Tema del sílabo:** UI/UX e innovación (accesibilidad).
 - **Tareas:**
-  - [ ] `accessibilityLabel` y `accessibilityRole` en botones con icono.
-  - [ ] Zonas táctiles de al menos 44x44.
-  - [ ] Contraste suficiente entre texto y fondo.
-  - [ ] Soporte del tamaño de letra del sistema sin romper el diseño.
-  - [ ] Revisión final de coherencia visual.
+  - [x] `accessibilityLabel` y `accessibilityRole` en botones con icono.
+  - [x] Zonas táctiles de al menos 44x44.
+  - [x] Contraste suficiente entre texto y fondo.
+  - [x] Soporte del tamaño de letra del sistema sin romper el diseño.
+  - [x] Revisión final de coherencia visual (detalle web revisado con el usuario).
+  - [ ] Probar en el celular TalkBack y la letra grande del sistema (con el APK de A4-7).
+  - [x] **Fix (solo web):** el banner (`heroImage`) del detalle del juego se ve muy angosto en
+    pantallas anchas. Propuesta: en web con ancho grande, mostrarlo como banner lateral (imagen a
+    un lado y la información al otro) para aprovechar el monitor; en móvil queda igual.
+- **Notas:** rol `button` en todos los táctiles (58) y etiquetas en los que solo tienen icono
+  (ojo de contraseña, estrellas con su estado); `hitSlop` en los botones de 36 px; `height` fijo
+  → `minHeight` en botones y campos (no recorta con letra grande); `textMuted` #65657a → #85859b
+  (4.8:1) y `primaryText` #a78bfa para textos violetas (4.08 → 6.35:1). Banner del detalle en web
+  ≥ 1024 px: banner (o portada) completo como fondo al 50 %, textos en `textOnImage`, volver junto al
+  título; el backend elige el banner por `artwork_type` (key art; genérico con forma de banner, único
+  o de 1000x620; si no, portada). Rutas web para el botón atrás del navegador.
 - **Terminado cuando:** todos los botones con icono se anuncian con lector de pantalla, ninguna
   zona táctil es menor de 44x44, y con letra grande del sistema no se corta ni solapa texto.
 

@@ -14,6 +14,7 @@ import { Image } from 'expo-image';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import FormInput from '../components/FormInput';
+import SocialLoginButtons from '../components/SocialLoginButtons';
 import { useAuth } from '../hooks/useAuth';
 
 const LOGO = require('../../assets/logo.png');
@@ -105,6 +106,7 @@ export default function LoginScreen({ navigation }) {
           )}
 
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
             onPress={handleSubmit}
             disabled={submitting}
@@ -116,7 +118,10 @@ export default function LoginScreen({ navigation }) {
             )}
           </TouchableOpacity>
 
+          <SocialLoginButtons disabled={submitting} />
+
           <TouchableOpacity
+            accessibilityRole="button"
             style={styles.linkRow}
             onPress={() => navigation.navigate('Register')}
             disabled={submitting}
@@ -178,7 +183,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   submitBtn: {
-    height: 48,
+    minHeight: 48,
     backgroundColor: colors.primary,
     borderRadius: 8,
     alignItems: 'center',
@@ -198,7 +203,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   linkText: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: 13,
     fontFamily: fonts.bodySemiBold,
   },

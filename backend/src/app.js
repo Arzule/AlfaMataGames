@@ -8,6 +8,7 @@ const { corsOrigins } = require('./config/env');
 const authRoutes = require('./routes/auth.routes');
 const libraryRoutes = require('./routes/library.routes');
 const gamesRoutes = require('./routes/games.routes');
+const steamRoutes = require('./routes/steam.routes');
 const { notFound, errorHandler } = require('./middleware/error.middleware');
 const { requestLogger } = require('./middleware/requestLogger.middleware');
 
@@ -47,6 +48,7 @@ app.get('/health', async (req, res) => {
 app.use('/auth', authRoutes);
 app.use('/library', libraryRoutes);
 app.use('/games', gamesRoutes);
+app.use('/steam', steamRoutes);
 
 // 404 y manejador de errores (siempre JSON).
 app.use(notFound);

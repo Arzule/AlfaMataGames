@@ -2,13 +2,12 @@
 // Búsquedas recientes del usuario guardadas con AsyncStorage (máx. 5, la más nueva primero).
 import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { recentSearchesKey } from '../services/preferences';
 
 const MAX_RECENT = 5;
 
 // Una lista por usuario para no mezclar búsquedas entre cuentas del mismo dispositivo.
-function storageKey(userId) {
-  return `alfamatagames.recentSearches.${userId ?? 'anon'}`;
-}
+const storageKey = recentSearchesKey;
 
 export function useRecentSearches(userId) {
   const [recent, setRecent] = useState([]);

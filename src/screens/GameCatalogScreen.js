@@ -192,8 +192,10 @@ export default function GameCatalogScreen({ navigation }) {
         title={username}
         left={
           <TouchableOpacity
+            accessibilityRole="button"
             onPress={() => navigation.navigate('Perfil')}
             accessibilityLabel="Ir a mi perfil"
+            hitSlop={2}
           >
             <Avatar uri={user?.avatar} name={user?.name} size={40} />
           </TouchableOpacity>
@@ -201,7 +203,9 @@ export default function GameCatalogScreen({ navigation }) {
         right={
           <View style={styles.headerActions}>
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.notifBtn}
+              hitSlop={4}
               onPress={openRandomGame}
               disabled={discovering}
               accessibilityLabel="Abrir un juego al azar"
@@ -209,7 +213,9 @@ export default function GameCatalogScreen({ navigation }) {
               <Feather name="shuffle" size={18} color={colors.textPrimary} />
             </TouchableOpacity>
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.notifBtn}
+              hitSlop={4}
               onPress={() => navigation.navigate('Reminders')}
               accessibilityLabel="Ver recordatorios"
             >
@@ -259,6 +265,7 @@ export default function GameCatalogScreen({ navigation }) {
         </View>
       ) : discoverError ? (
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.offlineBanner}
           onPress={() => {
             clearError();
@@ -268,7 +275,7 @@ export default function GameCatalogScreen({ navigation }) {
         >
           <Feather name="alert-triangle" size={14} color={colors.warning} />
           <Text style={styles.offlineText}>{discoverError} Toca para reintentar.</Text>
-          <TouchableOpacity onPress={clearError} accessibilityLabel="Cerrar aviso" hitSlop={8}>
+          <TouchableOpacity accessibilityRole="button" onPress={clearError} accessibilityLabel="Cerrar aviso" hitSlop={8}>
             <Feather name="x" size={14} color={colors.warning} />
           </TouchableOpacity>
         </TouchableOpacity>
@@ -276,7 +283,7 @@ export default function GameCatalogScreen({ navigation }) {
 
       {/* Aviso: sin conexión, se muestra el catálogo guardado */}
       {isTodos && offline && !isLoading ? (
-        <TouchableOpacity style={styles.offlineBanner} onPress={reload} activeOpacity={0.8}>
+        <TouchableOpacity accessibilityRole="button" style={styles.offlineBanner} onPress={reload} activeOpacity={0.8}>
           <Feather name="wifi-off" size={14} color={colors.warning} />
           <Text style={styles.offlineText}>
             Sin conexión: mostrando el catálogo guardado. Toca para reintentar.

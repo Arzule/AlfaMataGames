@@ -10,12 +10,13 @@ import { fonts } from '../theme/typography';
 export default function ReminderSheet({ visible, title, options, onSelect, onPickCustom, onClose }) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Cerrar">
+      <Pressable accessibilityRole="button" style={styles.backdrop} onPress={onClose} accessibilityLabel="Cerrar">
         {/* Pressable interno para que tocar la hoja no la cierre. */}
         <Pressable style={styles.sheet} onPress={() => {}}>
           <Text style={styles.title}>{title}</Text>
           {options.map((option) => (
             <TouchableOpacity
+              accessibilityRole="button"
               key={option.key}
               style={styles.option}
               onPress={() => onSelect(option.key)}
@@ -24,11 +25,11 @@ export default function ReminderSheet({ visible, title, options, onSelect, onPic
               <Text style={styles.optionText}>{option.label}</Text>
             </TouchableOpacity>
           ))}
-          <TouchableOpacity style={styles.option} onPress={onPickCustom}>
+          <TouchableOpacity accessibilityRole="button" style={styles.option} onPress={onPickCustom}>
             <Feather name="calendar" size={16} color={colors.textSecondary} />
             <Text style={styles.optionText}>Elegir fecha y hora</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.cancel} onPress={onClose}>
+          <TouchableOpacity accessibilityRole="button" style={styles.cancel} onPress={onClose}>
             <Text style={styles.cancelText}>Cancelar</Text>
           </TouchableOpacity>
         </Pressable>

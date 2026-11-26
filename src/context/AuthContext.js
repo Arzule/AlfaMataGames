@@ -11,6 +11,9 @@ import { setAuthToken, setUnauthorizedHandler } from '../services/apiClient';
 import * as authApi from '../services/authApi';
 import * as storage from '../utils/storage';
 import { cancelAllReminders } from '../services/notifications';
+import { clearUserData } from '../services/preferences';
+import { runOAuthFlow, completeWebRedirect } from '../services/socialAuth';
+import { confirmAction } from '../utils/confirm';
 
 // Clave con la que se guarda el token en el almacenamiento seguro.
 const TOKEN_KEY = 'alfamatagames.token';
@@ -64,9 +67,35 @@ export function AuthProvider({ children }) {
       } catch (err) {
         // Token inválido o expirado: limpiar la sesión.
         await clearSession();
-      } finally {
-        if (isMounted) setLoading(false);
       }
+
+      // Web: volvimos del proveedor (login social, vincular o Steam) en esta misma pestaña.
+      const redirect = await completeWebRedirect();
+      if (isMounted && redirect) {
+        if (redirect.data && redirect.kind === 'login' && redirect.data.token && redirect.data.user) {
+          setAuthToken(redirect.data.token);
+          setToken(redirect.data.token);
+          setUser(redirect.data.user);
+          await storage.setItem(TOKEN_KEY, redirect.data.token);
+        } else if (redirect.data && redirect.kind === 'link' && redirect.data.user) {
+          setUser(redirect.data.user);
+        }
+        const SUCCESS = {
+          link: 'Cuenta vinculada. La ves en Perfil → Gestionar cuenta.',
+          steam: 'Cuenta de Steam conectada. Ve a Perfil para importar tu biblioteca.',
+        };
+        const text = redirect.error || SUCCESS[redirect.kind];
+        if (text) {
+          confirmAction({
+            title: redirect.error ? 'No se pudo completar' : 'Listo',
+            message: text,
+            confirmText: 'Entendido',
+            cancelText: 'Cerrar',
+            icon: redirect.error ? 'alert-circle' : 'check-circle',
+          });
+        }
+      }
+      if (isMounted) setLoading(false);
     })();
 
     return () => {
@@ -104,6 +133,24 @@ export function AuthProvider({ children }) {
     [applySession]
   );
 
+  // Login social: null si el usuario cancela (no cambia nada).
+  const loginWithProvider = useCallback(
+    async (provider) => {
+      const data = await runOAuthFlow(provider);
+      if (data) await applySession(data);
+      return data;
+    },
+    [applySession]
+  );
+
+  // Vincula un proveedor a la cuenta actual. Devuelve true si se vinculó.
+  const linkProvider = useCallback(async (provider) => {
+    const data = await runOAuthFlow(provider, { link: true });
+    if (!data) return false;
+    if (data.user) setUser(data.user);
+    return true;
+  }, []);
+
   const logout = useCallback(async () => {
     await clearSession();
   }, [clearSession]);
@@ -121,10 +168,79 @@ export function AuthProvider({ children }) {
     setUser(data.user);
   }, []);
 
+  // Ciudad del Perfil: el backend la obtiene de las coordenadas y devuelve el usuario.
+  const saveLocation = useCallback(async (latitude, longitude) => {
+    const data = await authApi.updateLocation(latitude, longitude);
+    if (!data || !data.user) throw new Error('Respuesta inesperada del servidor');
+    setUser(data.user);
+  }, []);
+
+  const removeLocation = useCallback(async () => {
+    const data = await authApi.deleteLocation();
+    if (!data || !data.user) throw new Error('Respuesta inesperada del servidor');
+    setUser(data.user);
+  }, []);
+
+  // Datos de la cuenta: el backend devuelve el usuario actualizado.
+  const updateName = useCallback(async (name) => {
+    const data = await authApi.updateProfile(name);
+    if (!data || !data.user) throw new Error('Respuesta inesperada del servidor');
+    setUser(data.user);
+  }, []);
+
+  const changePassword = useCallback(async (currentPassword, newPassword) => {
+    const data = await authApi.changePassword(currentPassword, newPassword);
+    if (!data || !data.user) throw new Error('Respuesta inesperada del servidor');
+    setUser(data.user);
+  }, []);
+
+  // Elimina la cuenta, borra sus datos locales y cierra la sesión.
+  const deleteAccount = useCallback(
+    async (password) => {
+      const userId = user?.id;
+      await authApi.deleteAccount(password);
+      await clearUserData(userId);
+      await clearSession();
+    },
+    [user?.id, clearSession]
+  );
+
   // Valor memorizado: evita volver a dibujar todos los consumidores en cada render.
   const value = useMemo(
-    () => ({ user, token, loading, login, register, logout, updateAvatar, removeAvatar }),
-    [user, token, loading, login, register, logout, updateAvatar, removeAvatar]
+    () => ({
+      user,
+      token,
+      loading,
+      login,
+      register,
+      logout,
+      updateAvatar,
+      removeAvatar,
+      saveLocation,
+      removeLocation,
+      updateName,
+      changePassword,
+      deleteAccount,
+      loginWithProvider,
+      linkProvider,
+    }),
+    [
+      user,
+      token,
+      loading,
+      login,
+      register,
+      logout,
+      updateAvatar,
+      removeAvatar,
+      saveLocation,
+      removeLocation,
+      updateName,
+      changePassword,
+      deleteAccount,
+      loginWithProvider,
+      linkProvider,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

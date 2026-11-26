@@ -1,5 +1,5 @@
 // src/screens/ProfileScreen.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,13 @@ import { fonts } from '../theme/typography';
 import Header from '../components/Header';
 import Avatar from '../components/Avatar';
 import DateTimePickerModal from '../components/DateTimePickerModal';
+import LibraryStats from '../components/LibraryStats';
+import SteamCard from '../components/SteamCard';
+import LocationCard from '../components/LocationCard';
 import { useAuth } from '../hooks/useAuth';
+import { useLibrary } from '../hooks/useLibrary';
+import { useSteam } from '../hooks/useSteam';
+import { computeLibraryStats } from '../utils/libraryStats';
 import { useAvatarPicker, CAMERA_SUPPORTED } from '../hooks/useAvatarPicker';
 import { confirmAction } from '../utils/confirm';
 import { clearCatalogCache } from '../services/catalogCache';
@@ -31,12 +37,15 @@ function RenderCrashTest() {
   throw new Error('Error de prueba simulado desde Perfil.');
 }
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
   const { user, logout } = useAuth();
+  const library = useLibrary();
+  const stats = useMemo(() => computeLibraryStats(library.items), [library.items]);
   const [clearing, setClearing] = useState(false);
   const [cacheMessage, setCacheMessage] = useState(null);
   const [crashTest, setCrashTest] = useState(false);
   const avatarPicker = useAvatarPicker();
+  const steam = useSteam();
   const cameraBlocked = avatarPicker.cameraStatus === 'blocked';
 
   // "Agitar para descubrir": null mientras se comprueba el sensor.
@@ -140,6 +149,7 @@ export default function ProfileScreen() {
           <View style={styles.photoActions}>
             {CAMERA_SUPPORTED ? (
               <TouchableOpacity
+                accessibilityRole="button"
                 style={styles.photoBtn}
                 onPress={avatarPicker.takePhoto}
                 disabled={avatarPicker.busy}
@@ -149,6 +159,7 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             ) : null}
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.photoBtn}
               onPress={avatarPicker.pickPhoto}
               disabled={avatarPicker.busy}
@@ -158,6 +169,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
             {user?.avatar ? (
               <TouchableOpacity
+                accessibilityRole="button"
                 style={styles.photoBtn}
                 onPress={avatarPicker.deletePhoto}
                 disabled={avatarPicker.busy}
@@ -181,13 +193,28 @@ export default function ProfileScreen() {
           ) : null}
 
           {CAMERA_SUPPORTED && cameraBlocked ? (
-            <TouchableOpacity onPress={avatarPicker.openSettings}>
+            <TouchableOpacity accessibilityRole="button" onPress={avatarPicker.openSettings}>
               <Text style={styles.settingsLink}>
                 Permiso de cámara bloqueado · Abrir ajustes
               </Text>
             </TouchableOpacity>
           ) : null}
+
+          <TouchableOpacity
+            style={styles.accountBtn}
+            onPress={() => navigation.navigate('Account')}
+            accessibilityRole="button"
+          >
+            <Feather name="settings" size={16} color={colors.textPrimary} />
+            <Text style={styles.photoBtnText}>Gestionar cuenta</Text>
+          </TouchableOpacity>
         </View>
+
+        <LibraryStats stats={stats} loading={library.loading && !library.items.length} />
+
+        <LocationCard />
+
+        <SteamCard steam={steam} />
 
         {/* En web no hay sensor: la opción se oculta (queda el botón "Juego al azar"). */}
         {SHAKE_SUPPORTED ? (
@@ -240,6 +267,7 @@ export default function ProfileScreen() {
           </View>
           {daily.supported && daily.pref.enabled ? (
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.timeRow}
               onPress={() => setTimePickerVisible(true)}
               disabled={daily.busy}
@@ -261,7 +289,7 @@ export default function ProfileScreen() {
             </Text>
           ) : null}
           {daily.supported && daily.permissionStatus === 'blocked' ? (
-            <TouchableOpacity onPress={daily.openSettings}>
+            <TouchableOpacity accessibilityRole="button" onPress={daily.openSettings}>
               <Text style={styles.settingsLink}>
                 Notificaciones bloqueadas · Abrir ajustes
               </Text>
@@ -284,6 +312,7 @@ export default function ProfileScreen() {
 
         <View style={styles.cacheBlock}>
           <TouchableOpacity
+            accessibilityRole="button"
             style={styles.secondaryBtn}
             onPress={handleClearCache}
             disabled={clearing}
@@ -299,14 +328,14 @@ export default function ProfileScreen() {
         </View>
 
         {__DEV__ ? (
-          <TouchableOpacity style={styles.secondaryBtn} onPress={() => setCrashTest(true)}>
+          <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => setCrashTest(true)}>
             <Feather name="alert-octagon" size={18} color={colors.warning} />
             <Text style={styles.secondaryText}>Simular error (solo desarrollo)</Text>
           </TouchableOpacity>
         ) : null}
         {crashTest ? <RenderCrashTest /> : null}
 
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        <TouchableOpacity accessibilityRole="button" style={styles.logoutBtn} onPress={handleLogout}>
           <Feather name="log-out" size={18} color={colors.textPrimary} />
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </TouchableOpacity>
@@ -372,6 +401,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: fonts.bodySemiBold,
   },
+  accountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 44,
+    marginTop: 8,
+    paddingHorizontal: 16,
+  },
   feedback: {
     color: colors.textSecondary,
     fontSize: 12,
@@ -386,7 +424,7 @@ const styles = StyleSheet.create({
     color: colors.success,
   },
   settingsLink: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: 12,
     fontFamily: fonts.bodyBold,
     textAlign: 'center',
@@ -443,7 +481,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
   },
   settingsLinkInline: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontSize: 12,
     fontFamily: fonts.bodyBold,
   },
@@ -455,7 +493,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 48,
+    minHeight: 48,
     borderRadius: 8,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -477,7 +515,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 48,
+    minHeight: 48,
     borderRadius: 8,
     backgroundColor: colors.primary,
   },

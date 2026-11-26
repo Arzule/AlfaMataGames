@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   initials: {
-    color: colors.primary,
+    color: colors.primaryText,
     fontFamily: fonts.heading,
   },
 });
