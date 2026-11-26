@@ -22,7 +22,7 @@ export function useUserLocation() {
     title: 'Ubicación',
     rationale:
       'AlfaMataGames usa tu ubicación una sola vez para mostrar tu ciudad en el Perfil. ' +
-      'Solo se guarda la ciudad y un punto aproximado (unos 1 km), nunca tu dirección.',
+      'Solo se guardan la ciudad y el país, nunca tu posición.',
   });
 
   const detect = useCallback(async () => {

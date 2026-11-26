@@ -1,11 +1,10 @@
 // src/components/LocationCard.js
-// Tarjeta "Mi ciudad" del Perfil: detectar la ciudad con la ubicación, ver el mapa y quitarla.
+// Tarjeta "Mi ciudad" del Perfil: detectar la ciudad con la ubicación y quitarla.
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
-import CityMap from './CityMap';
 import { useAuth } from '../hooks/useAuth';
 import { useUserLocation } from '../hooks/useUserLocation';
 
@@ -13,7 +12,6 @@ export default function LocationCard() {
   const { user } = useAuth();
   const { busy, message, detect, remove, permissionStatus } = useUserLocation();
   const location = user?.location;
-  const hasMap = location && location.latitude !== null && location.longitude !== null;
 
   return (
     <View style={styles.card}>
@@ -23,22 +21,13 @@ export default function LocationCard() {
       </View>
 
       {location ? (
-        <>
-          <Text style={styles.city} accessibilityRole="text">
-            {location.country ? `${location.city}, ${location.country}` : location.city}
-          </Text>
-          {hasMap ? (
-            <CityMap
-              latitude={location.latitude}
-              longitude={location.longitude}
-              city={location.city}
-            />
-          ) : null}
-        </>
+        <Text style={styles.city}>
+          {location.country ? `${location.city}, ${location.country}` : location.city}
+        </Text>
       ) : (
         <Text style={styles.hint}>
           Muestra tu ciudad en el Perfil. Se usa tu ubicación una sola vez y solo se guarda la
-          ciudad con un punto aproximado.
+          ciudad y el país, nunca tu posición.
         </Text>
       )}
 

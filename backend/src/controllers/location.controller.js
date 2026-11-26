@@ -3,7 +3,7 @@ const pool = require('../config/db');
 const geocode = require('../services/geocode.service');
 const { publicUser, findUser } = require('../utils/users');
 
-// Redondea a 2 decimales (unos 1,1 km): nunca se guarda la posicion exacta.
+// Las coordenadas solo se usan para consultar la ciudad; se redondean (unos 1,1 km) y no se guardan.
 const round2 = (value) => Math.round(value * 100) / 100;
 
 function validCoordinate(value, limit) {
@@ -31,9 +31,8 @@ async function updateLocation(req, res, next) {
       throw err;
     }
     await pool.query(
-      `UPDATE users SET city = ?, country = ?, location_lat = ?, location_lng = ?,
-         location_updated_at = UTC_TIMESTAMP() WHERE id = ?`,
-      [place.city, place.country, lat, lng, req.userId]
+      'UPDATE users SET city = ?, country = ?, location_updated_at = UTC_TIMESTAMP() WHERE id = ?',
+      [place.city, place.country, req.userId]
     );
     const user = await findUser(req.userId);
     if (!user) return userGone(res);
@@ -47,8 +46,7 @@ async function updateLocation(req, res, next) {
 async function deleteLocation(req, res, next) {
   try {
     await pool.query(
-      `UPDATE users SET city = NULL, country = NULL, location_lat = NULL, location_lng = NULL,
-         location_updated_at = NULL WHERE id = ?`,
+      'UPDATE users SET city = NULL, country = NULL, location_updated_at = NULL WHERE id = ?',
       [req.userId]
     );
     const user = await findUser(req.userId);
