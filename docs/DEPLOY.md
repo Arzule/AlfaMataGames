@@ -110,8 +110,8 @@ y reiniciar con `npx expo start -c`. En EAS (A4-7) se define la misma variable e
 
 ## Versión web de la app
 
-La misma URL sirve la app web (export de Expo) en `/`; Caddy envía `/auth`, `/games`, `/library`
-`/steam` y `/health` al backend y el resto a los archivos estáticos (`deploy/web`, con `index.html` de
+La misma URL sirve la app web (export de Expo) en `/`; Caddy envía `/auth`, `/games`, `/library`,
+`/steam`, `/push` y `/health` al backend y el resto a los archivos estáticos (`deploy/web`, con `index.html` de
 respaldo). Al ser el mismo dominio no hace falta CORS. Para actualizarla (con
 `EXPO_PUBLIC_API_URL` apuntando a esta URL en el `.env`):
 

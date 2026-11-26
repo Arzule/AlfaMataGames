@@ -46,4 +46,4 @@ usuario fuera del repositorio.
 | Funcionalidades nativas | A3-2, A3-3, A3-4 y A4-6 (push remotas en el APK) |
 | UI/UX | A4-3 (estadísticas en Perfil), A4-7b (accesibilidad y pulido final), A3-7 |
 | Innovación y valor agregado | A4-4 (Google y Discord), A4-5 (Steam), A4-6 (push), A4-2 (seguridad), A4-7b (accesibilidad) |
-| Documentación | A4-8 (README, PRIVACY), A4-2 (`DEPLOY.md`), A4-7 (`APK.md`) |
+| Documentación | A4-8 (README, `PRIVACY.md`, `PUBLICACION.md`, CHANGELOG), A4-2 (`DEPLOY.md`), A4-4 (`OAUTH.md`), A4-7 (`APK.md`) |
