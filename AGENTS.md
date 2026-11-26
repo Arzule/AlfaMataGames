@@ -33,6 +33,8 @@ curso: entrega final (Avance 4, Unidad 4). Fase actual y decisiones: `docs/PLAN.
 - APK: EAS Build (`eas.json`: `development`, `preview` = APK, `production` = AAB), paquete
   `com.alfamatagames.app`, proyecto `@arzule/AlfaMataGames`. `EXPO_PUBLIC_API_URL` del APK es
   variable de EAS (el `.env` no se sube). Guía: `docs/APK.md`.
+- Documentación de entrega: `CHANGELOG.md` (versión 1.0.0), `docs/PRIVACY.md` (actualizar si se
+  recogen datos nuevos) y `docs/PUBLICACION.md` (tiendas, sin publicar).
 
 ## Cómo correrlo en local (Windows, PowerShell)
 

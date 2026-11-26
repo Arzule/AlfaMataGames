@@ -9,12 +9,12 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 
 - Entregados: Avance 1 y Avance 2.
 - Entregado: Avance 3 (A3-0 a A3-7).
-- Avance 4: A4-1, A4-1b, A4-2, A4-3, A4-4, A4-5, A4-7b y A4-7c terminadas. Backend en producción:
-  https://alfamatagames-api.chilecentral.cloudapp.azure.com (ver `docs/DEPLOY.md`).
-- **Fase actual: A4-7** (EAS Build y APK). Orden de lo que queda: A4-7 → A4-6 → A4-8
-  (A4-7 antes que A4-6: las push remotas solo se prueban en el APK; el código de A4-6 se hizo antes
-  del primer build para generar un solo APK). Pendiente de A4-4 y A4-5: probar login social y Steam en
-  el celular cuando se despliegue en Azure (Expo Go) y en el APK (A4-7).
+- Avance 4: A4-1, A4-1b, A4-2, A4-3, A4-4, A4-5, A4-7b, A4-7c y A4-8 terminadas. Backend y web en
+  producción: https://alfamatagames-api.chilecentral.cloudapp.azure.com (versión `2beb97a`, con
+  A4-6; ver `docs/DEPLOY.md`).
+- **Pendiente (lo hace el usuario):** generar el APK `preview` con EAS e instalarlo; probar en el
+  celular login social, Steam, push remotas (A4-6), "Mi ciudad" (A4-7c) y TalkBack/letra grande
+  (A4-7b); publicar el APK en GitHub Releases con el tag `v1.0.0`. Con eso se cierran A4-7 y A4-6.
 
 ## Decisiones tomadas
 
@@ -317,7 +317,7 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
     `emulator`) e imagen "Google Play" (necesaria para push);
     3) Android Studio completo.
     Incluir requisitos (virtualización activada) e instalación con `adb`.
-  - [ ] Antes del APK: desplegar en Azure la versión aprobada por el usuario (merge a `main`), con
+  - [x] Antes del APK: desplegar en Azure la versión aprobada por el usuario (merge a `main`), con
     las credenciales de OAuth y `STEAM_API_KEY` en la VM y las URLs de callback de producción
     registradas en Google y Discord.
   - [ ] Probar en el celular (APK) lo pendiente de A4-4 y A4-5: login con Google/Discord, vincular
@@ -382,13 +382,17 @@ Roadmap por fases. Cada fase se trabaja en su propia rama desde `develop`
 - **Terminado cuando:** todos los botones con icono se anuncian con lector de pantalla, ninguna
   zona táctil es menor de 44x44, y con letra grande del sistema no se corta ni solapa texto.
 
-### [ ] A4-8 Entrega final
+### [x] A4-8 Entrega final
 
 - **Objetivo:** cierre del proyecto.
 - **Tema del sílabo:** publicación.
 - **Tareas:**
-  - [ ] README definitivo.
-  - [ ] Política de privacidad (`docs/PRIVACY.md`).
-  - [ ] Guía del proceso de publicación en Google Play y App Store (sin publicar).
-  - [ ] `CHANGELOG.md`.
+  - [x] README definitivo.
+  - [x] Política de privacidad (`docs/PRIVACY.md`).
+  - [x] Guía del proceso de publicación en Google Play y App Store (sin publicar).
+  - [x] `CHANGELOG.md`.
+- **Notas:** guía de publicación en `docs/PUBLICACION.md` (Google Play: prueba cerrada de 12
+  testers por 14 días para cuentas personales nuevas; App Store: falta "Iniciar sesión con Apple"
+  por la guía 4.8). README con la tabla de la rúbrica del Proyecto Final. Al publicar el APK,
+  completar el correo de contacto de `PRIVACY.md` si se usa en una tienda.
 - **Terminado cuando:** documentación completa y coherente con el código entregado.
