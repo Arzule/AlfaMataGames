@@ -5,13 +5,19 @@ registrarse e iniciar sesión con autenticación real (JWT), explorar un catálo
 ver el detalle de cada uno, marcarlos como favoritos y guardar su propio progreso: estado,
 puntuación y reseña.
 
-Este repositorio corresponde al **Avance 3** del proyecto. Sobre la base del Avance 2 (app
-conectada a un backend propio con autenticación JWT, catálogo, detalle, favoritos y biblioteca
-por usuario) se agregaron funcionalidades nativas (cámara y galería, acelerómetro y vibración,
-notificaciones locales, sistema de archivos y estado de la red), sinopsis traducidas al español,
-reseñas de la comunidad, manejo de errores y logging, y un pulido de la interfaz para distintos
-tamaños de pantalla. La tabla de [cumplimiento de la rúbrica del Avance 3](#cumplimiento-de-la-rúbrica-del-avance-3)
-enlaza cada criterio con su evidencia.
+Este repositorio corresponde a la **entrega final (Avance 4, versión 1.0.0)** del curso
+Desarrollo de Aplicaciones Móviles (UTP). Sobre los Avances 2 y 3 (backend propio con JWT,
+biblioteca por usuario, funcionalidades nativas, sinopsis traducidas y reseñas de la comunidad)
+se agregaron: backend y versión web en **Azure con HTTPS**, **APK con EAS Build**, catálogo de
+**IGDB** a través del backend, gestión de cuenta y estadísticas, **login con Google y Discord**,
+**importación de la biblioteca de Steam**, **notificaciones push** desde el servidor, "Mi ciudad"
+con la ubicación y una revisión de **accesibilidad**.
+
+- **App web y API en producción:** https://alfamatagames-api.chilecentral.cloudapp.azure.com
+  (disponible hasta el 1/1/2027).
+- **APK:** ver [Producción, web y APK](#producción-web-y-apk).
+- La tabla de [cumplimiento de la rúbrica del Proyecto Final](#cumplimiento-de-la-rúbrica-del-proyecto-final)
+  enlaza cada criterio con su evidencia; los cambios por versión están en [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -64,6 +70,26 @@ enlaza cada criterio con su evidencia.
 - Logo propio en el inicio de sesión y como icono de la app (incluido el icono adaptativo y
   monocromático de Android).
 
+### Nuevo en la entrega final (Avance 4)
+
+- **Catálogo de IGDB** (Twitch) servido y normalizado por el backend: las credenciales nunca
+  llegan a la app.
+- **Gestión de cuenta** (Perfil → Gestionar cuenta): cambiar nombre y contraseña, ver y
+  desvincular cuentas, y eliminar la cuenta con todos sus datos.
+- **Estadísticas** en Perfil: juegos por estado, favoritos y puntuación media.
+- **Login con Google y Discord**: navegador del sistema, regreso por deep link validado y PKCE.
+  Si el correo verificado coincide se vincula a la cuenta existente. Ver [docs/OAUTH.md](docs/OAUTH.md).
+- **Conectar Steam**: importa la biblioteca por lotes con progreso, busca cada juego en IGDB y
+  asigna estado según el tiempo jugado; volver a sincronizar no pisa lo que el usuario cambió.
+- **Push remotas** en el APK: los recordatorios se guardan en el servidor y llegan aunque la app
+  esté cerrada (Expo Push → Firebase Cloud Messaging).
+- **Mi ciudad**: ciudad y país en Perfil con la ubicación del celular (una vez y en primer plano);
+  solo se guardan ciudad y país.
+- **Accesibilidad**: lector de pantalla (roles y etiquetas), zonas táctiles de 44x44, contraste
+  ≥ 4.5:1 y letra grande del sistema sin cortes.
+- **Seguridad en producción**: HTTPS, `helmet`, límite de intentos en `/auth`, CORS por entorno y
+  validación de variables al arrancar.
+
 ---
 
 ## Tecnologías
@@ -91,6 +117,10 @@ Versiones tomadas de `package.json` (app), `backend/package.json` y `docker-comp
 | @react-native-community/netinfo | 12.0.1 | Aviso de sin conexión |
 | react-native-safe-area-context | ~5.7.0 | Márgenes de la barra de estado, el notch y la barra de navegación |
 | expo-font / @expo-google-fonts | ~57.0.4 / ^0.4.2 | Fuentes Sora e Inter |
+| expo-web-browser / expo-linking / expo-crypto | ~57.0.3 / ~57.0.14 / ~57.0.4 | Login social y Steam: navegador del sistema, deep link y PKCE |
+| expo-location | ~57.0.24 | Ciudad del Perfil ("Mi ciudad") |
+| expo-splash-screen / expo-linear-gradient | ~57.0.12 / ~57.0.2 | Pantalla de inicio y degradados del detalle |
+| EAS Build | CLI >= 16 | APK (`preview`) y AAB (`production`) |
 | Node.js + Express | Express ^4.21.2 (Node >= 20) | Backend / API REST |
 | MySQL | 8.0 (`mysql:8.0`) | Base de datos |
 | Docker Compose | — | Orquestación de backend, BD y Adminer |
@@ -98,17 +128,51 @@ Versiones tomadas de `package.json` (app), `backend/package.json` y `docker-comp
 | bcrypt (`bcryptjs`) | ^2.4.3 | Cifrado de contraseñas |
 | mysql2 | ^3.11.5 | Conexión a MySQL |
 | cors | ^2.8.5 | CORS en el backend |
+| helmet / express-rate-limit | ^8.3.0 / ^7.5.1 | Cabeceras de seguridad y límite de intentos en `/auth` |
+| Caddy | 2 (`caddy:2`) | HTTPS (Let's Encrypt) y proxy en producción |
+| Microsoft Azure | VM Standard_B2ats_v2 | Hosting de producción (Docker Compose) |
 | API de IGDB (Twitch) | `https://api.igdb.com/v4` | Datos de videojuegos (solo desde el backend) |
 | DeepL API Free | `https://api-free.deepl.com/v2` | Traducción de las sinopsis (solo desde el backend) |
+| Google / Discord OAuth 2.0 | — | Login social (solo desde el backend) |
+| Steam OpenID y Steam Web API | — | Verificar la cuenta e importar la biblioteca (solo desde el backend) |
+| Expo Push Service + FCM | — | Notificaciones push en el APK |
+| OpenStreetMap Nominatim | — | Ciudad y país a partir de la ubicación (solo desde el backend) |
 
 ---
 
 ## Arquitectura
 
-La app Expo corre en el celular (Expo Go) o en el navegador. La app solo habla con el
-backend propio (Node/Express): autenticación, biblioteca, reseñas de la comunidad, foto de
-perfil, catálogo y sinopsis traducidas. El backend consulta IGDB (catálogo, detalle, juego al
-azar y sinopsis) y DeepL (traducción). El backend y MySQL corren en Docker.
+La app Expo corre en el celular (APK o Expo Go) o en el navegador, y solo habla con el backend
+propio (Node/Express). El backend es el único que conoce las claves de los servicios externos:
+IGDB (catálogo), DeepL (traducción), Google/Discord (login), Steam (biblioteca), Nominatim
+(ciudad) y Expo Push (notificaciones). Backend y MySQL corren en Docker, en local o en Azure.
+
+### Producción (Azure)
+
+```
+   APK Android / Navegador
+  +----------------------+
+  |  App AlfaMataGames   |
+  |  (Expo / RN / web)   |
+  +----------+-----------+
+             | HTTPS + JWT
+             v
+ +-------------------------------------------------------------------+
+ |  VM Azure (Chile Central) · Docker Compose (deploy/)              |
+ |  +-------------------+    +--------------------+    +-----------+ |
+ |  | Caddy :443        |--->| backend :3000      |--->| MySQL 8   | |
+ |  | HTTPS + app web   |    | Express + envío de |    | (db_data) | |
+ |  +-------------------+    | push cada minuto   |    +-----------+ |
+ |                           +---------+----------+                  |
+ +-------------------------------------|-----------------------------+
+                                       v
+     IGDB · DeepL · Google · Discord · Steam · Nominatim · Expo Push -> FCM
+```
+
+Caddy envía `/auth`, `/games`, `/library`, `/steam`, `/push` y `/health` al backend y el resto a
+la versión web exportada con Expo. Detalle en [docs/DEPLOY.md](docs/DEPLOY.md).
+
+### Desarrollo local
 
 ```
           Celular (Expo Go) / Navegador (web)
@@ -138,8 +202,7 @@ azar y sinopsis) y DeepL (traducción). El backend y MySQL corren en Docker.
   catálogo de IGDB llega a través de él; sus credenciales nunca están en la app).
 - **backend (`alfamatagames-api`):** API REST en Express; valida, cifra contraseñas, firma
   tokens, aplica las migraciones y traduce las sinopsis (IGDB + DeepL, con caché).
-- **db (`alfamatagames-db`):** MySQL 8 con las tablas `users`, `user_games`,
-  `game_translations` y `schema_migrations`.
+- **db (`alfamatagames-db`):** MySQL 8 (tablas en [Modelo de datos](#modelo-de-datos)).
 - **adminer (`alfamatagames-adminer`):** interfaz web para inspeccionar la base de datos.
 
 ---
@@ -150,16 +213,28 @@ azar y sinopsis) y DeepL (traducción). El backend y MySQL corren en Docker.
 AlfaMataGames/
 ├── App.js                      # Raíz de la app: carga fuentes y monta los providers
 ├── index.js                    # Punto de entrada de Expo (registerRootComponent)
-├── app.json                    # Configuración de Expo (name, slug, icon, plugins)
+├── app.json                    # Configuración de Expo (nombre, paquete, scheme, iconos, plugins)
+├── eas.json                    # Perfiles de EAS Build: development, preview (APK), production (AAB)
+├── google-services.json        # Configuración de Firebase para las push (no es secreto)
 ├── babel.config.js             # Preset de Expo (las variables EXPO_PUBLIC_* las inyecta Expo)
 ├── metro.config.js             # Config. de Metro: shim de expo-notifications para Expo Go Android
 ├── package.json                # Dependencias y scripts de la app
-├── docker-compose.yml          # Servicios db, backend y adminer
+├── docker-compose.yml          # Servicios locales: db, backend y adminer
 ├── .env.example                # Plantilla de variables de entorno (sin valores reales)
-├── .gitignore                  # Ignora node_modules, .env, .expo, dist, etc.
-├── assets/                     # logo.png (login) e iconos de la app generados desde el logo
+├── .gitignore                  # Ignora node_modules, .env, .expo, dist, claves de Firebase, etc.
+├── CHANGELOG.md                # Cambios por versión
+├── AGENTS.md                   # Contexto y reglas para agentes de código
+├── assets/                     # logo.png (login), iconos y splash generados desde el logo
+├── deploy/                     # Producción: docker-compose.prod.yml, Caddyfile y apagado programado
 ├── docs/
-│   └── screenshots/            # Carpeta para las capturas de pantalla (vacía)
+│   ├── PLAN.md                 # Roadmap por fases y decisiones
+│   ├── RUBRICAS.md             # Criterios de evaluación
+│   ├── DEPLOY.md               # Despliegue en Azure
+│   ├── APK.md                  # Generar, instalar y distribuir el APK
+│   ├── OAUTH.md                # Credenciales de Google, Discord y Steam
+│   ├── PRIVACY.md              # Política de privacidad
+│   ├── PUBLICACION.md          # Guía de publicación en Google Play y App Store
+│   └── screenshots/            # Capturas de pantalla
 ├── database/
 │   └── init/
 │       ├── 01-schema.sql       # Tablas users y user_games
@@ -172,32 +247,37 @@ AlfaMataGames/
 │       ├── server.js           # Arranque: aplica migraciones y escucha en PORT
 │       ├── migrate.js          # Runner de migraciones (npm run migrate)
 │       ├── app.js              # Express: middlewares, /health y rutas
-│       ├── config/db.js        # Pool MySQL (mysql2): URL única o variables sueltas, SSL opcional
-│       ├── controllers/        # auth, library, reviews y descriptions (sinopsis traducida)
-│       ├── services/           # igdb.service.js y deepl.service.js (clientes de APIs externas)
+│       ├── config/             # db.js (pool MySQL: URL única o variables sueltas, SSL opcional),
+│       │                       #   env.js (validación de variables al arrancar)
+│       ├── controllers/        # auth, library, reviews, catalog, descriptions, location,
+│       │                       #   oauth, steam y push
+│       ├── services/           # igdb, deepl, oauth, steam, geocode, expoPush y pushScheduler
 │       ├── middleware/         # auth, error y requestLogger (registro de cada petición)
-│       ├── routes/             # auth.routes.js, library.routes.js, games.routes.js
-│       └── utils/              # validators.js (validaciones y constantes), logger.js
+│       ├── routes/             # auth, library, games, steam y push
+│       └── utils/              # validators, logger, users (JWT y usuario público), oneTimeCodes
 └── src/
     ├── components/             # Header, SearchBar, RecentSearches, CategoryButton, FormInput,
     │                           #   EmptyState, ErrorState, GameCard, Rating, StatusChips, Avatar,
     │                           #   ReviewCard, ReminderSheet, DateTimePickerModal, ErrorBoundary,
-    │                           #   OfflineBanner, Synopsis, ConfirmDialog
+    │                           #   OfflineBanner, Synopsis, ConfirmDialog, LibraryStats,
+    │                           #   SocialLoginButtons, SteamCard, LocationCard
     ├── context/                # AuthContext.js, LibraryContext.js
     ├── hooks/                  # useAuth, useLibrary, useGames, useRecentSearches, useDebounce,
     │                           #   useGridColumns, usePermission, useAvatarPicker,
     │                           #   useShakeDetector, useRandomGame, useGameReviews, useNotificationPermission,
     │                           #   useGameReminder, useDailyReminder, useNotificationBridge,
-    │                           #   useNetworkStatus, useGameDescription
-    ├── navigation/             # AppNavigator.js (Stack + Tab)
+    │                           #   useNetworkStatus, useGameDescription, useOAuthProviders,
+    │                           #   useSteam, useUserLocation
+    ├── navigation/             # AppNavigator.js (Stack según la sesión + Tabs; rutas web)
     ├── screens/                # Login, Register, GameCatalog, GameDetail, Favorites, Profile,
-    │                           #   Reminders
-    ├── services/               # apiClient, authApi, libraryApi, reviewsApi, gamesApi,
-    │                           #   catalogCache (.web), preferences, notifications (.web)
+    │                           #   Reminders, Account
+    ├── services/               # apiClient, authApi, oauthApi, steamApi, socialAuth, libraryApi,
+    │                           #   reviewsApi, gamesApi, pushApi, catalogCache (.web),
+    │                           #   preferences, notifications (.web)
     ├── shims/                  # TopicSubscriptionModule.android.js (ver metro.config.js)
     ├── theme/                  # colors.js, typography.js
     └── utils/                  # storage.js, confirm.js, mapGame.js, cacheEntry.js, avatarImage.js,
-                                #   dateFormat.js, logger.js
+                                #   dateFormat.js, logger.js, libraryStats.js
 ```
 
 ---
@@ -334,6 +414,33 @@ También puedes conectar un cliente MySQL externo a `localhost:3307` (el valor d
 
 ---
 
+## Producción, web y APK
+
+| Qué | Dónde | Guía |
+| --- | --- | --- |
+| API y app web | https://alfamatagames-api.chilecentral.cloudapp.azure.com (`/health` para el estado) | [docs/DEPLOY.md](docs/DEPLOY.md) |
+| APK de Android | Build `preview` de EAS; se distribuye en GitHub Releases | [docs/APK.md](docs/APK.md) |
+| Login social y Steam | Credenciales y URLs de callback | [docs/OAUTH.md](docs/OAUTH.md) |
+| Publicación en tiendas | Google Play y App Store (documentado, no publicado) | [docs/PUBLICACION.md](docs/PUBLICACION.md) |
+| Privacidad | Datos recogidos, terceros y eliminación | [docs/PRIVACY.md](docs/PRIVACY.md) |
+
+Generar el APK (requiere cuenta de Expo y la variable `EXPO_PUBLIC_API_URL` en EAS):
+
+```powershell
+npx eas-cli@latest build --platform android --profile preview
+```
+
+Diferencias entre plataformas:
+
+| Función | APK | Expo Go | Web |
+| --- | --- | --- | --- |
+| Recordatorios | Push remotas (servidor) | Notificaciones locales | No disponible (se oculta) |
+| Agitar para descubrir | Sí | Sí | Botón "Juego al azar" |
+| Foto de perfil | Cámara y galería | Cámara y galería | Selector de archivos |
+| Login social y Steam | Vuelve por `alfamatagames://` | Vuelve por `exp://` (si el backend tiene `OAUTH_ALLOW_EXPO_GO=true`) | Misma pestaña (`/oauth`) |
+
+---
+
 ## Migraciones de base de datos
 
 Los cambios de esquema se hacen con archivos SQL numerados en `backend/migrations/`
@@ -347,7 +454,10 @@ local o en la nube, sin borrarla.
 | `003-fecha-resena.sql` | Columna `user_games.review_updated_at` e índice para las reseñas de la comunidad. |
 | `004-traducciones.sql` | Tabla `game_translations` (caché de sinopsis traducidas). |
 | `005-catalogo-igdb.sql` | Vacía `user_games` y `game_translations` al pasar de RAWG a IGDB (los ids no coinciden). |
+| `006-login-social.sql` | `users.password_hash` opcional y tabla `user_identities` (Google y Discord). |
+| `007-steam.sql` | Tablas `steam_accounts`, `steam_igdb_map` y `user_steam_games`; columnas `status_source` y `favorite_source` en `user_games`. |
 | `008-ubicacion-usuario.sql` | Columnas `users.city`, `users.country` y `users.location_updated_at` ("Mi ciudad"). |
+| `009-push.sql` | Tablas `push_tokens` y `push_reminders` (push remotas). |
 
 - **Automático:** al arrancar, el backend aplica en orden las migraciones que faltan y las
   registra en la tabla `schema_migrations`. Si una falla, el backend no arranca y muestra el error.
@@ -371,6 +481,9 @@ Creadas por `database/init/02-seed.sql`:
 | `drago@gmail.com` | `12345678` |
 | `demo@alfamatagames.com` | `Demo1234` |
 
+En producción solo existe el usuario Demo (su contraseña la entrega el autor); se puede crear una
+cuenta nueva desde la app o entrar con Google o Discord.
+
 ---
 
 ## Permisos
@@ -389,7 +502,8 @@ Creadas por `database/init/02-seed.sql`:
   ciudad y país**, nunca coordenadas. Nunca en segundo plano. No se pide micrófono
   (`microphonePermission: false` en `app.json`).
 - En **web** no hay opción de cámara; "Galería" abre el selector de archivos del navegador.
-- Textos de uso de los permisos: plugin `expo-image-picker` en `app.json`.
+- Textos de uso de los permisos: plugins `expo-image-picker` y `expo-location` en `app.json`.
+  `RECORD_AUDIO` está bloqueado en Android (`blockedPermissions`).
 - El **acelerómetro** no necesita permiso en Android/iOS. Solo se lee con el Catálogo en
   pantalla y la app en primer plano; al salir se desuscribe. En web no se usa (la opción de
   Perfil se oculta y queda el botón "Juego al azar").
@@ -589,9 +703,9 @@ Definido en `database/init/01-schema.sql` y las migraciones de `backend/migratio
 | `id` | INT AUTO_INCREMENT | Clave primaria. |
 | `name` | VARCHAR(80) | Nombre del usuario. |
 | `email` | VARCHAR(255) | Único. |
-| `password_hash` | VARCHAR(255) | Hash bcrypt (nunca en texto plano). |
+| `password_hash` | VARCHAR(255) NULL | Hash bcrypt (nunca en texto plano). NULL en cuentas creadas con Google/Discord (migración `006`). |
 | `avatar` | MEDIUMTEXT NULL | Foto de perfil como data URI base64 (migración `002`). |
-| `city`, `country` | VARCHAR NULL | Ciudad y país del Perfil (migración `008`); sin coordenadas. |
+| `city`, `country`, `location_updated_at` | NULL | Ciudad y país del Perfil (migración `008`); sin coordenadas. |
 | `created_at` | TIMESTAMP | Por defecto `CURRENT_TIMESTAMP`. |
 
 ### Tabla `user_games`
@@ -636,6 +750,32 @@ Caché de sinopsis traducidas. Clave primaria `(game_id, lang)`.
 - `steam_igdb_map`: caché compartida appid de Steam → juego de IGDB (`igdb_game_id` NULL = no encontrado, se reintenta a los 30 días; `matched_by` `external` o `name`).
 - `user_steam_games`: juegos de Steam ya procesados por usuario y minutos jugados; evita volver a agregar un juego que el usuario borró.
 
+### Otras tablas
+
+- `user_identities` (migración `006`): cuentas de Google/Discord vinculadas (`provider`,
+  `provider_user_id`, `email`); únicas por proveedor y usuario.
+- `push_tokens` y `push_reminders` (migración `009`): token de Expo Push de cada dispositivo y
+  recordatorios (`game` o `daily`) con su próxima fecha de envío.
+- `schema_migrations`: migraciones aplicadas.
+
+Todas las tablas con datos de un usuario tienen `ON DELETE CASCADE` a `users.id`: eliminar la
+cuenta borra todo lo suyo.
+
+---
+
+## Cumplimiento de la rúbrica del Proyecto Final
+
+Criterios del Proyecto Final (resumen en [`docs/RUBRICAS.md`](docs/RUBRICAS.md)).
+
+| Criterio (peso) | Cómo se cumple | Evidencia |
+| --- | --- | --- |
+| Arquitectura (20%) | Capas separadas en app y backend; configuración de publicación con `app.json` de producción (paquete, `scheme`, iconos, splash, permisos) y `eas.json` con tres perfiles; versión 1.0.0; variables `EXPO_PUBLIC_*` en EAS; ramas por fase, Conventional Commits, tags por avance y CHANGELOG. | [`app.json`](app.json), [`eas.json`](eas.json), [`docs/APK.md`](docs/APK.md), [`CHANGELOG.md`](CHANGELOG.md), [Estructura](#estructura-del-repositorio), [Flujo de trabajo en Git](#flujo-de-trabajo-en-git) |
+| Integración de servicios y backend en la nube (20%) | Backend en Azure con HTTPS; JWT con vencimiento y cierre de sesión ante 401; OAuth (Google, Discord) y Steam OpenID con PKCE y deep links validados; claves solo en el servidor; `helmet`, límite de intentos, CORS por entorno; timeouts en todas las llamadas externas; sincronización de Steam por lotes; push desde el servidor; errores JSON y 500 genéricos. | [`docs/DEPLOY.md`](docs/DEPLOY.md), [`oauth.controller.js`](backend/src/controllers/oauth.controller.js), [`steam.controller.js`](backend/src/controllers/steam.controller.js), [`pushScheduler.js`](backend/src/services/pushScheduler.js), [`apiClient.js`](src/services/apiClient.js), [API REST](#api-rest) |
+| Funcionalidades nativas (20%) | Cámara y galería, acelerómetro y vibración, notificaciones locales y **push remotas**, **ubicación**, sistema de archivos y estado de la red; permisos con explicación previa, estado bloqueado y "Abrir ajustes"; degradación en web. | [`usePermission.js`](src/hooks/usePermission.js), [`useAvatarPicker.js`](src/hooks/useAvatarPicker.js), [`useShakeDetector.js`](src/hooks/useShakeDetector.js), [`notifications.js`](src/services/notifications.js), [`useUserLocation.js`](src/hooks/useUserLocation.js), [Permisos](#permisos), [Notificaciones](#notificaciones) |
+| UI/UX (20%) | Tema único y tipografías propias, componentes reutilizables con PropTypes, estados de carga/vacío/error, estadísticas en Perfil, grillas de 2 a 6 columnas, banner del detalle en web ancha, accesibilidad (lector de pantalla, 44x44, contraste, letra grande). | [`src/components/`](src/components), [`src/theme/`](src/theme), [`LibraryStats.js`](src/components/LibraryStats.js), [Diseño y adaptabilidad](#diseño-y-adaptabilidad) |
+| Innovación y valor agregado (10%) | Frente al APF3: login con Google y Discord, importación de Steam con reglas por tiempo jugado, push desde el servidor, "Mi ciudad" sin guardar coordenadas, gestión de cuenta, versión web pública, seguridad de producción y accesibilidad. | [Nuevo en la entrega final](#nuevo-en-la-entrega-final-avance-4), [`CHANGELOG.md`](CHANGELOG.md) |
+| Documentación (10%) | README con instalación, variables, producción, API, modelo de datos y esta tabla; guías de despliegue, APK, OAuth, privacidad y publicación; plan por fases. | `README.md`, [`docs/`](docs), [`AGENTS.md`](AGENTS.md) |
+
 ---
 
 ## Cumplimiento de la rúbrica del Avance 3
@@ -669,24 +809,25 @@ Criterios del APF3 (resumen en [`docs/RUBRICAS.md`](docs/RUBRICAS.md)).
 
 ## Flujo de trabajo en Git
 
-- **`main`**: rama estable (prototipo inicial).
-- **`develop`**: rama de integración donde se fusionan las funcionalidades terminadas.
-- **`feature/*`**: nuevas funcionalidades (ej. `feature/library-state`, `feature/ui-components`).
-- **`fix/*`**: correcciones (ej. `fix/auth-null-response`, `fix/session-web-logout`).
+- **`main`**: versiones entregadas y desplegadas en producción.
+- **`develop`**: rama de integración donde se fusionan las fases terminadas.
+- **`feature/<fase>-<nombre>`**: una fase del plan por rama (ej. `feature/A4-5-steam`).
+- **`fix/*`** y **`docs/*`**: correcciones y documentación (ej. `fix/session-web-logout`).
 - **Commits** con **Conventional Commits** (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`...).
+- **Tags** por entrega: `v0.2.0-avance2`, `v0.3.0-avance3` y `v1.0.0` (final).
 
-Las ramas se integran a `develop` con `git merge --no-ff` para conservar el historial.
+Las ramas se integran a `develop` con `git merge --no-ff` para conservar el historial, y `develop`
+se fusiona a `main` al cerrar una versión.
 
 ---
 
-## Trabajo futuro (Avance 4)
+## Trabajo futuro
 
-- Catálogo a través del backend con IGDB (las credenciales salen de la app) y variables `EXPO_PUBLIC_*`.
-- Backend en producción: https://alfamatagames-api.chilecentral.cloudapp.azure.com (VM de Azure con HTTPS; ver [docs/DEPLOY.md](docs/DEPLOY.md)).
-- Gestión de cuenta (datos, contraseña, eliminar cuenta) y estadísticas en Perfil.
-- Inicio de sesión con Google y Discord, e importación de la biblioteca de Steam.
-- Recordatorios con notificaciones push desde el servidor.
-- APK con EAS Build (configuración lista: `eas.json` y guía en [docs/APK.md](docs/APK.md)), accesibilidad y pulido final.
+- Publicar en Google Play y App Store siguiendo [docs/PUBLICACION.md](docs/PUBLICACION.md)
+  (en iOS falta "Iniciar sesión con Apple").
+- Actualizaciones sin pasar por la tienda con EAS Update.
+- Pruebas automatizadas (unitarias del backend y de los hooks) e integración continua.
+- Listas personalizadas y seguir a otros usuarios.
 
 ---
 
@@ -694,6 +835,8 @@ Las ramas se integran a `develop` con `git merge --no-ff` para conservar el hist
 
 - Datos de videojuegos proporcionados por **IGDB** (https://www.igdb.com), servicio de Twitch.
 - Traducción de las sinopsis con **DeepL** (https://www.deepl.com).
+- Ciudad y país: © colaboradores de **OpenStreetMap** (datos bajo ODbL), vía Nominatim.
+- Biblioteca de Steam con la **Steam Web API** (Valve). No afiliado a Valve, Twitch ni Google.
 - **Autor(es):** Gerardo Carpio
 
 ---
