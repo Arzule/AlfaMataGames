@@ -52,7 +52,7 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   (sinopsis con etiqueta de traducción, "Ver original" y "Ver más"), ConfirmDialog (diálogo de
   confirmación propio y `ConfirmDialogHost`, montado en `App.js`), LibraryStats (estadísticas
   de la biblioteca en Perfil), SocialLoginButtons (Google/Discord configurados en el backend),
-  SteamCard (conectar Steam y sincronizar con progreso).
+  SteamCard (conectar Steam y sincronizar con progreso), LocationCard ("Mi ciudad").
 - `context/` — `AuthContext.js` (sesión, token, login/register/logout, restaura con `/auth/me`;
   updateName, changePassword y deleteAccount, que también borra los datos locales del usuario);
   `LibraryContext.js` (biblioteca del usuario con cambios optimistas).
@@ -64,7 +64,7 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   catálogo), `useGameReviews` (reseñas de la comunidad paginadas), `useNotificationPermission`,
   `useGameReminder` (recordatorio de un juego), `useDailyReminder` (diario, por usuario),
   `useNotificationBridge` (tocar notificación → navegar; restaura el diario al iniciar sesión),
-  `useNetworkStatus` (NetInfo), `useOAuthProviders` (proveedores de login social), `useSteam` (conectar, desconectar y sincronizar Steam por lotes), `useGameDescription` (sinopsis traducida con respaldo al texto original),
+  `useNetworkStatus` (NetInfo), `useOAuthProviders` (proveedores de login social), `useSteam` (conectar, desconectar y sincronizar Steam por lotes), `useUserLocation` (ciudad con expo-location), `useGameDescription` (sinopsis traducida con respaldo al texto original),
   `useDebounce`, `useGridColumns` (2/3/4 columnas y
   `GRID_PERFORMANCE_PROPS` para las FlatList).
 - `navigation/` — `AppNavigator.js`: Stack según sesión; Tabs Catálogo/Favoritos/Perfil +
@@ -96,7 +96,7 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   `steam.controller.js` (Steam OpenID, sincronización por lotes, correspondencia con IGDB y reglas
   por tiempo jugado).
 - `services/` — `igdb.service.js` (token de Twitch y normalización), `oauth.service.js` (Google y
-  Discord: URL de autorización, canje y perfil), `steam.service.js` (OpenID y Web API de Steam) y `deepl.service.js` (APIs externas con timeout; sus errores
+  Discord: URL de autorización, canje y perfil), `steam.service.js` (OpenID y Web API de Steam), `geocode.service.js` (Nominatim: ciudad y país) y `deepl.service.js` (APIs externas con timeout; sus errores
   llevan `status`/`code` o `reason`).
 - `middleware/` — `auth.middleware.js` (`authRequired`), `error.middleware.js` (404 y errores JSON),
   `requestLogger.middleware.js` (una línea por petición, `req.id` y `X-Request-Id`).
@@ -138,8 +138,8 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
   días; expo-file-system no funciona en web, por eso existe `catalogCache.web.js` (Metro elige
   el archivo por plataforma). Imágenes con `expo-image` (no usar `Image` de react-native).
 - **Permisos**: siempre con `usePermission` (explicación previa con `confirmAction`, estado
-  `blocked` con "Abrir ajustes"). La galería no pide permiso (selector del sistema). Nunca
-  pedir ubicación. Textos de uso en los plugins de `app.json`.
+  `blocked` con "Abrir ajustes"). La galería no pide permiso (selector del sistema).
+  Ubicación solo para "Mi ciudad" (primer plano, una vez); en web se pide directo al navegador. Textos de uso en los plugins de `app.json`.
 - **Foto de perfil** como data URI en `users.avatar` (≤ 200 KB, firma del archivo validada en
   el backend); `express.json` acepta hasta 400 KB y los 413 responden JSON.
 - **Notificaciones locales**: siempre por `services/notifications` (nunca importar
@@ -178,6 +178,10 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
   `colors.primaryText` (no `primary`, que no llega a 4.5:1 sobre `surface`).
 - **Rendimiento**: componentes de listas con `React.memo` y handlers estables (`onPress`
   recibe el elemento); valores de contexto con `useMemo`.
+- **Ciudad del Perfil**: la app envía la posición redondeada a 2 decimales a
+  `PUT /auth/me/location`; el backend obtiene ciudad y país con Nominatim (OpenStreetMap, sin
+  clave, 1 petición/s, User-Agent propio) y **solo guarda `city`/`country`**, nunca coordenadas.
+  La app muestra solo ciudad y país (sin mapa).
 - **Steam**: no es un método de acceso (tabla propia `steam_accounts`, no `user_identities`).
   Sincronización por lotes de 100 (`/steam/sync` + `/steam/sync/next`), ninguna petición larga.
   Correspondencia con IGDB por `external_games` y, si falta, por nombre exacto; caché en

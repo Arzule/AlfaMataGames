@@ -168,6 +168,19 @@ export function AuthProvider({ children }) {
     setUser(data.user);
   }, []);
 
+  // Ciudad del Perfil: el backend la obtiene de las coordenadas y devuelve el usuario.
+  const saveLocation = useCallback(async (latitude, longitude) => {
+    const data = await authApi.updateLocation(latitude, longitude);
+    if (!data || !data.user) throw new Error('Respuesta inesperada del servidor');
+    setUser(data.user);
+  }, []);
+
+  const removeLocation = useCallback(async () => {
+    const data = await authApi.deleteLocation();
+    if (!data || !data.user) throw new Error('Respuesta inesperada del servidor');
+    setUser(data.user);
+  }, []);
+
   // Datos de la cuenta: el backend devuelve el usuario actualizado.
   const updateName = useCallback(async (name) => {
     const data = await authApi.updateProfile(name);
@@ -203,6 +216,8 @@ export function AuthProvider({ children }) {
       logout,
       updateAvatar,
       removeAvatar,
+      saveLocation,
+      removeLocation,
       updateName,
       changePassword,
       deleteAccount,
@@ -218,6 +233,8 @@ export function AuthProvider({ children }) {
       logout,
       updateAvatar,
       removeAvatar,
+      saveLocation,
+      removeLocation,
       updateName,
       changePassword,
       deleteAccount,

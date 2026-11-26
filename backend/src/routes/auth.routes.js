@@ -13,6 +13,7 @@ const {
 const rateLimit = require('express-rate-limit');
 const { authRequired, optionalAuth } = require('../middleware/auth.middleware');
 const oauth = require('../controllers/oauth.controller');
+const location = require('../controllers/location.controller');
 
 const router = express.Router();
 
@@ -41,5 +42,7 @@ router.get('/me/identities', authRequired, oauth.identities);
 router.delete('/me/identities/:provider', authRequired, oauth.unlink);
 router.put('/me/avatar', authRequired, updateAvatar);
 router.delete('/me/avatar', authRequired, deleteAvatar);
+router.put('/me/location', authRequired, location.updateLocation);
+router.delete('/me/location', authRequired, location.deleteLocation);
 
 module.exports = router;

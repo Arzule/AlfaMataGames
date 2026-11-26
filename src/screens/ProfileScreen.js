@@ -19,6 +19,7 @@ import Avatar from '../components/Avatar';
 import DateTimePickerModal from '../components/DateTimePickerModal';
 import LibraryStats from '../components/LibraryStats';
 import SteamCard from '../components/SteamCard';
+import LocationCard from '../components/LocationCard';
 import { useAuth } from '../hooks/useAuth';
 import { useLibrary } from '../hooks/useLibrary';
 import { useSteam } from '../hooks/useSteam';
@@ -210,6 +211,8 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         <LibraryStats stats={stats} loading={library.loading && !library.items.length} />
+
+        <LocationCard />
 
         <SteamCard steam={steam} />
 
