@@ -58,3 +58,6 @@ backend/node_modules/
 .claude/.skipper-*
 .skipper/*
 !.skipper/receipts/
+
+# Clave privada de la cuenta de servicio de Firebase (va en EAS, nunca en el repo).
+*firebase-adminsdk*.json

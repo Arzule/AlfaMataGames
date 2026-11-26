@@ -99,14 +99,14 @@ npx expo start -c              # Expo Go (QR) o 'w' para web
   `steam.controller.js` (Steam OpenID, sincronización por lotes, correspondencia con IGDB y reglas
   por tiempo jugado).
 - `services/` — `igdb.service.js` (token de Twitch y normalización), `oauth.service.js` (Google y
-  Discord: URL de autorización, canje y perfil), `steam.service.js` (OpenID y Web API de Steam), `geocode.service.js` (Nominatim: ciudad y país) y `deepl.service.js` (APIs externas con timeout; sus errores
+  Discord: URL de autorización, canje y perfil), `steam.service.js` (OpenID y Web API de Steam), `expoPush.service.js` y `pushScheduler.js` (push remotas), `geocode.service.js` (Nominatim: ciudad y país) y `deepl.service.js` (APIs externas con timeout; sus errores
   llevan `status`/`code` o `reason`).
 - `middleware/` — `auth.middleware.js` (`authRequired`), `error.middleware.js` (404 y errores JSON),
   `requestLogger.middleware.js` (una línea por petición, `req.id` y `X-Request-Id`).
 - `routes/` — `/auth` (register, login, GET/PUT/DELETE `me`, PUT `me/password`, PUT/DELETE `me/avatar`), `/library` (GET lista,
   GET/PUT/DELETE `:gameId`) y `/games` (GET `/`, `/random` y `:gameId`: catálogo de IGDB; GET `:gameId/reviews`: reseñas de los demás usuarios;
   GET `:gameId/description`: sinopsis en español) y `/steam` (estado, conectar/desconectar,
-  `callback` de OpenID y `sync` / `sync/next`).
+  `callback` de OpenID y `sync` / `sync/next`) y `/push` (token del dispositivo y recordatorios).
   El usuario público incluye `avatar` (data URI o null) y `hasPassword`.
 - `utils/users.js` — `signToken`, `publicUser` y `findUser` (compartidos por auth y oauth).
 - `utils/oneTimeCodes.js` — códigos de un solo uso con PKCE (login social y Steam).
@@ -145,8 +145,15 @@ en 1024) y `favicon.png`. El fondo del icono adaptativo es `backgroundColor` en 
   Ubicación solo para "Mi ciudad" (primer plano, una vez); en web se pide directo al navegador. Textos de uso en los plugins de `app.json`.
 - **Foto de perfil** como data URI en `users.avatar` (≤ 200 KB, firma del archivo validada en
   el backend); `express.json` acepta hasta 400 KB y los 413 responden JSON.
-- **Notificaciones locales**: siempre por `services/notifications` (nunca importar
-  expo-notifications en pantallas; en web no existe). Identificadores fijos: `game-<id>` (uno
+- **Notificaciones**: siempre por `services/notifications` (nunca importar
+  expo-notifications en pantallas; en web no existe). En el APK (no Expo Go) el servicio
+  registra el token de Expo Push (`PUT /push/token`) y guarda los recordatorios en el servidor
+  (`/push/reminders`); el backend los envía con Expo Push (→ FCM) desde un programador interno
+  cada minuto (`services/pushScheduler.js`, `PUSH_SCHEDULER=false` lo apaga). Sin token (Expo
+  Go, sin red o sin permiso) se programan locales; `listReminders` une ambos. Cerrar sesión
+  llama a `endPushSession` (desregistra el token) antes de cancelar las locales. Las
+  credenciales FCM están en EAS; `google-services.json` va en el repo (no es secreto) y la clave
+  `*firebase-adminsdk*.json` nunca. Identificadores fijos: `game-<id>` (uno
   por juego) y `daily-reminder`; `data` lleva `type`, `userId` y `fireAt`. `clearSession` cancela
   todas; tocar una de otra cuenta no navega.
 - **Agitar para descubrir**: acelerómetro solo con el Catálogo enfocado y la app activa

@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth.routes');
 const libraryRoutes = require('./routes/library.routes');
 const gamesRoutes = require('./routes/games.routes');
 const steamRoutes = require('./routes/steam.routes');
+const pushRoutes = require('./routes/push.routes');
 const { notFound, errorHandler } = require('./middleware/error.middleware');
 const { requestLogger } = require('./middleware/requestLogger.middleware');
 
@@ -49,6 +50,7 @@ app.use('/auth', authRoutes);
 app.use('/library', libraryRoutes);
 app.use('/games', gamesRoutes);
 app.use('/steam', steamRoutes);
+app.use('/push', pushRoutes);
 
 // 404 y manejador de errores (siempre JSON).
 app.use(notFound);

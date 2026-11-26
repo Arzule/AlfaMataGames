@@ -416,8 +416,11 @@ En Expo Go esto aplica a la app Expo Go completa, no solo a AlfaMataGames.
 
 ## Notificaciones
 
-- Son **locales** (programadas en el propio celular) y funcionan en **Expo Go**. Las push
-  remotas llegan en el Avance 4 y se prueban con el APK.
+- En el **APK** son **push remotas**: el teléfono registra su token de Expo Push, los
+  recordatorios se guardan en el servidor y el backend los envía cada minuto con Expo Push
+  (que los entrega por Firebase Cloud Messaging). Siguen al usuario aunque cambie de teléfono.
+- En **Expo Go** (o sin conexión al programarlas) son **locales**, programadas en el propio
+  celular. En web no hay notificaciones.
 - En Expo Go aparecen dos avisos amarillos de `expo-notifications` sobre las push remotas;
   son esperables y no afectan a las locales.
 - Expo Go en Android no trae el módulo nativo de temas push (`ExpoTopicSubscriptionModule`) y
@@ -551,6 +554,13 @@ Tabla generada a partir de `backend/src/routes/`.
 | DELETE | `/auth/me/avatar` | Bearer JWT | Elimina la foto. Devuelve `{ user }`. |
 | PUT | `/auth/me/location` | Bearer JWT | `{ latitude, longitude }`: obtiene ciudad y país (Nominatim) y los guarda; 404 si no hay localidad, 503 si el servicio falla. Devuelve `{ user }` con `location { city, country }`. |
 | DELETE | `/auth/me/location` | Bearer JWT | Quita la ciudad. Devuelve `{ user }`. |
+| PUT | `/push/token` | Bearer JWT | Registra el token de Expo Push del dispositivo: `{ token }`. 204. |
+| DELETE | `/push/token` | — | Desregistra el token (al cerrar sesión): `{ token }`. 204. |
+| GET | `/push/reminders` | Bearer JWT | Recordatorios del servidor: `{ items }` (diario primero, juegos por fecha). |
+| PUT | `/push/reminders/game/:gameId` | Bearer JWT | `{ gameName, fireAt }` (ms, futura). Crea o reemplaza el recordatorio del juego. |
+| DELETE | `/push/reminders/game/:gameId` | Bearer JWT | Quita el recordatorio del juego. 204. |
+| PUT | `/push/reminders/daily` | Bearer JWT | `{ hour, minute, utcOffset }`. Crea o cambia el diario. |
+| DELETE | `/push/reminders/daily` | Bearer JWT | Quita el diario. 204. |
 | GET | `/library` | Bearer JWT | Lista la biblioteca. Acepta `?favorite=true`. |
 | GET | `/library/:gameId` | Bearer JWT | Devuelve `{ entry }` de un juego (o `null`). |
 | PUT | `/library/:gameId` | Bearer JWT | Crea o actualiza (upsert parcial) la entrada. |

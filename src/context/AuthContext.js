@@ -10,7 +10,7 @@ import React, {
 import { setAuthToken, setUnauthorizedHandler } from '../services/apiClient';
 import * as authApi from '../services/authApi';
 import * as storage from '../utils/storage';
-import { cancelAllReminders } from '../services/notifications';
+import { cancelAllReminders, endPushSession } from '../services/notifications';
 import { clearUserData } from '../services/preferences';
 import { runOAuthFlow, completeWebRedirect } from '../services/socialAuth';
 import { confirmAction } from '../utils/confirm';
@@ -31,6 +31,7 @@ export function AuthProvider({ children }) {
     setAuthToken(null);
     setUser(null);
     setToken(null);
+    await endPushSession();
     await cancelAllReminders();
     try {
       await storage.removeItem(TOKEN_KEY);

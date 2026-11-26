@@ -25,6 +25,8 @@ async function start() {
     process.exit(1);
   }
 
+  require('./services/pushScheduler').start();
+
   app.listen(PORT, () => {
     log.info(`AlfaMataGames API escuchando en el puerto ${PORT}`);
   });
