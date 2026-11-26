@@ -15,7 +15,9 @@ con la ubicación y una revisión de **accesibilidad**.
 
 - **App web y API en producción:** https://alfamatagames-api.chilecentral.cloudapp.azure.com
   (disponible hasta el 1/1/2027).
-- **APK:** ver [Producción, web y APK](#producción-web-y-apk).
+- **APK de Android (v1.0.0):** [descargar `AlfaMataGames-v1.0.0.apk`](https://github.com/Arzule/AlfaMataGames/releases/download/v1.0.0/AlfaMataGames-v1.0.0.apk)
+  ([página del release](https://github.com/Arzule/AlfaMataGames/releases/latest); instalación en
+  [Producción, web y APK](#producción-web-y-apk)).
 - La tabla de [cumplimiento de la rúbrica del Proyecto Final](#cumplimiento-de-la-rúbrica-del-proyecto-final)
   enlaza cada criterio con su evidencia; los cambios por versión están en [CHANGELOG.md](CHANGELOG.md).
 
@@ -419,10 +421,13 @@ También puedes conectar un cliente MySQL externo a `localhost:3307` (el valor d
 | Qué | Dónde | Guía |
 | --- | --- | --- |
 | API y app web | https://alfamatagames-api.chilecentral.cloudapp.azure.com (`/health` para el estado) | [docs/DEPLOY.md](docs/DEPLOY.md) |
-| APK de Android | Build `preview` de EAS; se distribuye en GitHub Releases | [docs/APK.md](docs/APK.md) |
+| APK de Android | [AlfaMataGames-v1.0.0.apk](https://github.com/Arzule/AlfaMataGames/releases/download/v1.0.0/AlfaMataGames-v1.0.0.apk) (GitHub Releases; build `preview` de EAS) | [docs/APK.md](docs/APK.md) |
 | Login social y Steam | Credenciales y URLs de callback | [docs/OAUTH.md](docs/OAUTH.md) |
 | Publicación en tiendas | Google Play y App Store (documentado, no publicado) | [docs/PUBLICACION.md](docs/PUBLICACION.md) |
 | Privacidad | Datos recogidos, terceros y eliminación | [docs/PRIVACY.md](docs/PRIVACY.md) |
+
+Instalar: abrir el enlace en el celular Android, descargar el `.apk` y aceptar "instalar apps de
+origen desconocido" (si había otra versión firmada con otra clave, desinstalarla primero).
 
 Generar el APK (requiere cuenta de Expo y la variable `EXPO_PUBLIC_API_URL` en EAS):
 
