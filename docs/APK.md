@@ -22,7 +22,7 @@ Cómo generar, instalar y distribuir el APK de AlfaMataGames (fase A4-7).
 3. Variable de la URL del backend para los perfiles que usan Azure:
 
    ```powershell
-   npx eas-cli@latest env:create --name EXPO_PUBLIC_API_URL --value https://alfamatagames-api.chilecentral.cloudapp.azure.com --environment preview --environment production --visibility plaintext
+   npx eas-cli@latest env:set --name EXPO_PUBLIC_API_URL --value https://alfamatagames-api.chilecentral.cloudapp.azure.com --environment preview --environment production --visibility plaintext
    ```
 
    Comprobar: `npx eas-cli@latest env:list --environment preview`.
@@ -85,3 +85,12 @@ npx eas-cli@latest build --platform android --profile preview
 - **El login social no vuelve a la app**: el backend de producción no tiene las variables de
   OAuth o las URLs de callback no están registradas.
 - **"App no instalada"**: había otra versión firmada con otro keystore; desinstalarla primero.
+
+## Push remotas (FCM)
+
+1. Proyecto de Firebase con la app Android `com.alfamatagames.app`; su `google-services.json`
+   está en la raíz y en `app.json` (`android.googleServicesFile`).
+2. Clave de cuenta de servicio (Firebase → Configuración → Cuentas de servicio → Generar clave)
+   subida con `npx eas-cli@latest credentials -p android` → Google Service Account → FCM V1.
+   Después se puede borrar el JSON local (está en `.gitignore`).
+3. Cualquier cambio en estas credenciales requiere un APK nuevo.
