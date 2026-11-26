@@ -7,7 +7,7 @@ Cómo generar, instalar y distribuir el APK de AlfaMataGames (fase A4-7).
 - `app.json`: `android.package` / `ios.bundleIdentifier` = `com.alfamatagames.app` (no se puede
   cambiar después de publicar), `scheme` `alfamatagames` (retorno del login social y de Steam),
   tema oscuro, icono adaptativo, pantalla de inicio con el logo (`expo-splash-screen`), permisos
-  con sus textos (cámara, fotos, notificaciones) y `RECORD_AUDIO` bloqueado. `extra.eas.projectId`
+  con sus textos (cámara, fotos, ubicación, notificaciones) y `RECORD_AUDIO` bloqueado. `extra.eas.projectId`
   y `owner` los agregó `eas init`.
 - `eas.json`: perfiles `development` (cliente de desarrollo), `preview` (**APK** para instalar
   directo) y `production` (AAB para Google Play). La versión de compilación la lleva EAS
@@ -76,7 +76,7 @@ npx eas-cli@latest build --platform android --profile preview
 - `development`: requiere `npx expo install expo-dev-client` antes de compilar; sirve para
   depurar módulos nativos que Expo Go no tiene.
 - `production`: `npx eas-cli@latest build --platform android --profile production` genera un AAB
-  para Google Play (no se publica en este proyecto; ver la guía de publicación de A4-8).
+  para Google Play (no se publica en este proyecto; ver [PUBLICACION.md](PUBLICACION.md)).
 
 ## Errores frecuentes
 
